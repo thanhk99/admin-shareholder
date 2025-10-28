@@ -1,0 +1,292 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  background: white;
+  border-right: 1px solid #e1e5e9;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+.sidebar.open {
+  width: 280px;
+}
+
+.sidebar.closed {
+  width: 64px;
+}
+
+.sidebarHeader {
+  padding: 20px 16px;
+  border-bottom: 1px solid #e1e5e9;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  background: #3498db;
+  border-radius: 8px;
+  color: white;
+}
+
+.logoText {
+  display: flex;
+  flex-direction: column;
+}
+
+.logoTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2d3748;
+  line-height: 1.2;
+}
+
+.logoSubtitle {
+  font-size: 12px;
+  color: #718096;
+  line-height: 1.2;
+}
+
+.logoCollapsed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.logoCollapsed .logoIcon {
+  margin: 0 auto;
+}
+
+.nav {
+  flex: 1;
+  padding: 16px 0;
+  overflow-y: auto;
+}
+
+.navSection {
+  margin-bottom: 24px;
+}
+
+.sectionLabel {
+  padding: 0 16px 8px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #a0aec0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.navList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.navItem {
+  position: relative;
+  margin: 2px 8px;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: #4a5568;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.navLink:hover {
+  background: #f8f9fa;
+  color: #2d3748;
+}
+
+.navLink.active {
+  background: #ebf8ff;
+  color: #3182ce;
+  font-weight: 500;
+}
+
+.navIcon {
+  font-size: 18px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.navLabel {
+  font-size: 14px;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.activeIndicator {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 16px;
+  background: #3182ce;
+  border-radius: 2px;
+}
+
+.sidebarFooter {
+  padding: 16px;
+  border-top: 1px solid #e1e5e9;
+}
+
+.footerContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.footerHelp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.helpIcon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  background: #e9ecef;
+  border-radius: 4px;
+}
+
+.helpText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.helpTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2d3748;
+  line-height: 1;
+}
+
+.helpSubtitle {
+  font-size: 11px;
+  color: #718096;
+  line-height: 1;
+}
+
+.footerButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.footerButton:hover {
+  background: #2980b9;
+}
+
+.footerCollapsed {
+  display: flex;
+  justify-content: center;
+}
+
+.helpButton {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.helpButton:hover {
+  background: #e9ecef;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+@media (min-width: 769px) {
+  .overlay {
+    display: none;
+  }
+}
+
+/* Scrollbar styling */
+.nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.nav::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.nav::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 2px;
+}
+
+.nav::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+.navIcon :global(.anticon) {
+  font-size: 16px;
+}
+
+.helpIcon :global(.anticon) {
+  font-size: 14px;
+}
+
+.logoIcon :global(.anticon) {
+  font-size: 18px;
+  color: white;
+}
