@@ -1,87 +1,123 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   PlusOutlined, 
   EditOutlined, 
   DeleteOutlined, 
   SearchOutlined,
-  UserOutlined,
-  MailOutlined
+  UserOutlined
 } from '@ant-design/icons';
 import styles from './ShareholderManagement.module.css';
+import ShareholderManage from '@/lib/api/shareholdermanagement';
+import AddShareholderModal from './AddShareholderModal/AddShareholderModal';
+import EditShareholderModal from './EditShareholderModal/EditShareholderModal';
 
 interface Shareholder {
   id: string;
-  name: string;
+  fullname: string;
   email: string;
   shares: number;
-  votingRights: number;
+  cccd: string;
+  phone:string ;
   status: 'active' | 'inactive';
-  joinDate: string;
 }
 
 export default function ShareholderManagement() {
-  const [shareholders, setShareholders] = useState<Shareholder[]>([
-    {
-      id: '1',
-      name: 'Nguyễn Văn A',
-      email: 'a.nguyen@email.com',
-      shares: 5000,
-      votingRights: 5000,
-      status: 'active',
-      joinDate: '2023-01-15',
-    },
-    {
-      id: '2',
-      name: 'Trần Thị B',
-      email: 'b.tran@email.com',
-      shares: 3000,
-      votingRights: 3000,
-      status: 'active',
-      joinDate: '2023-02-20',
-    },
-    {
-      id: '3',
-      name: 'Lê Văn C',
-      email: 'c.le@email.com',
-      shares: 2000,
-      votingRights: 2000,
-      status: 'inactive',
-      joinDate: '2023-03-10',
-    },
-  ]);
-
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [shareholders, setShareholders] = useState<Shareholder[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [newShareholder, setNewShareholder] = useState({
-    name: '',
-    email: '',
-    shares: 0,
-  });
+  const [editingShareholder, setEditingShareholder] = useState<Shareholder | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const filteredShareholders = shareholders.filter(sh =>
-    sh.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sh.email.toLowerCase().includes(searchTerm.toLowerCase())
+    sh.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sh.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sh.cccd.includes(searchTerm)
   );
 
-  const handleAddShareholder = () => {
-    const shareholder: Shareholder = {
-      id: Date.now().toString(),
-      ...newShareholder,
-      votingRights: newShareholder.shares,
-      status: 'active',
-      joinDate: new Date().toISOString().split('T')[0],
-    };
+  // "Xoá" cổ đông (chuyển sang inactive)
+  const handleDeleteShareholder = async (id: string) => {
+    if (!confirm('Bạn có chắc chắn muốn vô hiệu hoá cổ đông này?')) {
+      return;
+    }
 
-    setShareholders([...shareholders, shareholder]);
-    setNewShareholder({ name: '', email: '', shares: 0 });
-    setShowAddForm(false);
+    setLoading(true);
+    try {
+      const response = await ShareholderManage.updateShareholder(id, {
+        status: 'inactive'
+      });
+
+      if (response.status === "success") {
+        await fetchShareholder();
+        alert('Đã vô hiệu hoá cổ đông thành công');
+      }
+    } catch (error) {
+      console.error('Error deactivating shareholder:', error);
+      alert('Có lỗi xảy ra khi vô hiệu hoá cổ đông');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteShareholder = (id: string) => {
-    setShareholders(shareholders.filter(sh => sh.id !== id));
+  // Kích hoạt lại cổ đông
+  const handleActivateShareholder = async (id: string) => {
+    setLoading(true);
+    try {
+      const response = await ShareholderManage.updateShareholder(id, {
+        status: 'active'
+      });
+
+      if (response.status === "success") {
+        await fetchShareholder();
+        alert('Đã kích hoạt cổ đông thành công');
+      }
+    } catch (error) {
+      console.error('Error activating shareholder:', error);
+      alert('Có lỗi xảy ra khi kích hoạt cổ đông');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Mở modal chỉnh sửa
+  const openEditModal = (shareholder: Shareholder) => {
+    setEditingShareholder({ ...shareholder });
+    setShowEditModal(true);
+  };
+
+  // Đóng modal chỉnh sửa
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingShareholder(null);
+  };
+
+  // Refresh danh sách sau khi thêm thành công
+  const handleAddSuccess = () => {
+    fetchShareholder();
+  };
+
+  // Refresh danh sách sau khi chỉnh sửa thành công
+  const handleEditSuccess = () => {
+    fetchShareholder();
+  };
+
+  const fetchShareholder = async () => {
+    try {
+      const response = await ShareholderManage.getList();
+      console.log(response);
+      if (response.status === "success") {
+        setShareholders(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching shareholders:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchShareholder();
+  }, []);
 
   return (
     <div className={styles.management}>
@@ -92,7 +128,8 @@ export default function ShareholderManagement() {
         </div>
         <button 
           className={styles.addButton}
-          onClick={() => setShowAddForm(true)}
+          onClick={() => setShowAddModal(true)}
+          disabled={loading}
         >
           <PlusOutlined />
           Thêm Cổ đông
@@ -104,7 +141,7 @@ export default function ShareholderManagement() {
           <SearchOutlined />
           <input
             type="text"
-            placeholder="Tìm kiếm cổ đông..."
+            placeholder="Tìm kiếm theo tên, email hoặc CCCD..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -113,70 +150,38 @@ export default function ShareholderManagement() {
           <span>Tổng: {shareholders.length} cổ đông</span>
           <span>•</span>
           <span>Active: {shareholders.filter(sh => sh.status === 'active').length}</span>
+          <span>•</span>
+          <span>Inactive: {shareholders.filter(sh => sh.status === 'inactive').length}</span>
         </div>
       </div>
 
-      {showAddForm && (
-        <div className={styles.modal}>
-          <div className={styles.modalContent}>
-            <h3>Thêm Cổ đông mới</h3>
-            <div className={styles.form}>
-              <div className={styles.formGroup}>
-                <label>Họ tên</label>
-                <div className={styles.inputWithIcon}>
-                  <UserOutlined />
-                  <input
-                    type="text"
-                    value={newShareholder.name}
-                    onChange={(e) => setNewShareholder({...newShareholder, name: e.target.value})}
-                    placeholder="Nhập họ tên cổ đông"
-                  />
-                </div>
-              </div>
-              <div className={styles.formGroup}>
-                <label>Email</label>
-                <div className={styles.inputWithIcon}>
-                  <MailOutlined />
-                  <input
-                    type="email"
-                    value={newShareholder.email}
-                    onChange={(e) => setNewShareholder({...newShareholder, email: e.target.value})}
-                    placeholder="Nhập email"
-                  />
-                </div>
-              </div>
-              <div className={styles.formGroup}>
-                <label>Số cổ phần</label>
-                <input
-                  type="number"
-                  value={newShareholder.shares}
-                  onChange={(e) => setNewShareholder({...newShareholder, shares: parseInt(e.target.value) || 0})}
-                  placeholder="Nhập số cổ phần"
-                />
-              </div>
-              <div className={styles.formActions}>
-                <button className={styles.cancelButton} onClick={() => setShowAddForm(false)}>
-                  Hủy
-                </button>
-                <button className={styles.saveButton} onClick={handleAddShareholder}>
-                  Thêm
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Modal Thêm cổ đông */}
+      <AddShareholderModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={handleAddSuccess}
+      />
+
+      {/* Modal Chỉnh sửa cổ đông */}
+      {editingShareholder && (
+        <EditShareholderModal
+          isOpen={showEditModal}
+          onClose={closeEditModal}
+          onSuccess={handleEditSuccess}
+          shareholder={editingShareholder}
+        />
       )}
 
       <div className={styles.tableContainer}>
         <table className={styles.table}>
           <thead>
             <tr>
+              <th>ID cổ đông</th>
               <th>Tên cổ đông</th>
               <th>Email</th>
               <th>Số cổ phần</th>
-              <th>Quyền biểu quyết</th>
+              <th>CCCD</th>
               <th>Trạng thái</th>
-              <th>Ngày tham gia</th>
               <th>Thao tác</th>
             </tr>
           </thead>
@@ -188,30 +193,47 @@ export default function ShareholderManagement() {
                     <div className={styles.avatar}>
                       <UserOutlined />
                     </div>
-                    {shareholder.name}
+                    {shareholder.id}
                   </div>
                 </td>
+                <td>{shareholder.fullname}</td>
                 <td>{shareholder.email}</td>
                 <td className={styles.shares}>{shareholder.shares.toLocaleString()}</td>
-                <td className={styles.votingRights}>{shareholder.votingRights.toLocaleString()}</td>
+                <td>{shareholder.cccd}</td>
                 <td>
                   <span className={`${styles.status} ${styles[shareholder.status]}`}>
                     {shareholder.status === 'active' ? 'Hoạt động' : 'Không hoạt động'}
                   </span>
                 </td>
-                <td>{new Date(shareholder.joinDate).toLocaleDateString('vi-VN')}</td>
                 <td>
                   <div className={styles.actions}>
-                    <button className={styles.editButton} title="Sửa">
+                    <button 
+                      className={styles.editButton} 
+                      title="Sửa"
+                      onClick={() => openEditModal(shareholder)}
+                      disabled={loading}
+                    >
                       <EditOutlined />
                     </button>
-                    <button 
-                      className={styles.deleteButton} 
-                      title="Xóa"
-                      onClick={() => handleDeleteShareholder(shareholder.id)}
-                    >
-                      <DeleteOutlined />
-                    </button>
+                    {shareholder.status === 'active' ? (
+                      <button 
+                        className={styles.deleteButton} 
+                        title="Vô hiệu hoá"
+                        onClick={() => handleDeleteShareholder(shareholder.id)}
+                        disabled={loading}
+                      >
+                        <DeleteOutlined />
+                      </button>
+                    ) : (
+                      <button 
+                        className={styles.activateButton} 
+                        title="Kích hoạt"
+                        onClick={() => handleActivateShareholder(shareholder.id)}
+                        disabled={loading}
+                      >
+                        ✓
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -219,6 +241,12 @@ export default function ShareholderManagement() {
           </tbody>
         </table>
       </div>
+
+      {loading && (
+        <div className={styles.loadingOverlay}>
+          <div className={styles.loadingSpinner}></div>
+        </div>
+      )}
     </div>
   );
 }

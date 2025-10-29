@@ -10,14 +10,37 @@
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  transform: translateX(0); 
 }
-
 .sidebar.open {
   width: 280px;
+  transform: translateX(0); 
 }
 
 .sidebar.closed {
   width: 64px;
+  transform: translateX(0); 
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%); 
+  }
+
+  .sidebar.open {
+    width: 280px;
+    transform: translateX(0); 
+  }
+
+  .sidebar.closed {
+    width: 0;
+    transform: translateX(-100%); 
+    overflow: hidden;
+  }
+
+  .mainContent {
+    margin-left: 0 !important;
+  }
 }
 
 .sidebarHeader {
@@ -26,6 +49,8 @@
   min-height: 64px;
   display: flex;
   align-items: center;
+  background: white;
+  flex-shrink: 0; 
 }
 
 .logo {
@@ -40,7 +65,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 18px;
   background: #3498db;
   border-radius: 8px;
   color: white;
@@ -79,6 +104,7 @@
   flex: 1;
   padding: 16px 0;
   overflow-y: auto;
+  background: white;
 }
 
 .navSection {
@@ -155,6 +181,8 @@
 .sidebarFooter {
   padding: 16px;
   border-top: 1px solid #e1e5e9;
+  background: white;
+  flex-shrink: 0; /* Không bị co lại */
 }
 
 .footerContent {
@@ -245,6 +273,7 @@
   background: #e9ecef;
 }
 
+/* Overlay cho mobile */
 .overlay {
   position: fixed;
   top: 0;
@@ -252,9 +281,11 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 999;
+  z-index: 999; /* Dưới sidebar nhưng trên nội dung */
+  backdrop-filter: blur(2px); /* Hiệu ứng blur */
 }
 
+/* Trên desktop, ẩn overlay */
 @media (min-width: 769px) {
   .overlay {
     display: none;
@@ -278,15 +309,9 @@
 .nav::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
-.navIcon :global(.anticon) {
-  font-size: 16px;
-}
 
-.helpIcon :global(.anticon) {
-  font-size: 14px;
-}
-
-.logoIcon :global(.anticon) {
-  font-size: 18px;
-  color: white;
+@media (max-width: 768px) {
+  .sidebar {
+    transition: transform 0.3s ease, width 0.3s ease;
+  }
 }

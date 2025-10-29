@@ -31,7 +31,6 @@ export default function Login() {
 
     try {
       const response = await AuthService.login(account, password);
-      console.log(response)
       // Lưu token và user info vào localStorage
       if (response && response.message === "success") {
         TokenService.setToken(response.data.accessToken ,response.data.refreshToken)
@@ -45,6 +44,8 @@ export default function Login() {
           console.log(error.response.data)
         }
       }
+    }finally{
+      setLoading(false);
     }
   };
 

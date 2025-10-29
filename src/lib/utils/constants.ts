@@ -8,7 +8,7 @@ export const API_CONFIG = {
             LOGIN: '/api/auth/login',
             SIGNUP : '/api/auth/signup',
             LOGOUT :'/api/auth/logout',
-            REFRESH : '/api/auth/refresh',
+            REFRESH : '/api/auth/refreshAdmin',
             EXISTEMAIL: '/api/auth/existEmail'
         },
         ADMIN: {
@@ -39,6 +39,9 @@ export const API_CONFIG = {
         },
         PASSWORD: {
             CHANGEPASSWORD:'/api/auth/changePassword'
+        },
+        SHAREHOLDER:{
+            GETLIST:'/api/admin/shareholder/getAllShareholder'
         }
     }
 }
