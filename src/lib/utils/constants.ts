@@ -41,7 +41,11 @@ export const API_CONFIG = {
             CHANGEPASSWORD:'/api/auth/changePassword'
         },
         SHAREHOLDER:{
-            GETLIST:'/api/admin/shareholder/getAllShareholder'
+            GETLIST:'/api/admin/shareholder/getAllShareholder',
+            ADDSHAREHOLDER:'/api/admin/shareholder/addShareholder'
+        },
+        DASHBOARD:{
+            GETHOME:'/api/dashboard/home'
         }
     }
 }

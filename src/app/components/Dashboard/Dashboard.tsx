@@ -10,14 +10,14 @@ import {
   ArrowDownOutlined
 } from '@ant-design/icons';
 import styles from './Dashboard.module.css';
+import AddShareholderModal from '../ShareholderManagement/AddShareholderModal/AddShareholderModal';
+import { DashboardService } from '@/lib/api/dashboard';
 
 interface DashboardStats {
   totalShareholders: number;
   totalMeetings: number;
   activeVotings: number;
   totalShares: number;
-  shareholderGrowth: number;
-  meetingGrowth: number;
 }
 
 export default function Dashboard() {
@@ -26,20 +26,27 @@ export default function Dashboard() {
     totalMeetings: 0,
     activeVotings: 0,
     totalShares: 0,
-    shareholderGrowth: 0,
-    meetingGrowth: 0,
   });
+  const [showAddModal , setShowAddModal] = useState(false);
 
+  const fetchDataDashboard = async ()=>{
+    try {
+      const response = await DashboardService.getHome();
+      if(response.status === "success"){
+        setStats(response.data);
+      }
+    } catch (error) {
+      setStats({
+        totalShareholders: 0,
+        totalMeetings: 0,
+        activeVotings: 0,
+        totalShares: 0
+      });
+    }
+    
+  }
   useEffect(() => {
-    // Mock data - thay thế bằng API call thực tế
-    setStats({
-      totalShareholders: 156,
-      totalMeetings: 12,
-      activeVotings: 3,
-      totalShares: 125000,
-      shareholderGrowth: 12.5,
-      meetingGrowth: -2.3,
-    });
+    fetchDataDashboard();
   }, []);
 
   const StatCard = ({ 
@@ -47,7 +54,7 @@ export default function Dashboard() {
     value, 
     icon, 
     color, 
-    growth 
+    growth  
   }: { 
     title: string; 
     value: number; 
@@ -60,7 +67,7 @@ export default function Dashboard() {
         {icon}
       </div>
       <div className={styles.statContent}>
-        <h3 className={styles.statValue}>{value.toLocaleString()}</h3>
+        <h3 className={styles.statValue}>{value}</h3>
         <p className={styles.statTitle}>{title}</p>
         {growth !== undefined && (
           <div className={`${styles.growth} ${growth >= 0 ? styles.positive : styles.negative}`}>
@@ -103,6 +110,13 @@ export default function Dashboard() {
     }
   ];
 
+  const handleAddShareholder = async() =>{
+    setShowAddModal(true);
+  }
+
+  const handleAddSuccess = async() =>{
+    console.log("ok2")
+  }
   return (
     <div className={styles.dashboard}>
       <div className={styles.header}>
@@ -116,14 +130,12 @@ export default function Dashboard() {
           value={stats.totalShareholders}
           icon={<TeamOutlined />}
           color="#3498db"
-          growth={stats.shareholderGrowth}
         />
         <StatCard
           title="Cuộc họp"
           value={stats.totalMeetings}
           icon={<CalendarOutlined />}
           color="#e74c3c"
-          growth={stats.meetingGrowth}
         />
         <StatCard
           title="Bầu cử đang diễn ra"
@@ -165,7 +177,7 @@ export default function Dashboard() {
             <h2>Thao tác nhanh</h2>
           </div>
           <div className={styles.actionsGrid}>
-            <button className={styles.actionButton}>
+            <button className={styles.actionButton} onClick={handleAddShareholder}>
               <TeamOutlined />
               <span>Thêm cổ đông</span>
             </button>
@@ -184,6 +196,11 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      <AddShareholderModal
+        isOpen ={showAddModal}
+        onClose={()=>{setShowAddModal(false)}}
+        onSuccess={handleAddSuccess}
+      />
     </div>
   );
 }

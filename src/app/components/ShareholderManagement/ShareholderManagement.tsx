@@ -12,8 +12,7 @@ import styles from './ShareholderManagement.module.css';
 import ShareholderManage from '@/lib/api/shareholdermanagement';
 import AddShareholderModal from './AddShareholderModal/AddShareholderModal';
 import EditShareholderModal from './EditShareholderModal/EditShareholderModal';
-
-interface Shareholder {
+  interface Shareholder {
   id: string;
   fullname: string;
   email: string;

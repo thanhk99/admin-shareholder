@@ -3,7 +3,8 @@ export interface addShareholderRequest{
     email: string,
     shares: number,
     cccd: string
-    status: string
+    address: string,
+    phone:string
 }
 
 export interface ShareholderForm {
@@ -11,11 +12,20 @@ export interface ShareholderForm {
   email: string;
   shares: number;
   cccd: string;
+  address: string,
   phone:string;
-  status: 'active' | 'inactive';
 }
 
 export interface FormErrors {
+  fullname?: string;
+  email?: string;
+  shares?: string; 
+  cccd?: string;
+  address?: string;
+  phone?: string ;
+}
+
+export interface updateShareholderRequest{
   fullname?: string;
   email?: string;
   shares?: string; 

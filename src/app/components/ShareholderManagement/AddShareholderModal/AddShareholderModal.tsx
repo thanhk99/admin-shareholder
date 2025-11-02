@@ -22,8 +22,9 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
     email: '',
     shares: 0,
     cccd: '',
+    address: '',
     phone:'',
-    status: "active"
+
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({}); // Sửa thành FormErrors thay vì Partial<FormErrors>
@@ -69,9 +70,10 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
         email: formData.email,
         shares: formData.shares,
         cccd: formData.cccd,
-        status: 'active'
+        address:formData.address,
+        phone: formData.phone
       });
-
+      console.log(response)
       if (response.status === "success") {
         // Reset form
         setFormData({
@@ -79,8 +81,9 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
           email: '',
           shares: 0,
           cccd: '',
+          address: '',
           phone:'',
-          status: "active"
+
         });
         setErrors({});
         onSuccess();
@@ -128,8 +131,9 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
       email: '',
       shares: 0,
       cccd: '',
+      address: '',
       phone:'',
-      status: "active"
+
     });
     setErrors({});
     onClose();
@@ -218,6 +222,23 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
                 placeholder="Nhập số Sđt"
                 disabled={loading}
                 className={`${modalStyles.formInput} ${errors.phone ? modalStyles.error : ''}`}
+              />
+            </div>
+            {errors.phone && <span className={modalStyles.errorText}>{errors.phone}</span>}
+          </div>
+          <div className={modalStyles.formGroup}>
+            <label className={`${modalStyles.formLabel} ${modalStyles.required}`}>
+              Địa chỉ
+            </label>
+            <div className={modalStyles.inputWithIcon}>
+              <IdcardOutlined className={modalStyles.inputIcon} />
+              <input
+                type="text"
+                value={formData.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+                placeholder="Nhập địa chỉ"
+                disabled={loading}
+                className={`${modalStyles.formInput} ${errors.address ? modalStyles.error : ''}`}
               />
             </div>
             {errors.phone && <span className={modalStyles.errorText}>{errors.phone}</span>}
