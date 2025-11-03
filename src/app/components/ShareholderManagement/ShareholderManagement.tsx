@@ -6,21 +6,17 @@ import {
   EditOutlined, 
   DeleteOutlined, 
   SearchOutlined,
-  UserOutlined
+  UserOutlined,
+  EyeOutlined
 } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
 import styles from './ShareholderManagement.module.css';
 import ShareholderManage from '@/lib/api/shareholdermanagement';
 import AddShareholderModal from './AddShareholderModal/AddShareholderModal';
 import EditShareholderModal from './EditShareholderModal/EditShareholderModal';
-  interface Shareholder {
-  id: string;
-  fullname: string;
-  email: string;
-  shares: number;
-  cccd: string;
-  phone:string ;
-  status: 'active' | 'inactive';
-}
+import { Shareholder } from '@/app/types/shareholder';
+
+
 
 export default function ShareholderManagement() {
   const [shareholders, setShareholders] = useState<Shareholder[]>([]);
@@ -29,23 +25,30 @@ export default function ShareholderManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingShareholder, setEditingShareholder] = useState<Shareholder | null>(null);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const filteredShareholders = shareholders.filter(sh =>
-    sh.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sh.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     sh.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     sh.cccd.includes(searchTerm)
   );
 
+  // Xem chi tiết cổ đông
+  const handleViewDetail = (shareholder: Shareholder) => {
+    router.push(`/profile/${shareholder.shareholderCode}`);
+  };
+
   // "Xoá" cổ đông (chuyển sang inactive)
-  const handleDeleteShareholder = async (id: string) => {
+  const handleDeleteShareholder = async (cccd: string) => {
     if (!confirm('Bạn có chắc chắn muốn vô hiệu hoá cổ đông này?')) {
       return;
     }
 
     setLoading(true);
     try {
-      const response = await ShareholderManage.updateShareholder(id, {
-        status: 'inactive'
+      const response = await ShareholderManage.updateShareholder({
+        cccd:cccd,
+        status: false
       });
 
       if (response.status === "success") {
@@ -61,11 +64,12 @@ export default function ShareholderManagement() {
   };
 
   // Kích hoạt lại cổ đông
-  const handleActivateShareholder = async (id: string) => {
+  const handleActivateShareholder = async (cccd: string) => {
     setLoading(true);
     try {
-      const response = await ShareholderManage.updateShareholder(id, {
-        status: 'active'
+      const response = await ShareholderManage.updateShareholder({
+        cccd:cccd,
+        status: true
       });
 
       if (response.status === "success") {
@@ -148,9 +152,9 @@ export default function ShareholderManagement() {
         <div className={styles.stats}>
           <span>Tổng: {shareholders.length} cổ đông</span>
           <span>•</span>
-          <span>Active: {shareholders.filter(sh => sh.status === 'active').length}</span>
+          <span>Active: {shareholders.filter(sh => sh.status.toString() === 'true').length}</span>
           <span>•</span>
-          <span>Inactive: {shareholders.filter(sh => sh.status === 'inactive').length}</span>
+          <span>Inactive: {shareholders.filter(sh => sh.status.toString() === 'false').length}</span>
         </div>
       </div>
 
@@ -186,26 +190,31 @@ export default function ShareholderManagement() {
           </thead>
           <tbody>
             {filteredShareholders.map((shareholder) => (
-              <tr key={shareholder.id}>
+              <tr 
+                key={shareholder.shareholderCode} 
+                className={styles.clickableRow}
+                onClick={() => handleViewDetail(shareholder)}
+              >
                 <td>
                   <div className={styles.userInfo}>
                     <div className={styles.avatar}>
                       <UserOutlined />
                     </div>
-                    {shareholder.id}
+                    {shareholder.shareholderCode}
                   </div>
                 </td>
-                <td>{shareholder.fullname}</td>
+                <td>{shareholder.fullName}</td>
                 <td>{shareholder.email}</td>
-                <td className={styles.shares}>{shareholder.shares.toLocaleString()}</td>
+                <td className={styles.shares}>{shareholder.ownShares}</td>
                 <td>{shareholder.cccd}</td>
                 <td>
-                  <span className={`${styles.status} ${styles[shareholder.status]}`}>
-                    {shareholder.status === 'active' ? 'Hoạt động' : 'Không hoạt động'}
+                  <span className={`${styles.status} ${styles[shareholder.status.toString()]}`}>
+                    {shareholder.status.toString() === 'true' ? 'Hoạt động' : 'Không hoạt động'}
                   </span>
                 </td>
                 <td>
-                  <div className={styles.actions}>
+                  <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
+
                     <button 
                       className={styles.editButton} 
                       title="Sửa"
@@ -214,11 +223,11 @@ export default function ShareholderManagement() {
                     >
                       <EditOutlined />
                     </button>
-                    {shareholder.status === 'active' ? (
+                    {shareholder.status.toString() === 'true' ? (
                       <button 
                         className={styles.deleteButton} 
                         title="Vô hiệu hoá"
-                        onClick={() => handleDeleteShareholder(shareholder.id)}
+                        onClick={() => handleDeleteShareholder(shareholder.cccd)}
                         disabled={loading}
                       >
                         <DeleteOutlined />
@@ -227,7 +236,7 @@ export default function ShareholderManagement() {
                       <button 
                         className={styles.activateButton} 
                         title="Kích hoạt"
-                        onClick={() => handleActivateShareholder(shareholder.id)}
+                        onClick={() => handleActivateShareholder(shareholder.cccd)}
                         disabled={loading}
                       >
                         ✓

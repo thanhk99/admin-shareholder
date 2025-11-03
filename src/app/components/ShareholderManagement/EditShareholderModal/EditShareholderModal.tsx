@@ -4,27 +4,40 @@ import { useState, useEffect } from 'react';
 import { 
   UserOutlined,
   MailOutlined,
-  IdcardOutlined
+  IdcardOutlined,
+  PhoneOutlined,
+  HomeOutlined
 } from '@ant-design/icons';
 import ShareholderManage from '@/lib/api/shareholdermanagement';
 import modalStyles from '../Modal/Modal.module.css';
-import { FormErrors, ShareholderForm } from '@/app/types/shareholder';
-
-interface Shareholder {
-  id: string;
-  fullname: string;
-  email: string;
-  shares: number;
-  cccd: string;
-  phone: string,
-  status: 'active' | 'inactive';
-}
+import { Shareholder } from '@/app/types/shareholder';
 
 interface EditShareholderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  shareholder: Shareholder;
+  shareholder: Shareholder | null;
+}
+
+interface FormData {
+  fullname: string;
+  email: string;
+  shares: number;
+  cccd: string;
+  phone: string;
+  status: boolean;
+  address: string;
+  birthDay?: string;
+  nation?: string;
+}
+
+interface FormErrors {
+  fullname?: string;
+  email?: string;
+  shares?: string;
+  cccd?: string;
+  phone?: string;
+  address?: string;
 }
 
 export default function EditShareholderModal({ 
@@ -33,33 +46,39 @@ export default function EditShareholderModal({
   onSuccess, 
   shareholder 
 }: EditShareholderModalProps) {
-  const [formData, setFormData] = useState<ShareholderForm>({
+  const [formData, setFormData] = useState<FormData>({
     fullname: '',
     email: '',
     shares: 0,
     cccd: '',
-    phone:'',
-    status: 'active'
+    phone: '',
+    status:true,
+    address: '',
+    birthDay: '',
+    nation: ''
   });
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Partial<FormErrors>>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
   // Cập nhật form data khi shareholder prop thay đổi
   useEffect(() => {
     if (shareholder) {
       setFormData({
-        fullname: shareholder.fullname,
-        email: shareholder.email,
-        shares: shareholder.shares,
-        cccd: shareholder.cccd,
-        phone:shareholder.phone,
-        status: shareholder.status
+        fullname: shareholder.fullName || '',
+        email: shareholder.email || '',
+        shares: shareholder.ownShares || 0,
+        cccd: shareholder.cccd || '',
+        phone: shareholder.phone || '',
+        status: shareholder.status || true,
+        address: shareholder.address || '',
+        birthDay: shareholder.birthDay || '',
+        nation: shareholder.nation || ''
       });
     }
   }, [shareholder]);
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<FormErrors> = {};
+    const newErrors: FormErrors = {};
 
     if (!formData.fullname.trim()) {
       newErrors.fullname = 'Họ tên là bắt buộc';
@@ -73,12 +92,22 @@ export default function EditShareholderModal({
 
     if (!formData.cccd.trim()) {
       newErrors.cccd = 'Số CCCD là bắt buộc';
-    } else if (!/^\d+$/.test(formData.cccd)) {
-      newErrors.cccd = 'Số CCCD phải là số';
+    } else if (!/^\d{9,12}$/.test(formData.cccd)) {
+      newErrors.cccd = 'Số CCCD phải từ 9-12 chữ số';
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Số điện thoại là bắt buộc';
+    } else if (!/^(0|\+84)(\d{9,10})$/.test(formData.phone)) {
+      newErrors.phone = 'Số điện thoại không hợp lệ';
     }
 
     if (formData.shares < 0) {
       newErrors.shares = 'Số cổ phần không được âm';
+    }
+
+    if (!formData.address.trim()) {
+      newErrors.address = 'Địa chỉ là bắt buộc';
     }
 
     setErrors(newErrors);
@@ -92,19 +121,29 @@ export default function EditShareholderModal({
       return;
     }
 
+    if (!shareholder?.shareholderCode) {
+      alert('Không tìm thấy ID cổ đông');
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await ShareholderManage.updateShareholder(shareholder.id, {
+      console.log(formData.status)
+      const response = await ShareholderManage.updateShareholder({
         fullname: formData.fullname,
         email: formData.email,
         shares: formData.shares,
         cccd: formData.cccd,
-        status: formData.status
+        phone: formData.phone,
+        status: formData.status,
+        address: formData.address,
+        birthDay: formData.birthDay,
+        nation: formData.nation
       });
-
       if (response.status === "success") {
         onSuccess();
         onClose();
+        alert('Cập nhật thông tin cổ đông thành công!');
       } else {
         alert(response.message || 'Có lỗi xảy ra khi cập nhật cổ đông');
       }
@@ -116,14 +155,14 @@ export default function EditShareholderModal({
     }
   };
 
-  const handleInputChange = (field: keyof ShareholderForm, value: string | number) => {
+  const handleInputChange = (field: keyof FormData, value: string | number | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
     
     // Clear error when user starts typing
-    if (errors[field]) {
+    if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({
         ...prev,
         [field]: undefined
@@ -135,19 +174,22 @@ export default function EditShareholderModal({
     // Reset form về giá trị ban đầu từ shareholder
     if (shareholder) {
       setFormData({
-        fullname: shareholder.fullname,
+        fullname: shareholder.fullName || '',
         email: shareholder.email,
-        shares: shareholder.shares,
+        shares: shareholder.ownShares,
         cccd: shareholder.cccd,
-        phone:shareholder.phone,
-        status: shareholder.status
+        phone: shareholder.phone,
+        status: shareholder.status,
+        address: shareholder.address,
+        birthDay: shareholder.birthDay || '',
+        nation: shareholder.nation || ''
       });
     }
     setErrors({});
     onClose();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !shareholder) return null;
 
   return (
     <div className={modalStyles.modalOverlay}>
@@ -164,89 +206,160 @@ export default function EditShareholderModal({
         </div>
 
         <form onSubmit={handleSubmit} className={modalStyles.modalForm}>
-          <div className={modalStyles.formGroup}>
-            <label className={`${modalStyles.formLabel} ${modalStyles.required}`}>
-              Họ tên
-            </label>
-            <div className={modalStyles.inputWithIcon}>
-              <UserOutlined className={modalStyles.inputIcon} />
+          <div className={modalStyles.formRow}>
+            <div className={modalStyles.formGroup}>
+              <label className={`${modalStyles.formLabel} ${modalStyles.required}`}>
+                Họ tên
+              </label>
+              <div className={modalStyles.inputWithIcon}>
+                <UserOutlined className={modalStyles.inputIcon} />
+                <input
+                  type="text"
+                  value={formData.fullname}
+                  onChange={(e) => handleInputChange('fullname', e.target.value)}
+                  placeholder="Nhập họ tên cổ đông"
+                  disabled={loading}
+                  className={`${modalStyles.formInput} ${errors.fullname ? modalStyles.error : ''}`}
+                />
+              </div>
+              {errors.fullname && <span className={modalStyles.errorText}>{errors.fullname}</span>}
+            </div>
+
+            <div className={modalStyles.formGroup}>
+              <label className={`${modalStyles.formLabel} ${modalStyles.required}`}>
+                Email
+              </label>
+              <div className={modalStyles.inputWithIcon}>
+                <MailOutlined className={modalStyles.inputIcon} />
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  placeholder="Nhập email"
+                  disabled={loading}
+                  className={`${modalStyles.formInput} ${errors.email ? modalStyles.error : ''}`}
+                />
+              </div>
+              {errors.email && <span className={modalStyles.errorText}>{errors.email}</span>}
+            </div>
+          </div>
+
+          <div className={modalStyles.formRow}>
+            <div className={modalStyles.formGroup}>
+              <label className={`${modalStyles.formLabel} ${modalStyles.required}`}>
+                Số CCCD
+              </label>
+              <div className={modalStyles.inputWithIcon}>
+                <IdcardOutlined className={modalStyles.inputIcon} />
+                <input
+                  type="text"
+                  value={formData.cccd}
+                  onChange={(e) => handleInputChange('cccd', e.target.value)}
+                  placeholder="Nhập số CCCD"
+                  disabled={loading}
+                  className={`${modalStyles.formInput} ${errors.cccd ? modalStyles.error : ''}`}
+                />
+              </div>
+              {errors.cccd && <span className={modalStyles.errorText}>{errors.cccd}</span>}
+            </div>
+
+            <div className={modalStyles.formGroup}>
+              <label className={`${modalStyles.formLabel} ${modalStyles.required}`}>
+                Số điện thoại
+              </label>
+              <div className={modalStyles.inputWithIcon}>
+                <PhoneOutlined className={modalStyles.inputIcon} />
+                <input
+                  type="text"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  placeholder="Nhập số điện thoại"
+                  disabled={loading}
+                  className={`${modalStyles.formInput} ${errors.phone ? modalStyles.error : ''}`}
+                />
+              </div>
+              {errors.phone && <span className={modalStyles.errorText}>{errors.phone}</span>}
+            </div>
+          </div>
+
+          <div className={modalStyles.formRow}>
+            <div className={modalStyles.formGroup}>
+              <label className={modalStyles.formLabel}>
+                Ngày sinh
+              </label>
+              <input
+                type="date"
+                value={formData.birthDay}
+                onChange={(e) => handleInputChange('birthDay', e.target.value)}
+                disabled={loading}
+                className={modalStyles.formInput}
+              />
+            </div>
+
+            <div className={modalStyles.formGroup}>
+              <label className={modalStyles.formLabel}>
+                Quốc tịch
+              </label>
               <input
                 type="text"
-                value={formData.fullname}
-                onChange={(e) => handleInputChange('fullname', e.target.value)}
-                placeholder="Nhập họ tên cổ đông"
+                value={formData.nation}
+                onChange={(e) => handleInputChange('nation', e.target.value)}
+                placeholder="Nhập quốc tịch"
                 disabled={loading}
-                className={`${modalStyles.formInput} ${errors.fullname ? modalStyles.error : ''}`}
+                className={modalStyles.formInput}
               />
             </div>
-            {errors.fullname && <span className={modalStyles.errorText}>{errors.fullname}</span>}
           </div>
 
           <div className={modalStyles.formGroup}>
             <label className={`${modalStyles.formLabel} ${modalStyles.required}`}>
-              Email
+              Địa chỉ
             </label>
             <div className={modalStyles.inputWithIcon}>
-              <MailOutlined className={modalStyles.inputIcon} />
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="Nhập email"
-                disabled={loading}
-                className={`${modalStyles.formInput} ${errors.email ? modalStyles.error : ''}`}
-              />
-            </div>
-            {errors.email && <span className={modalStyles.errorText}>{errors.email}</span>}
-          </div>
-
-          <div className={modalStyles.formGroup}>
-            <label className={`${modalStyles.formLabel} ${modalStyles.required}`}>
-              Số CCCD
-            </label>
-            <div className={modalStyles.inputWithIcon}>
-              <IdcardOutlined className={modalStyles.inputIcon} />
+              <HomeOutlined className={modalStyles.inputIcon} />
               <input
                 type="text"
-                value={formData.cccd}
-                onChange={(e) => handleInputChange('cccd', e.target.value)}
-                placeholder="Nhập số CCCD"
+                value={formData.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+                placeholder="Nhập địa chỉ"
                 disabled={loading}
-                className={`${modalStyles.formInput} ${errors.cccd ? modalStyles.error : ''}`}
+                className={`${modalStyles.formInput} ${errors.address ? modalStyles.error : ''}`}
               />
             </div>
-            {errors.cccd && <span className={modalStyles.errorText}>{errors.cccd}</span>}
+            {errors.address && <span className={modalStyles.errorText}>{errors.address}</span>}
           </div>
 
-          <div className={modalStyles.formGroup}>
-            <label className={modalStyles.formLabel}>
-              Số cổ phần
-            </label>
-            <input
-              type="number"
-              value={formData.shares}
-              onChange={(e) => handleInputChange('shares', parseInt(e.target.value) || 0)}
-              placeholder="Nhập số cổ phần"
-              disabled={loading}
-              min="0"
-              className={`${modalStyles.formInput} ${errors.shares ? modalStyles.error : ''}`}
-            />
-            {errors.shares && <span className={modalStyles.errorText}>{errors.shares}</span>}
-          </div>
+          <div className={modalStyles.formRow}>
+            <div className={modalStyles.formGroup}>
+              <label className={modalStyles.formLabel}>
+                Số cổ phần
+              </label>
+              <input
+                type="number"
+                value={formData.shares}
+                onChange={(e) => handleInputChange('shares', parseInt(e.target.value) || 0)}
+                placeholder="Nhập số cổ phần"
+                disabled={loading}
+                min="0"
+                className={`${modalStyles.formInput} ${errors.shares ? modalStyles.error : ''}`}
+              />
+              {errors.shares && <span className={modalStyles.errorText}>{errors.shares}</span>}
+            </div>
 
-          <div className={modalStyles.formGroup}>
-            <label className={modalStyles.formLabel}>
-              Trạng thái
-            </label>
+            <div className={modalStyles.formGroup}>
+              <label className={modalStyles.formLabel}>
+                Trạng thái
+              </label>
             <select
-              value={formData.status}
-              onChange={(e) => handleInputChange('status', e.target.value as 'active' | 'inactive')}
+              value={formData.status.toString()}
+              onChange={(e) => handleInputChange('status', e.target.value === 'true')}
               disabled={loading}
               className={modalStyles.formSelect}
             >
-              <option value="active">Hoạt động</option>
-              <option value="inactive">Không hoạt động</option>
+              <option value="true">Hoạt động</option>
+              <option value="false">Không hoạt động</option>
             </select>
+            </div>
           </div>
 
           <div className={modalStyles.formActions}>

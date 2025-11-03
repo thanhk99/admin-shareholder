@@ -303,7 +303,34 @@
 .deleteButton:hover {
   background: #f1b0b7;
 }
+.clickableRow {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
 
+.clickableRow:hover {
+  background-color: #f8f9fa;
+}
+
+.viewButton {
+  background: #1890ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.viewButton:hover {
+  background: #40a9ff;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
