@@ -13,18 +13,7 @@ import {
   EyeOutlined
 } from '@ant-design/icons';
 import styles from './MeetingManagement.module.css';
-
-interface Meeting {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  time: string;
-  location: string;
-  status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
-  participants: string[];
-  agenda: string[];
-}
+import { Meeting } from '@/app/types/meeting';
 
 export default function MeetingManagement() {
   const [meetings, setMeetings] = useState<Meeting[]>([
@@ -35,7 +24,7 @@ export default function MeetingManagement() {
       date: '2024-06-15',
       time: '09:00',
       location: 'Trụ sở chính - Tầng 10, 123 Nguyễn Huệ, Q.1',
-      status: 'scheduled',
+      status: 'UPCOMING',
       participants: ['1', '2', '3'],
       agenda: ['Báo cáo tài chính 2023', 'Bầu HĐQT nhiệm kỳ mới', 'Phân chia lợi nhuận'],
     },
@@ -46,7 +35,7 @@ export default function MeetingManagement() {
       date: '2024-05-20',
       time: '14:00',
       location: 'Phòng họp A - Tầng 8',
-      status: 'completed',
+      status: 'COMPLETED',
       participants: ['1', '2'],
       agenda: ['Giới thiệu dự án mới', 'Thảo luận kế hoạch đầu tư'],
     },
@@ -57,7 +46,7 @@ export default function MeetingManagement() {
       date: '2024-04-10',
       time: '10:00',
       location: 'Phòng họp B - Tầng 9',
-      status: 'completed',
+      status: 'COMPLETED',
       participants: ['1'],
       agenda: ['Đánh giá kết quả Quý I', 'Kế hoạch Quý II'],
     },
@@ -82,7 +71,7 @@ export default function MeetingManagement() {
     const meeting: Meeting = {
       id: Date.now().toString(),
       ...newMeeting,
-      status: 'scheduled',
+      status: 'UPCOMING',
       participants: [],
       agenda: [],
     };
@@ -108,10 +97,9 @@ export default function MeetingManagement() {
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {
-      scheduled: '#3498db',
-      ongoing: '#2ecc71',
-      completed: '#95a5a6',
-      cancelled: '#e74c3c',
+      UPCOMING: '#3498db',
+      PENDING: '#2ecc71',
+      COMPLETED: '#95a5a6'
     };
     return colors[status] || '#95a5a6';
   };
@@ -145,7 +133,7 @@ export default function MeetingManagement() {
         <div className={styles.stats}>
           <span>Tổng: {meetings.length} cuộc họp</span>
           <span>•</span>
-          <span>Sắp tới: {meetings.filter(m => m.status === 'scheduled').length}</span>
+          <span>Sắp tới: {meetings.filter(m => m.status === 'UPCOMING').length}</span>
         </div>
       </div>
 

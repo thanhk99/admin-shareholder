@@ -8,9 +8,9 @@ class AuthService{
     static apiRefreshToken :string =API_CONFIG.ENDPOINTS.AUTH.REFRESH
     static aoiSignUp : string = API_CONFIG.ENDPOINTS.AUTH.SIGNUP
 
-  static async login(account: string, password: string){
+  static async login(identify: string, password: string){
     const body= {
-      account: account,
+      identify: identify,
       password: password
     };
     
