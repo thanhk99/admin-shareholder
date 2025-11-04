@@ -23,6 +23,7 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
     shares: 0,
     cccd: '',
     address: '',
+    status:'',
     phone:'',
 
   });
@@ -82,6 +83,7 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
           shares: 0,
           cccd: '',
           address: '',
+          status:'',
           phone:'',
 
         });
@@ -132,6 +134,7 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
       shares: 0,
       cccd: '',
       address: '',
+      status:'',
       phone:'',
 
     });

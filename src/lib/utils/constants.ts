@@ -1,7 +1,7 @@
 //API Constants 
 export const API_CONFIG = {
-    // BASE_URL : "https://remarkably-arriving-imp.ngrok-free.app",
-    BASE_URL : "http://localhost:8085",
+    BASE_URL : "https://remarkably-arriving-imp.ngrok-free.app",
+    //BASE_URL : "http://localhost:8085",
     TIMEOUT: 10000,
     ENDPOINTS: { 
         AUTH: {
@@ -55,4 +55,5 @@ export const API_CONFIG = {
 export const KEY_CONFIG = {
     ACCESS_TOKEN_KEY:"accessToken",
     REFRESH_TOKEN_KEY: "refreshToken"
+
 }
