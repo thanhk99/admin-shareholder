@@ -1,0 +1,176 @@
+'use client';
+
+import { 
+  EditOutlined, 
+  DeleteOutlined,
+  CloseOutlined,
+  CalendarOutlined,
+  ClockCircleOutlined,
+  EnvironmentOutlined,
+  TeamOutlined,
+  UserOutlined
+} from '@ant-design/icons';
+import styles from './MeetingDetailsModal.module.css';
+import { Meeting } from '@/app/types/meeting';
+
+interface MeetingDetailModalProps {
+  isOpen: boolean;
+  meeting: Meeting | null;
+  onClose: () => void;
+  onEdit: (meeting: Meeting) => void;
+  onDelete: (meetingCode: string) => void;
+  loading?: boolean;
+}
+
+export default function MeetingDetailModal({ 
+  isOpen, 
+  meeting, 
+  onClose, 
+  onEdit, 
+  onDelete,
+  loading = false 
+}: MeetingDetailModalProps) {
+  if (!isOpen || !meeting) return null;
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('vi-VN');
+  };
+
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('vi-VN', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: { [key: string]: string } = {
+      UPCOMING: 'Sắp diễn ra',
+      PENDING: 'Đang diễn ra',
+      COMPLETED: 'Đã kết thúc'
+    };
+    return labels[status] || status;
+  };
+
+  const getStatusColor = (status: string) => {
+    const colors: { [key: string]: string } = {
+      UPCOMING: '#3498db',
+      PENDING: '#f39c12',
+      COMPLETED: '#95a5a6'
+    };
+    return colors[status] || '#95a5a6';
+  };
+
+  return (
+    <div className={styles.modal}>
+      <div className={styles.modalContent}>
+        <div className={styles.modalHeader}>
+          <h3>Chi tiết Cuộc họp</h3>
+          <button 
+            className={styles.closeButton}
+            onClick={onClose}
+            disabled={loading}
+          >
+            <CloseOutlined />
+          </button>
+        </div>
+        
+        <div className={styles.detailContent}>
+          <div className={styles.detailHeader}>
+            <h2>{meeting.title}</h2>
+            <span 
+              className={styles.status}
+              style={{ backgroundColor: getStatusColor(meeting.status) }}
+            >
+              {getStatusLabel(meeting.status)}
+            </span>
+          </div>
+          
+          <p className={styles.detailDescription}>{meeting.description}</p>
+          
+          <div className={styles.detailGrid}>
+            <div className={styles.detailSection}>
+              <h4><CalendarOutlined /> Thông tin thời gian</h4>
+              <div className={styles.detailItem}>
+                <strong>Mã cuộc họp:</strong>
+                <span>{meeting.meetingCode}</span>
+              </div>
+              <div className={styles.detailItem}>
+                <strong>Ngày họp:</strong>
+                <span>{formatDate(meeting.meetingDate)}</span>
+              </div>
+              <div className={styles.detailItem}>
+                <strong>Thời gian:</strong>
+                <span>{formatTime(meeting.dayStart)} - {formatTime(meeting.dayEnd)}</span>
+              </div>
+              <div className={styles.detailItem}>
+                <strong>Địa điểm:</strong>
+                <span>{meeting.location}</span>
+              </div>
+            </div>
+
+            <div className={styles.detailSection}>
+            <h4><TeamOutlined /> Người tham gia</h4>
+            <div className={styles.participants}>
+                {meeting.participants > 0 ? (
+                <div className={styles.participant}>
+                    <UserOutlined />
+                    <span>{meeting.participants} người tham gia</span>
+                </div>
+                ) : (
+                <p className={styles.noData}>Chưa có người tham gia</p>
+                )}
+            </div>
+            </div>
+          </div>
+
+          {meeting.agenda && meeting.agenda.length > 0 && (
+            <div className={styles.detailSection}>
+              <h4>Biểu quyết: </h4>
+              <div className={styles.agendaList}>
+                {meeting.agenda.map((item, index) => (
+                  <div key={index} className={styles.agendaItemDetail}>
+                    <span className={styles.agendaNumber}>{index + 1}.</span>
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {meeting.candidates && meeting.candidates.length > 0 && (
+            <div className={styles.detailSection}>
+              <h4>Bầu cử HĐQT: </h4>
+              <div className={styles.agendaList}>
+                {meeting.candidates.map((item, index) => (
+                  <div key={index} className={styles.agendaItemDetail}>
+                    <span className={styles.agendaNumber}>{index + 1}.</span>
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className={styles.detailActions}>
+            <button 
+              className={styles.editButton}
+              onClick={() => onEdit(meeting)}
+              disabled={loading}
+            >
+              <EditOutlined />
+              Chỉnh sửa
+            </button>
+            <button 
+              className={styles.deleteButton}
+              onClick={() => onDelete(meeting.meetingCode)}
+              disabled={loading}
+            >
+              <DeleteOutlined />
+              Xóa
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

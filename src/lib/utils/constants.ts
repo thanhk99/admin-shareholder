@@ -1,7 +1,7 @@
 //API Constants 
 export const API_CONFIG = {
-    BASE_URL : "https://remarkably-arriving-imp.ngrok-free.app",
-    //BASE_URL : "http://localhost:8085",
+    // BASE_URL : "https://remarkably-arriving-imp.ngrok-free.app",
+    BASE_URL : "http://localhost:8085",
     TIMEOUT: 10000,
     ENDPOINTS: { 
         AUTH: {
@@ -18,13 +18,9 @@ export const API_CONFIG = {
             UPDATE_SHAREHOLDER_NAME: '/api/shareholders/changeName'
         },
         MEETING :{
-            GETMEETINGPENDING: 'api/meetings/getAllPending',
-            GETCANDIDATES: '/api/meetings/getCandidate',
-            GETRESOLUTION: '/api/meetings/getResolution',
-            GETCANDIDATEVOTE: '/api/meetings/getCandidateVoted',
-            GETRESOLUTIONVOTE:'/api/meetings/getVoteResolution',
-            VOTERESOLUTION:'api/meetings/voteResolution',
-            VOTECANDIDATE:'/api/meetings/voteCandidate'
+            GETMEETINGALL: 'api/admin/meetings/getMeetings',
+            CREATEMEETING: 'api/admin/meetings/create',
+            UPDATEMEETING: 'api/admin/meetings/update',
             
         },
         ATTENED: {

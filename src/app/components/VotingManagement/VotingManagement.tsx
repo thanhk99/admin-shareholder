@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   PlusOutlined, 
   EditOutlined, 
@@ -11,124 +11,145 @@ import {
   CheckCircleOutlined,
   BarChartOutlined,
   TeamOutlined,
-  CalendarOutlined
+  CalendarOutlined,
+  UserOutlined,
+  TrophyOutlined
 } from '@ant-design/icons';
 import styles from './VotingManagement.module.css';
-
-interface VotingSession {
-  id: string;
-  meetingId: string;
-  title: string;
-  description: string;
-  options: VotingOption[];
-  status: 'pending' | 'active' | 'completed';
-  totalVotes: number;
-  startDate: string;
-  endDate: string;
-  results?: VotingResult[];
-}
-
-interface VotingOption {
-  id: string;
-  text: string;
-  votes: number;
-}
-
-interface VotingResult {
-  optionId: string;
-  votes: number;
-  percentage: number;
-}
+import { ElectionSession, Candidate } from '@/app/types/candidate';
+import { useRouter } from 'next/navigation';
 
 export default function VotingManagement() {
-  const [votingSessions, setVotingSessions] = useState<VotingSession[]>([
+  const router = useRouter();
+  const [electionSessions, setElectionSessions] = useState<ElectionSession[]>([
     {
       id: '1',
-      meetingId: '1',
-      title: 'Bầu Chủ tịch HĐQT',
-      description: 'Bầu chọn Chủ tịch Hội đồng quản trị nhiệm kỳ 2024-2028',
+      meetingCode: 'CLIENT-ABC-MEET',
+      title: 'Bầu Hội đồng Quản trị',
+      description: 'Bầu cử thành viên Hội đồng Quản trị nhiệm kỳ 2024-2028',
       status: 'active',
-      totalVotes: 100,
+      totalVotes: 150,
+      totalShares: 1000000,
       startDate: '2024-06-01',
       endDate: '2024-06-15',
-      options: [
-        { id: '1', text: 'Ông Nguyễn Văn A', votes: 45 },
-        { id: '2', text: 'Bà Trần Thị B', votes: 35 },
-        { id: '3', text: 'Ông Lê Văn C', votes: 20 },
+      candidates: [
+        {
+          id: '1',
+          meetingCode: 'CLIENT-ABC-MEET',
+          candidateName: 'Ông Nguyễn Văn A',
+          candidateInfo: 'Có 10 năm kinh nghiệm trong lĩnh vực tài chính',
+          currentPosition: 'Giám đốc Tài chính',
+          amountVotes: 750000,
+          isActive: true,
+          createAt: '2024-05-01T00:00:00'
+        },
+        {
+          id: '2',
+          meetingCode: 'CLIENT-ABC-MEET',
+          candidateName: 'Bà Trần Thị B',
+          candidateInfo: 'Chuyên gia về quản trị doanh nghiệp',
+          currentPosition: 'Trưởng phòng Nhân sự',
+          amountVotes: 600000,
+          isActive: true,
+          createAt: '2024-05-01T00:00:00'
+        },
+        {
+          id: '3',
+          meetingCode: 'CLIENT-ABC-MEET',
+          candidateName: 'Ông Lê Văn C',
+          candidateInfo: 'Chuyên gia công nghệ và đổi mới',
+          currentPosition: 'Giám đốc Công nghệ',
+          amountVotes: 450000,
+          isActive: true,
+          createAt: '2024-05-01T00:00:00'
+        },
+        {
+          id: '4',
+          meetingCode: 'CLIENT-ABC-MEET',
+          candidateName: 'Bà Phạm Thị D',
+          candidateInfo: 'Chuyên gia về pháp lý và tuân thủ',
+          currentPosition: 'Trưởng phòng Pháp chế',
+          amountVotes: 300000,
+          isActive: true,
+          createAt: '2024-05-01T00:00:00'
+        }
       ],
       results: [
-        { optionId: '1', votes: 45, percentage: 45 },
-        { optionId: '2', votes: 35, percentage: 35 },
-        { optionId: '3', votes: 20, percentage: 20 },
+        { candidateId: '1', candidateName: 'Ông Nguyễn Văn A', votes: 75, shares: 750000, percentage: 75, position: 1 },
+        { candidateId: '2', candidateName: 'Bà Trần Thị B', votes: 60, shares: 600000, percentage: 60, position: 2 },
+        { candidateId: '3', candidateName: 'Ông Lê Văn C', votes: 45, shares: 450000, percentage: 45, position: 3 },
+        { candidateId: '4', candidateName: 'Bà Phạm Thị D', votes: 30, shares: 300000, percentage: 30, position: 4 },
       ],
     },
     {
       id: '2',
-      meetingId: '1',
-      title: 'Thông qua Báo cáo Tài chính 2023',
-      description: 'Biểu quyết thông qua báo cáo tài chính năm 2023',
+      meetingCode: 'CLIENT-ABC-MEET',
+      title: 'Bầu Ban Kiểm soát',
+      description: 'Bầu cử thành viên Ban Kiểm soát nhiệm kỳ 2024-2028',
       status: 'completed',
-      totalVotes: 95,
+      totalVotes: 120,
+      totalShares: 800000,
       startDate: '2024-05-20',
       endDate: '2024-05-30',
-      options: [
-        { id: '1', text: 'Đồng ý', votes: 85 },
-        { id: '2', text: 'Không đồng ý', votes: 8 },
-        { id: '3', text: 'Không ý kiến', votes: 2 },
+      candidates: [
+        {
+          id: '5',
+          meetingCode: 'CLIENT-ABC-MEET',
+          candidateName: 'Ông Hoàng Văn E',
+          candidateInfo: 'Kiểm toán viên chuyên nghiệp',
+          currentPosition: 'Kiểm toán viên Cao cấp',
+          amountVotes: 520000,
+          isActive: true,
+          createAt: '2024-05-01T00:00:00'
+        },
+        {
+          id: '6',
+          meetingCode: 'CLIENT-ABC-MEET',
+          candidateName: 'Bà Nguyễn Thị F',
+          candidateInfo: 'Chuyên gia kiểm soát nội bộ',
+          currentPosition: 'Trưởng phòng Kiểm soát Nội bộ',
+          amountVotes: 480000,
+          isActive: true,
+          createAt: '2024-05-01T00:00:00'
+        }
       ],
       results: [
-        { optionId: '1', votes: 85, percentage: 89.5 },
-        { optionId: '2', votes: 8, percentage: 8.4 },
-        { optionId: '3', votes: 2, percentage: 2.1 },
+        { candidateId: '5', candidateName: 'Ông Hoàng Văn E', votes: 65, shares: 520000, percentage: 65, position: 1 },
+        { candidateId: '6', candidateName: 'Bà Nguyễn Thị F', votes: 60, shares: 480000, percentage: 60, position: 2 },
       ],
-    },
-    {
-      id: '3',
-      meetingId: '2',
-      title: 'Phê duyệt Dự án Đầu tư Mới',
-      description: 'Biểu quyết phê duyệt dự án đầu tư nhà máy mới',
-      status: 'pending',
-      totalVotes: 0,
-      startDate: '2024-06-20',
-      endDate: '2024-06-30',
-      options: [
-        { id: '1', text: 'Đồng ý', votes: 0 },
-        { id: '2', text: 'Không đồng ý', votes: 0 },
-      ],
-    },
+    }
   ]);
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [newVoting, setNewVoting] = useState({
-    meetingId: '1',
+  const [newElection, setNewElection] = useState({
+    meetingCode: '',
     title: '',
     description: '',
     startDate: '',
     endDate: '',
   });
 
-  const filteredVotings = votingSessions.filter(voting =>
-    voting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    voting.description.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredElections = electionSessions.filter(election =>
+    election.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    election.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const handleCreateVoting = () => {
-    const voting: VotingSession = {
+  const handleManageCandidates = (meetingCode: string) => {
+    router.push(`/candidate?&meeting=${meetingCode}`);
+  };
+  const handleCreateElection = () => {
+    const election: ElectionSession = {
       id: Date.now().toString(),
-      ...newVoting,
+      ...newElection,
       status: 'pending',
       totalVotes: 0,
-      options: [
-        { id: '1', text: 'Đồng ý', votes: 0 },
-        { id: '2', text: 'Không đồng ý', votes: 0 },
-        { id: '3', text: 'Không ý kiến', votes: 0 },
-      ],
+      totalShares: 0,
+      candidates: [],
     };
 
-    setVotingSessions([...votingSessions, voting]);
-    setNewVoting({ 
-      meetingId: '1', 
+    setElectionSessions([...electionSessions, election]);
+    setNewElection({ 
+      meetingCode: '', 
       title: '', 
       description: '', 
       startDate: '', 
@@ -137,19 +158,19 @@ export default function VotingManagement() {
     setShowCreateForm(false);
   };
 
-  const handleDeleteVoting = (id: string) => {
-    setVotingSessions(votingSessions.filter(voting => voting.id !== id));
+  const handleDeleteElection = (id: string) => {
+    setElectionSessions(electionSessions.filter(election => election.id !== id));
   };
 
-  const handleStartVoting = (id: string) => {
-    setVotingSessions(votingSessions.map(voting => 
-      voting.id === id ? { ...voting, status: 'active' } : voting
+  const handleStartElection = (id: string) => {
+    setElectionSessions(electionSessions.map(election => 
+      election.id === id ? { ...election, status: 'active' } : election
     ));
   };
 
-  const handleEndVoting = (id: string) => {
-    setVotingSessions(votingSessions.map(voting => 
-      voting.id === id ? { ...voting, status: 'completed' } : voting
+  const handleEndElection = (id: string) => {
+    setElectionSessions(electionSessions.map(election => 
+      election.id === id ? { ...election, status: 'completed' } : election
     ));
   };
 
@@ -171,19 +192,32 @@ export default function VotingManagement() {
     return colors[status] || '#95a5a6';
   };
 
+  const getPositionIcon = (position: number) => {
+    switch (position) {
+      case 1:
+        return <TrophyOutlined className={styles.goldIcon} />;
+      case 2:
+        return <TrophyOutlined className={styles.silverIcon} />;
+      case 3:
+        return <TrophyOutlined className={styles.bronzeIcon} />;
+      default:
+        return <UserOutlined />;
+    }
+  };
+
   return (
     <div className={styles.management}>
       <div className={styles.header}>
         <div>
-          <h1>Quản lý Bầu cử</h1>
-          <p>Tổ chức và quản lý các phiên bầu cử, biểu quyết</p>
+          <h1>Quản lý Bầu cử HĐQT</h1>
+          <p>Tổ chức và quản lý các cuộc bầu cử Hội đồng Quản trị</p>
         </div>
         <button 
           className={styles.addButton}
           onClick={() => setShowCreateForm(true)}
         >
           <PlusOutlined />
-          Tạo Phiên bầu cử
+          Tạo Cuộc bầu cử
         </button>
       </div>
 
@@ -192,38 +226,49 @@ export default function VotingManagement() {
           <SearchOutlined />
           <input
             type="text"
-            placeholder="Tìm kiếm phiên bầu cử..."
+            placeholder="Tìm kiếm cuộc bầu cử..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className={styles.stats}>
-          <span>Tổng: {votingSessions.length} phiên</span>
+          <span>Tổng: {electionSessions.length} cuộc bầu cử</span>
           <span>•</span>
-          <span>Đang hoạt động: {votingSessions.filter(v => v.status === 'active').length}</span>
+          <span>Đang hoạt động: {electionSessions.filter(v => v.status === 'active').length}</span>
+          <span>•</span>
+          <span>Đã kết thúc: {electionSessions.filter(v => v.status === 'completed').length}</span>
         </div>
       </div>
 
       {showCreateForm && (
         <div className={styles.modal}>
           <div className={styles.modalContent}>
-            <h3>Tạo Phiên bầu cử mới</h3>
+            <h3>Tạo Cuộc bầu cử HĐQT mới</h3>
             <div className={styles.form}>
               <div className={styles.formGroup}>
-                <label>Tiêu đề phiên bầu cử</label>
+                <label>Mã cuộc họp</label>
                 <input
                   type="text"
-                  value={newVoting.title}
-                  onChange={(e) => setNewVoting({...newVoting, title: e.target.value})}
-                  placeholder="Nhập tiêu đề phiên bầu cử"
+                  value={newElection.meetingCode}
+                  onChange={(e) => setNewElection({...newElection, meetingCode: e.target.value})}
+                  placeholder="Nhập mã cuộc họp"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Tiêu đề cuộc bầu cử</label>
+                <input
+                  type="text"
+                  value={newElection.title}
+                  onChange={(e) => setNewElection({...newElection, title: e.target.value})}
+                  placeholder="Nhập tiêu đề cuộc bầu cử"
                 />
               </div>
               <div className={styles.formGroup}>
                 <label>Mô tả</label>
                 <textarea
-                  value={newVoting.description}
-                  onChange={(e) => setNewVoting({...newVoting, description: e.target.value})}
-                  placeholder="Nhập mô tả phiên bầu cử"
+                  value={newElection.description}
+                  onChange={(e) => setNewElection({...newElection, description: e.target.value})}
+                  placeholder="Nhập mô tả cuộc bầu cử"
                   rows={3}
                 />
               </div>
@@ -232,16 +277,16 @@ export default function VotingManagement() {
                   <label>Ngày bắt đầu</label>
                   <input
                     type="date"
-                    value={newVoting.startDate}
-                    onChange={(e) => setNewVoting({...newVoting, startDate: e.target.value})}
+                    value={newElection.startDate}
+                    onChange={(e) => setNewElection({...newElection, startDate: e.target.value})}
                   />
                 </div>
                 <div className={styles.formGroup}>
                   <label>Ngày kết thúc</label>
                   <input
                     type="date"
-                    value={newVoting.endDate}
-                    onChange={(e) => setNewVoting({...newVoting, endDate: e.target.value})}
+                    value={newElection.endDate}
+                    onChange={(e) => setNewElection({...newElection, endDate: e.target.value})}
                   />
                 </div>
               </div>
@@ -249,7 +294,7 @@ export default function VotingManagement() {
                 <button className={styles.cancelButton} onClick={() => setShowCreateForm(false)}>
                   Hủy
                 </button>
-                <button className={styles.saveButton} onClick={handleCreateVoting}>
+                <button className={styles.saveButton} onClick={handleCreateElection}>
                   Tạo
                 </button>
               </div>
@@ -258,90 +303,125 @@ export default function VotingManagement() {
         </div>
       )}
 
-      <div className={styles.votingGrid}>
-        {filteredVotings.map((voting) => (
-          <div key={voting.id} className={styles.votingCard}>
-            <div className={styles.votingHeader}>
-              <h3>{voting.title}</h3>
+      <div className={styles.electionGrid}>
+        {filteredElections.map((election) => (
+          <div key={election.id} className={styles.electionCard}>
+            <div className={styles.electionHeader}>
+              <div>
+                <h3>{election.title}</h3>
+                <span className={styles.meetingCode}>{election.meetingCode}</span>
+              </div>
               <span 
                 className={styles.status}
-                style={{ backgroundColor: getStatusColor(voting.status) }}
+                style={{ backgroundColor: getStatusColor(election.status) }}
               >
-                {getStatusLabel(voting.status)}
+                {getStatusLabel(election.status)}
               </span>
             </div>
             
-            <p className={styles.description}>{voting.description}</p>
+            <p className={styles.description}>{election.description}</p>
 
-            <div className={styles.votingDetails}>
+            <div className={styles.electionDetails}>
               <div className={styles.detail}>
                 <CalendarOutlined />
                 <span>
-                  {new Date(voting.startDate).toLocaleDateString('vi-VN')} - {new Date(voting.endDate).toLocaleDateString('vi-VN')}
+                  {new Date(election.startDate).toLocaleDateString('vi-VN')} - {new Date(election.endDate).toLocaleDateString('vi-VN')}
                 </span>
               </div>
               <div className={styles.detail}>
                 <TeamOutlined />
-                <span>{voting.totalVotes} phiếu bầu</span>
+                <span>{election.totalVotes} cổ đông bỏ phiếu</span>
               </div>
               <div className={styles.detail}>
                 <BarChartOutlined />
-                <span>{voting.options.length} lựa chọn</span>
+                <span>{election.candidates.length} ứng viên</span>
+              </div>
+              <div className={styles.detail}>
+                <UserOutlined />
+                <span>{election.totalShares.toLocaleString()} cổ phần</span>
               </div>
             </div>
 
-            {voting.status === 'completed' && voting.results && (
+            {election.status === 'completed' && election.results && (
               <div className={styles.results}>
-                <h4>Kết quả:</h4>
-                {voting.results.map((result, index) => (
-                  <div key={result.optionId} className={styles.resultItem}>
-                    <div className={styles.resultHeader}>
-                      <span>{voting.options[index]?.text}</span>
-                      <span>{result.percentage}% ({result.votes} phiếu)</span>
+                <h4>
+                  <TrophyOutlined />
+                  Kết quả bầu cử:
+                </h4>
+                <div className={styles.candidatesResults}>
+                  {election.results.slice(0, 3).map((result) => (
+                    <div key={result.candidateId} className={styles.candidateResult}>
+                      <div className={styles.candidateRank}>
+                        {getPositionIcon(result.position)}
+                        <span className={styles.rank}>#{result.position}</span>
+                      </div>
+                      <div className={styles.candidateInfo}>
+                        <span className={styles.candidateName}>{result.candidateName}</span>
+                        <span className={styles.voteInfo}>
+                          {result.percentage}% • {result.shares.toLocaleString()} cổ phần
+                        </span>
+                      </div>
+                      <div className={styles.votePercentage}>
+                        {result.percentage}%
+                      </div>
                     </div>
-                    <div className={styles.progressBar}>
-                      <div 
-                        className={styles.progressFill}
-                        style={{ width: `${result.percentage}%` }}
-                      ></div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {election.status !== 'completed' && election.candidates.length > 0 && (
+              <div className={styles.candidatesPreview}>
+                <h4>Danh sách ứng viên:</h4>
+                <div className={styles.candidatesList}>
+                  {election.candidates.slice(0, 3).map((candidate, index) => (
+                    <div key={candidate.id} className={styles.candidatePreview}>
+                      <UserOutlined />
+                      <span>{candidate.candidateName}</span>
+                      {index === 2 && election.candidates.length > 3 && (
+                        <span className={styles.moreCandidates}>
+                          +{election.candidates.length - 3} ứng viên khác
+                        </span>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
 
             <div className={styles.actions}>
-              {voting.status === 'pending' && (
+              {election.status === 'pending' && (
                 <button 
                   className={styles.startButton}
-                  onClick={() => handleStartVoting(voting.id)}
+                  onClick={() => handleStartElection(election.id)}
                 >
                   <PlayCircleOutlined />
-                  Bắt đầu
+                  Bắt đầu bầu cử
                 </button>
               )}
-              {voting.status === 'active' && (
+              {election.status === 'active' && (
                 <button 
                   className={styles.endButton}
-                  onClick={() => handleEndVoting(voting.id)}
+                  onClick={() => handleEndElection(election.id)}
                 >
                   <StopOutlined />
-                  Kết thúc
+                  Kết thúc bầu cử
                 </button>
               )}
-              {voting.status === 'completed' && (
+              {election.status === 'completed' && (
                 <button className={styles.resultsButton}>
                   <BarChartOutlined />
-                  Xem kết quả
+                  Chi tiết kết quả
                 </button>
               )}
-              <button className={styles.editButton}>
+              <button className={styles.editButton}
+              onClick={() => handleManageCandidates(election.meetingCode)}>
                 <EditOutlined />
-                Sửa
+                Quản lý ứng viên
               </button>
               <button 
                 className={styles.deleteButton}
-                onClick={() => handleDeleteVoting(voting.id)}
+                onClick={() => handleDeleteElection(election.id)}
               >
                 <DeleteOutlined />
                 Xóa

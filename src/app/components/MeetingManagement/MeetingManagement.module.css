@@ -1,5 +1,7 @@
 .management {
-  padding: 0;
+  padding: 24px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
 }
 
 .header {
@@ -85,117 +87,6 @@
   font-size: 14px;
 }
 
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.modalContent {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modalContent h3 {
-  margin: 0 0 24px 0;
-  color: #2c3e50;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.formGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.formGroup label {
-  color: #2c3e50;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.formGroup input,
-.formGroup textarea {
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: border-color 0.2s ease;
-  font-family: inherit;
-}
-
-.formGroup input:focus,
-.formGroup textarea:focus {
-  outline: none;
-  border-color: #3498db;
-}
-
-.formRow {
-  display: flex;
-  gap: 16px;
-}
-
-.formRow .formGroup {
-  flex: 1;
-}
-
-.formActions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 24px;
-}
-
-.cancelButton {
-  padding: 10px 20px;
-  background: #95a5a6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-}
-
-.cancelButton:hover {
-  background: #7f8c8d;
-}
-
-.saveButton {
-  padding: 10px 20px;
-  background: #3498db;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-}
-
-.saveButton:hover {
-  background: #2980b9;
-}
-
 .meetingsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
@@ -230,6 +121,16 @@
   font-size: 18px;
   font-weight: 600;
   flex: 1;
+}
+
+.meetingCode {
+  font-size: 12px;
+  color: #7f8c8d;
+  background: #f8f9fa;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  display: inline-block;
 }
 
 .status {
@@ -269,7 +170,6 @@
 }
 
 .agenda {
-  margin-bottom: 16px;
   padding: 12px;
   background: #f8f9fa;
   border-radius: 6px;
@@ -292,6 +192,11 @@
   font-size: 13px;
   margin-bottom: 4px;
   line-height: 1.4;
+}
+
+.moreItems {
+  color: #7f8c8d !important;
+  font-style: italic;
 }
 
 .actions {
@@ -340,7 +245,29 @@
   background: #f1b0b7;
 }
 
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 16px;
+  color: #666;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  background: white;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
 @media (max-width: 768px) {
+  .management {
+    padding: 16px;
+  }
+  
   .header {
     flex-direction: column;
     gap: 16px;

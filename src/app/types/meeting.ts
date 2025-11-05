@@ -1,11 +1,23 @@
 export interface Meeting {
-  id: string;
+  meetingCode: string;
   title: string;
   description: string;
-  date: string;
-  time: string;
+  meetingDate: string;
+  dayStart: string;
   location: string;
+  dayEnd:string;
   status: 'UPCOMING' | 'PENDING' | 'COMPLETED';
-  participants: string[];
+  participants: number;
   agenda: string[];
+  candidates:string[];
+}
+export interface MeetingRequest {
+  meetingCode: string;
+  title: string;
+  description: string;
+  meetingDate: string;
+  dayStart: string;
+  location: string;
+  dayEnd:string;
+  status: 'UPCOMING' | 'PENDING' | 'COMPLETED';
 }
