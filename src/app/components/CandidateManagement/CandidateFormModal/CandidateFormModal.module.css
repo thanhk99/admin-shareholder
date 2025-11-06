@@ -1,17 +1,4 @@
-.management {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 200px;
-  font-size: 16px;
-  color: #666;
-}.modal {
+.modal {
   position: fixed;
   top: 0;
   left: 0;

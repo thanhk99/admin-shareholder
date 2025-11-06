@@ -44,6 +44,12 @@ export const API_CONFIG = {
         },
         DASHBOARD:{
             GETHOME:'/api/dashboard/home'
+        },
+        CANDIDATE:{
+            GETBYMEETING: 'api/admin/candidate',
+            CREATECANDIDATE:'api/admin/candidate/create',
+            UPDATECANDIDATE:'api/admin/candidate/update',
+            DISABLECANDIDATE:'api/admin/candidate/toggle'
         }
     }
 }

@@ -16,6 +16,25 @@ interface MeetingFormModalProps {
   loading?: boolean;
 }
 
+// Hàm format thời gian cho input type="time"
+const formatTimeForInput = (timeString: string | undefined) => {
+  if (!timeString) return '';
+  
+  // Loại bỏ khoảng trắng ở đầu và cuối chuỗi
+  const trimmedTime = timeString.trim();
+  if (!trimmedTime) return '';
+  
+  // Tách chuỗi thời gian thành các phần
+  const parts = trimmedTime.split(':');
+  if (parts.length < 2) return '';
+  
+  // Đảm bảo giờ và phút có 2 chữ số
+  const hours = parts[0].padStart(2, '0');
+  const minutes = parts[1].padStart(2, '0');
+  
+  return `${hours}:${minutes}`;
+};
+
 export default function MeetingFormModal({ 
   isOpen, 
   mode, 
@@ -28,8 +47,8 @@ export default function MeetingFormModal({
     title: meeting?.title || '',
     description: meeting?.description || '',
     meetingDate: meeting?.meetingDate ? meeting.meetingDate.split('T')[0] : '',
-    dayStart: meeting?.dayStart ? meeting.dayStart.split('T')[1].substring(0, 5) : '',
-    dayEnd: meeting?.dayEnd ? meeting.dayEnd.split('T')[1].substring(0, 5) : '',
+    dayStart: formatTimeForInput(meeting?.dayStart), // Format ngay từ đầu
+    dayEnd: formatTimeForInput(meeting?.dayEnd), // Format ngay từ đầu
     location: meeting?.location || '',
     status: meeting?.status || 'PENDING'
   });
@@ -41,8 +60,8 @@ export default function MeetingFormModal({
         title: meeting.title,
         description: meeting.description,
         meetingDate: meeting.meetingDate.split('T')[0],
-        dayStart: meeting.dayStart.split('T')[1].substring(0, 5),
-        dayEnd: meeting.dayEnd.split('T')[1].substring(0, 5),
+        dayStart: formatTimeForInput(meeting.dayStart),
+        dayEnd: formatTimeForInput(meeting.dayEnd),
         location: meeting.location,
         status: meeting.status
       });

@@ -18,7 +18,7 @@ export class MeetingService{
 
     static createMeeting = async (meeting : MeetingRequest) =>{
         try {
-            const response = await axiosInstance.post(this.api_create_meetings);
+            const response = await axiosInstance.post(this.api_create_meetings,meeting);
             return response.data;
         } catch (error) {
             throw error;
@@ -27,7 +27,7 @@ export class MeetingService{
 
     static updateMeeting = async (meeting : MeetingRequest) =>{
         try {
-            const response = await axiosInstance.post(this.api_update_meetings);
+            const response = await axiosInstance.post(this.api_update_meetings,meeting);
             return response.data;
         } catch (error) {
             throw error;

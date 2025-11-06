@@ -44,6 +44,7 @@ export interface ElectionResult {
 }
 
 export interface CandidateFormData {
+  id:string;
   candidateName: string;
   candidateInfo: string;
   currentPosition: string;

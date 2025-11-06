@@ -101,7 +101,7 @@ export default function MeetingDetailModal({
               </div>
               <div className={styles.detailItem}>
                 <strong>Thời gian:</strong>
-                <span>{formatTime(meeting.dayStart)} - {formatTime(meeting.dayEnd)}</span>
+                <span>{meeting.dayStart} - {meeting.dayEnd}</span>
               </div>
               <div className={styles.detailItem}>
                 <strong>Địa điểm:</strong>

@@ -1,0 +1,173 @@
+.candidateCard {
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: box-shadow 0.3s, transform 0.2s;
+}
+
+.candidateCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+  background: #fafafa;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.candidateBasic {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #1890ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.candidateMain h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+}
+
+.position {
+  color: #666;
+  font-size: 14px;
+}
+
+.statusBadge {
+  flex-shrink: 0;
+}
+
+.status {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: white;
+  font-weight: 500;
+}
+
+.cardBody {
+  padding: 20px;
+}
+
+.candidateInfo {
+  margin: 0 0 16px 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.candidateDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detailItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label {
+  font-size: 12px;
+  color: #999;
+  font-weight: 500;
+}
+
+.value {
+  font-size: 13px;
+  color: #666;
+}
+
+.votes {
+  font-size: 13px;
+  color: #1890ff;
+  font-weight: 600;
+}
+
+.cardFooter {
+  padding: 16px 20px;
+  background: #fafafa;
+  border-top: 1px solid #e8e8e8;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.actions button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.viewButton {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.viewButton:hover {
+  background: #e0e0e0;
+}
+
+.editButton {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.editButton:hover {
+  background: #bae7ff;
+}
+
+.deactivateButton {
+  background: #fff2f0;
+  color: #ff4d4f;
+}
+
+.deactivateButton:hover {
+  background: #ffccc7;
+}
+
+.activateButton {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.activateButton:hover {
+  background: #d9f7be;
+}
+
+.deleteButton {
+  background: #fff2f0;
+  color: #ff4d4f;
+}
+
+.deleteButton:hover {
+  background: #ffccc7;
+}

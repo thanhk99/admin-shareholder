@@ -1,3 +1,4 @@
+'use client'
 import CandidateManagement from "../../components/CandidateManagement/CandidateManagement";
 import AdminLayout from "../../components/AdminLayout/AdminLayout";
 

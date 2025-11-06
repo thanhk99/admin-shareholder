@@ -135,7 +135,7 @@ export default function VotingManagement() {
     election.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
   const handleManageCandidates = (meetingCode: string) => {
-    router.push(`/candidate?&meeting=${meetingCode}`);
+    router.push(`/candidate/${meetingCode}`);
   };
   const handleCreateElection = () => {
     const election: ElectionSession = {

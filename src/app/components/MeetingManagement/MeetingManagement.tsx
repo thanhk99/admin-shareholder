@@ -31,27 +31,26 @@ export default function MeetingManagement() {
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
 
   // Fetch meetings from API
-  useEffect(() => {
-    const fetchMeetings = async () => {
-      try {
-        setLoading(true);
-        const meetingsData = await MeetingService.getAllMeetings();
-        console.log(meetingsData.data)
-        setMeetings(meetingsData.data);
-      } catch (error) {
-        console.error('Error fetching meetings:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchMeetings = async () => {
+    try {
+      setLoading(true);
+      const meetingsData = await MeetingService.getAllMeetings();
+      setMeetings(meetingsData.data);
+    } catch (error) {
+      console.error('Error fetching meetings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchMeetings();
   }, []);
 
   const filteredMeetings = meetings.filter(meeting =>
-    meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    meeting.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    meeting.meetingCode.toLowerCase().includes(searchTerm.toLowerCase())
+    (meeting.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (meeting.description?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (meeting.meetingCode?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   // Xem chi tiết cuộc họp
@@ -81,7 +80,13 @@ export default function MeetingManagement() {
       const createdMeeting = await MeetingService.createMeeting({
         ...meetingData,
       });
-      setMeetings([...meetings]);
+      console.log(createdMeeting);
+      
+      // Fetch lại danh sách meetings sau khi tạo thành công
+      if (createdMeeting.status === "success") {
+        await fetchMeetings(); // Gọi API để lấy danh sách mới nhất
+      }
+      
       setShowFormModal(false);
     } catch (error) {
       console.error('Error creating meeting:', error);
@@ -96,13 +101,17 @@ export default function MeetingManagement() {
 
     try {
       setFormLoading(true);
+      meetingData.meetingCode = selectedMeeting.meetingCode;
       const updatedMeeting = await MeetingService.updateMeeting(
         meetingData
       );
+      console.log(updatedMeeting);
       
-      setMeetings(meetings.map(meeting => 
-        meeting.meetingCode === selectedMeeting.meetingCode ? updatedMeeting : meeting
-      ));
+      // Fetch lại danh sách meetings sau khi cập nhật thành công
+      if (updatedMeeting.status === "success") {
+        await fetchMeetings(); // Gọi API để lấy danh sách mới nhất
+      }
+      
       setShowFormModal(false);
     } catch (error) {
       console.error('Error updating meeting:', error);
@@ -115,7 +124,10 @@ export default function MeetingManagement() {
   const handleDeleteMeeting = async (meetingCode: string) => {
     try {
       // await MeetingService.deleteMeeting(meetingCode);
-      setMeetings(meetings.filter(meeting => meeting.meetingCode !== meetingCode));
+      
+      // Fetch lại danh sách meetings sau khi xóa
+      await fetchMeetings(); // Gọi API để lấy danh sách mới nhất
+      
       setShowDetailModal(false);
     } catch (error) {
       console.error('Error deleting meeting:', error);
@@ -234,7 +246,7 @@ export default function MeetingManagement() {
               </div>
               <div className={styles.detail}>
                 <ClockCircleOutlined />
-                <span>{formatTime(meeting.dayStart)} - {formatTime(meeting.dayEnd)}</span>
+                <span>{meeting.dayStart} - {meeting.dayEnd}</span>
               </div>
               <div className={styles.detail}>
                 <EnvironmentOutlined />
