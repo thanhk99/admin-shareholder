@@ -11,6 +11,7 @@ export interface Candidate {
 }
 
 export interface CandidateVote {
+  candidateName: any;
   id: string;
   candidateId: string;
   shareholderId: string;
@@ -26,13 +27,15 @@ export interface ElectionSession {
   title: string;
   description: string;
   candidates: Candidate[];
-  status: 'pending' | 'active' | 'completed';
+  status: 'pending' | 'upcoming' | 'completed';
   totalVotes: number;
   totalShares: number;
   startDate: string;
   endDate: string;
   results?: ElectionResult[];
 }
+
+
 
 export interface ElectionResult {
   candidateId: string;
@@ -49,4 +52,52 @@ export interface CandidateFormData {
   candidateInfo: string;
   currentPosition: string;
   meetingCode: string;
+}
+
+
+export interface Meeting {
+  meetingCode: string;
+  title: string;
+  description: string;
+  meetingDate: string;
+  location: string;
+  status: string;
+  dayStart: string;
+  dayEnd: string;
+  createdAt: string;
+  updatedAt: string;
+  createBy: string | null;
+  updateBy: string | null;
+}
+
+export interface ApiElectionData {
+  meeting: Meeting;
+  candidateCount: number;
+  totalVotes: number;
+  candidateVotes: CandidateVote[];
+}
+
+export interface ApiResponse {
+  data: ApiElectionData[];
+  status: string;
+}
+
+export interface Candidate {
+  id: string;
+  meetingCode: string;
+  candidateName: string;
+  candidateInfo: string;
+  currentPosition: string;
+  amountVotes: number;
+  isActive: boolean;
+  createAt: string;
+}
+
+export interface ElectionResult {
+  candidateId: string;
+  candidateName: string;
+  votes: number;
+  shares: number;
+  percentage: number;
+  position: number;
 }

@@ -49,7 +49,8 @@ export const API_CONFIG = {
             GETBYMEETING: 'api/admin/candidate',
             CREATECANDIDATE:'api/admin/candidate/create',
             UPDATECANDIDATE:'api/admin/candidate/update',
-            DISABLECANDIDATE:'api/admin/candidate/toggle'
+            DISABLECANDIDATE:'api/admin/candidate/toggle',
+            GETALLCANDIDATES:'api/admin/candidate'
         }
     }
 }

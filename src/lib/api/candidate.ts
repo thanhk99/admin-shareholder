@@ -8,6 +8,7 @@ export default class CandidateService{
     static api_create_candidate: string = API_CONFIG.ENDPOINTS.CANDIDATE.CREATECANDIDATE;
     static api_update_candidate:string = API_CONFIG.ENDPOINTS.CANDIDATE.UPDATECANDIDATE;
     static api_disable_candidate : string =API_CONFIG.ENDPOINTS.CANDIDATE.DISABLECANDIDATE;
+    static api_get_all_candidates : string = API_CONFIG.ENDPOINTS.CANDIDATE.GETALLCANDIDATES;
 
     static getCandidateMeeting = async (meetingCode:string)=>{
         try {
@@ -46,4 +47,15 @@ export default class CandidateService{
             throw error;
         }
     }
+
+    static getAllCandidates = async () =>{
+        try {
+            const response = await axiosInstance.get(this.api_get_all_candidates);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+
 }

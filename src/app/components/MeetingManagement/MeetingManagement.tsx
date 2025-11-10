@@ -70,6 +70,7 @@ export default function MeetingManagement() {
   const handleEdit = (meeting: Meeting) => {
     setSelectedMeeting(meeting);
     setFormMode('edit');
+    setShowDetailModal(false);
     setShowFormModal(true);
   };
 
@@ -82,9 +83,8 @@ export default function MeetingManagement() {
       });
       console.log(createdMeeting);
       
-      // Fetch lại danh sách meetings sau khi tạo thành công
       if (createdMeeting.status === "success") {
-        await fetchMeetings(); // Gọi API để lấy danh sách mới nhất
+        await fetchMeetings(); 
       }
       
       setShowFormModal(false);
@@ -107,9 +107,9 @@ export default function MeetingManagement() {
       );
       console.log(updatedMeeting);
       
-      // Fetch lại danh sách meetings sau khi cập nhật thành công
+
       if (updatedMeeting.status === "success") {
-        await fetchMeetings(); // Gọi API để lấy danh sách mới nhất
+        await fetchMeetings(); 
       }
       
       setShowFormModal(false);
@@ -120,19 +120,7 @@ export default function MeetingManagement() {
     }
   };
 
-  // Xóa cuộc họp
-  const handleDeleteMeeting = async (meetingCode: string) => {
-    try {
-      // await MeetingService.deleteMeeting(meetingCode);
-      
-      // Fetch lại danh sách meetings sau khi xóa
-      await fetchMeetings(); // Gọi API để lấy danh sách mới nhất
-      
-      setShowDetailModal(false);
-    } catch (error) {
-      console.error('Error deleting meeting:', error);
-    }
-  };
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN');
@@ -218,7 +206,6 @@ export default function MeetingManagement() {
         meeting={selectedMeeting}
         onClose={() => setShowDetailModal(false)}
         onEdit={handleEdit}
-        onDelete={handleDeleteMeeting}
       />
 
       {/* Danh sách cuộc họp */}
@@ -299,13 +286,6 @@ export default function MeetingManagement() {
               >
                 <EditOutlined />
                 Sửa
-              </button>
-              <button 
-                className={styles.deleteButton}
-                onClick={() => handleDeleteMeeting(meeting.meetingCode)}
-              >
-                <DeleteOutlined />
-                Xóa
               </button>
             </div>
           </div>

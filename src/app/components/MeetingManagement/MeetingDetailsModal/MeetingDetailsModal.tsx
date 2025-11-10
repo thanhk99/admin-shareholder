@@ -18,7 +18,6 @@ interface MeetingDetailModalProps {
   meeting: Meeting | null;
   onClose: () => void;
   onEdit: (meeting: Meeting) => void;
-  onDelete: (meetingCode: string) => void;
   loading?: boolean;
 }
 
@@ -27,20 +26,12 @@ export default function MeetingDetailModal({
   meeting, 
   onClose, 
   onEdit, 
-  onDelete,
   loading = false 
 }: MeetingDetailModalProps) {
   if (!isOpen || !meeting) return null;
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN');
-  };
-
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('vi-VN', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
   };
 
   const getStatusLabel = (status: string) => {
@@ -161,12 +152,12 @@ export default function MeetingDetailModal({
               Chỉnh sửa
             </button>
             <button 
+              onClick={() => onClose()}
               className={styles.deleteButton}
-              onClick={() => onDelete(meeting.meetingCode)}
               disabled={loading}
             >
-              <DeleteOutlined />
-              Xóa
+              <CloseOutlined />
+              Thoát
             </button>
           </div>
         </div>
