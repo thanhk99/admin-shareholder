@@ -27,9 +27,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       '/': 'Dashboard',
       '/shareholders': 'Quản lý Cổ đông',
       '/meetings': 'Quản lý Cuộc họp',
-      '/voting': 'Quản lý Bầu cử',
+      '/election': 'Quản lý Bầu cử',
+      '/voting': 'Quản lý Biểu quyết',
       '/reports': 'Báo cáo',
-      '/settings': 'Cài đặt',
     };
     
     // Match dynamic routes

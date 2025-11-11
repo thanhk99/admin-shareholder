@@ -1,121 +1,84 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  PlusOutlined, 
-  EditOutlined, 
-  DeleteOutlined, 
-  SearchOutlined,
-  PlayCircleOutlined,
-  StopOutlined,
-  BarChartOutlined,
-  TeamOutlined,
-  CalendarOutlined,
-  UserOutlined,
-  TrophyOutlined
-} from '@ant-design/icons';
-import styles from './VotingManagement.module.css';
-import { 
-  ElectionSession, 
-  Candidate, 
-  ElectionResult,
-  ApiElectionData,
-  ApiResponse 
-} from '@/app/types/candidate';
 import { useRouter } from 'next/navigation';
-import CandidateService from '@/lib/api/candidate';
-import VotingDetailModal from './VotingDetailModal/VotingDetailModal';
+import { SearchOutlined, TeamOutlined, CalendarOutlined, UserOutlined, SettingOutlined } from '@ant-design/icons';
+import styles from './VotingManagement.module.css';
+
+// Interfaces dựa trên API response
+interface Meeting {
+  meetingCode: string;
+  title: string;
+  description: string;
+  meetingDate: string;
+  location?: string;
+  status: 'COMPLETED' | 'PENDING' | 'UPCOMING';
+  dayStart: string;
+  dayEnd: string;
+  createdAt: string;
+  updatedAt: string;
+  createBy: string | null;
+  updateBy: string | null;
+}
+
+interface ResolutionVote {
+  title: string;
+  description: string;
+  resolutionCode: string;
+  agreeVotes: number;
+  notAgreeVotes: number;
+  noIdeaVotes: number;
+}
+
+interface MeetingResponse {
+  meeting: Meeting;
+  resolutionCount: number;
+  resolutionVotes: ResolutionVote[];
+}
+
+interface ApiResponse {
+  status: string;
+  data: MeetingResponse[];
+}
+
+interface MeetingGroup {
+  meetingCode: string;
+  meetingTitle: string;
+  meetingDate: string;
+  location?: string;
+  status: 'COMPLETED' | 'PENDING' | 'UPCOMING';
+  resolutions: ResolutionVote[];
+  totalResolutions: number;
+  totalVotes: number;
+  approvedResolutions: number;
+}
 
 export default function VotingManagement() {
   const router = useRouter();
-  const [electionSessions, setElectionSessions] = useState<ElectionSession[]>([]);
+  const [meetings, setMeetings] = useState<MeetingGroup[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedElection, setSelectedElection] = useState<ElectionSession | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [newElection, setNewElection] = useState({
-    meetingCode: '',
-    title: '',
-    description: '',
-    startDate: '',
-    endDate: '',
-  });
+  const [expandedMeetings, setExpandedMeetings] = useState<Set<string>>(new Set());
 
-  // Transform dữ liệu từ API mới thành định dạng ElectionSession
-  const transformApiDataToElectionSessions = (apiData: ApiElectionData[]): ElectionSession[] => {
-    return apiData.map(electionData => {
-      const meeting = electionData.meeting;
-      
-      // Chuyển đổi status từ API sang status trong component
-      const mapStatus = (apiStatus: string): "upcoming" | "pending" | "completed" => {
-        const statusMap: { [key: string]: "upcoming" | "pending" | "completed" } = {
-          'UPCOMING': 'upcoming',
-          'PENDING': 'pending',
-          'COMPLETED': 'completed',
-        };
-        return statusMap[apiStatus] || 'upcoming';
-      };
-
-      // Tạo candidates từ candidateVotes
-      const candidates: Candidate[] = electionData.candidateVotes.map(vote => ({
-        id: vote.candidateId.toString(),
-        meetingCode: meeting.meetingCode,
-        candidateName: vote.candidateName,
-        candidateInfo: '', 
-        currentPosition: '', 
-        amountVotes: vote.amountShare || 0,
-        isActive: true,
-        createAt: meeting.createdAt
-      }));
-
-      // Tính toán results với kiểm tra an toàn
-      const results: ElectionResult[] = electionData.candidateVotes
-        .sort((a, b) => (b.amountShare || 0) - (a.amountShare || 0))
-        .map((vote, index) => ({
-          candidateId: vote.candidateId.toString(),
-          candidateName: vote.candidateName || 'Không có tên',
-          votes: Math.floor((vote.amountShare || 0) / 100),
-          shares: vote.amountShare || 0,
-          percentage: electionData.totalVotes > 0 ? 
-            Math.round(((vote.amountShare || 0) / electionData.totalVotes) * 100) : 0,
-          position: index + 1
-        }));
-
-      return {
-        id: meeting.meetingCode,
-        meetingCode: meeting.meetingCode,
-        title: meeting.title,
-        description: meeting.description,
-        status: mapStatus(meeting.status),
-        totalVotes: electionData.candidateCount || 0,
-        totalShares: electionData.totalVotes || 0,
-        startDate: meeting.meetingDate,
-        endDate: meeting.meetingDate,
-        candidates: candidates,
-        results: results
-      };
-    });
-  };
-
-  // Fetch data từ API
+  // Fetch data từ API thực tế
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await CandidateService.getAllCandidates();
-        if (response.status === 'success') {
-          const apiData: ApiResponse = response;
-          // Kiểm tra thêm để đảm bảo data tồn tại
-          const transformedData = transformApiDataToElectionSessions(apiData.data || []);
-          setElectionSessions(transformedData);
+        // Giả lập API call - thay thế bằng API thực tế của bạn
+        const response = await fetch('/api/meetings-with-resolutions');
+        const result: ApiResponse = await response.json();
+        
+        if (result.status === 'success') {
+          const meetingGroups = transformApiData(result.data);
+          setMeetings(meetingGroups);
         } else {
-          // Nếu API trả về lỗi, set mảng rỗng
-          setElectionSessions([]);
+          console.error('API returned error:', result);
+          setMeetings([]);
         }
-        setLoading(false);  
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
-        setElectionSessions([]);
+        setMeetings([]);
         setLoading(false);
       }
     };
@@ -123,370 +86,301 @@ export default function VotingManagement() {
     fetchData();
   }, []);
 
-  const filteredElections = electionSessions.filter(election =>
-    election.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    election.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    election.meetingCode?.toLowerCase().includes(searchTerm.toLowerCase())
+  // Transform API data thành MeetingGroup
+  const transformApiData = (apiData: MeetingResponse[]): MeetingGroup[] => {
+    return apiData.map(item => {
+      const totalVotes = item.resolutionVotes.reduce((sum, resolution) => 
+        sum + resolution.agreeVotes + resolution.notAgreeVotes + resolution.noIdeaVotes, 0
+      );
+      
+      const approvedResolutions = item.resolutionVotes.filter(resolution => 
+        resolution.agreeVotes > resolution.notAgreeVotes
+      ).length;
+
+      return {
+        meetingCode: item.meeting.meetingCode,
+        meetingTitle: item.meeting.title,
+        meetingDate: item.meeting.meetingDate,
+        location: item.meeting.location,
+        status: item.meeting.status,
+        resolutions: item.resolutionVotes,
+        totalResolutions: item.resolutionCount,
+        totalVotes,
+        approvedResolutions
+      };
+    });
+  };
+
+  // Tính trạng thái của từng resolution
+  const getResolutionStatus = (resolution: ResolutionVote) => {
+    const totalVotes = resolution.agreeVotes + resolution.notAgreeVotes + resolution.noIdeaVotes;
+    const agreePercentage = totalVotes > 0 ? Math.round((resolution.agreeVotes / totalVotes) * 100) : 0;
+    const isApproved = resolution.agreeVotes > resolution.notAgreeVotes;
+    
+    return {
+      totalVotes,
+      agreePercentage,
+      isApproved,
+      statusLabel: isApproved ? 'ĐÃ THÔNG QUA' : 'KHÔNG THÔNG QUA',
+      statusClass: isApproved ? styles.approved : styles.rejected
+    };
+  };
+
+  // Toggle expand/collapse meeting
+  const toggleMeeting = (meetingCode: string) => {
+    const newExpanded = new Set(expandedMeetings);
+    if (newExpanded.has(meetingCode)) {
+      newExpanded.delete(meetingCode);
+    } else {
+      newExpanded.add(meetingCode);
+    }
+    setExpandedMeetings(newExpanded);
+  };
+
+  // Xử lý click nút quản lý
+  const handleManageClick = (meetingCode: string) => {
+    router.push(`/resolution/${meetingCode}`);
+  };
+
+  // Filter meetings based on search term
+  const filteredMeetings = meetings.filter(meeting =>
+    meeting.meetingTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    meeting.meetingCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    meeting.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    meeting.resolutions.some(resolution => 
+      resolution.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      resolution.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
 
-  const handleManageCandidates = (meetingCode: string) => {
-    router.push(`/candidate/${meetingCode}`);
-  };
-  const handleViewDetail = (election: ElectionSession) => {
-    setSelectedElection(election);
-    setShowDetailModal(true);
-  };
-  const handleCreateElection = () => {
-    const election: ElectionSession = {
-      id: Date.now().toString(),
-      ...newElection,
-      status: 'upcoming',
-      totalVotes: 0,
-      totalShares: 0,
-      candidates: [],
-      results: []
-    };
-
-    setElectionSessions([...electionSessions, election]);
-    setNewElection({ 
-      meetingCode: '', 
-      title: '', 
-      description: '', 
-      startDate: '', 
-      endDate: '' 
-    });
-    setShowCreateForm(false);
+  // Tính tổng số liệu thống kê
+  const totalStats = {
+    meetings: filteredMeetings.length,
+    resolutions: filteredMeetings.reduce((sum, meeting) => sum + meeting.totalResolutions, 0),
+    totalVotes: filteredMeetings.reduce((sum, meeting) => sum + meeting.totalVotes, 0),
+    approvedResolutions: filteredMeetings.reduce((sum, meeting) => sum + meeting.approvedResolutions, 0)
   };
 
-  const handleDeleteElection = (id: string) => {
-    setElectionSessions(electionSessions.filter(election => election.id !== id));
+  // Format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('vi-VN');
   };
 
-  const handleStartElection = (id: string) => {
-    setElectionSessions(electionSessions.map(election => 
-      election.id === id ? { ...election, status: 'pending' } : election
-    ));
-  };
-
-  const handleEndElection = (id: string) => {
-    setElectionSessions(electionSessions.map(election => 
-      election.id === id ? { ...election, status: 'completed' } : election
-    ));
-  };
-
-  const getStatusLabel = (status: string) => {
-    const labels: { [key: string]: string } = {
-      upcoming: 'Chờ bắt đầu',
-      pending: 'Đang diễn ra',
-      completed: 'Đã kết thúc',
-    };
-    return labels[status] || status;
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors: { [key: string]: string } = {
-      upcoming: '#f39c12',
-      pending: '#2ecc71',
-      completed: '#95a5a6',
-    };
-    return colors[status] || '#95a5a6';
-  };
-
-  const getPositionIcon = (position: number) => {
-    switch (position) {
-      case 1:
-        return <TrophyOutlined className={styles.goldIcon} />;
-      case 2:
-        return <TrophyOutlined className={styles.silverIcon} />;
-      case 3:
-        return <TrophyOutlined className={styles.bronzeIcon} />;
+  // Get status badge class
+  const getStatusBadgeClass = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return styles.statusCompleted;
+      case 'UPCOMING':
+        return styles.statusUpcoming;
+      case 'PENDING':
+        return styles.statusPending;
       default:
-        return <UserOutlined />;
+        return styles.statusPending;
     }
   };
 
-  const getElectionStats = () => {
-    const total = electionSessions.length;
-    const upcoming = electionSessions.filter(v => v.status === 'upcoming').length;
-    const pending = electionSessions.filter(v => v.status === 'pending').length;
-    const completed = electionSessions.filter(v => v.status === 'completed').length;
-    
-    return { total, upcoming, pending, completed };
-  };
-
-  // Hàm format số an toàn
-  const safeToLocaleString = (value: number | undefined | null): string => {
-    return value?.toLocaleString() || '0';
+  // Get status text
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'ĐÃ KẾT THÚC';
+      case 'UPCOMING':
+        return 'SẮP DIỄN RA';
+      case 'PENDING':
+        return 'ĐANG TIẾN HÀNH';
+      default:
+        return status;
+    }
   };
 
   if (loading) {
     return <div className={styles.loading}>Đang tải dữ liệu...</div>;
   }
 
-  const stats = getElectionStats();
-
   return (
-    <>
-      <div className={styles.management}>
-        <div className={styles.header}>
-          <div>
-            <h1>Quản lý Bầu cử HĐQT</h1>
-            <p>Tổ chức và quản lý các cuộc bầu cử Hội đồng Quản trị</p>
-          </div>
-          <button 
-            className={styles.addButton}
-            onClick={() => setShowCreateForm(true)}
-          >
-            <PlusOutlined />
-            Tạo Cuộc bầu cử
-          </button>
+    <div className={styles.management}>
+      {/* Header */}
+      <div className={styles.header}>
+        <div className={styles.headerContent}>
+          <h1>Quản lý Biểu quyết</h1>
+          <p>Theo dõi và quản lý các nghị quyết theo từng cuộc họp</p>
         </div>
+      </div>
 
-        <div className={styles.toolbar}>
-          <div className={styles.searchBox}>
-            <SearchOutlined />
-            <input
-              type="text"
-              placeholder="Tìm kiếm cuộc bầu cử..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className={styles.stats}>
-            <span>Tổng: {stats.total} cuộc bầu cử</span>
-            <span>•</span>
-            <span>Chờ bắt đầu: {stats.upcoming}</span>
-            <span>•</span>
-            <span>Đang diễn ra: {stats.pending}</span>
-            <span>•</span>
-            <span>Đã kết thúc: {stats.completed}</span>
-          </div>
+      {/* Statistics */}
+      <div className={styles.stats}>
+        <div className={styles.statItem}>
+          <span className={styles.statNumber}>{totalStats.meetings}</span>
+          <span className={styles.statLabel}>Cuộc họp</span>
         </div>
+        <div className={styles.statItem}>
+          <span className={styles.statNumber}>{totalStats.resolutions}</span>
+          <span className={styles.statLabel}>Nghị quyết</span>
+        </div>
+        <div className={styles.statItem}>
+          <span className={styles.statNumber}>{totalStats.totalVotes.toLocaleString()}</span>
+          <span className={styles.statLabel}>Lượt bỏ phiếu</span>
+        </div>
+        <div className={styles.statItem}>
+          <span className={styles.statNumber}>{totalStats.approvedResolutions}</span>
+          <span className={styles.statLabel}>Đã thông qua</span>
+        </div>
+      </div>
 
-        {showCreateForm && (
-          <div className={styles.modal}>
-            <div className={styles.modalContent}>
-              <h3>Tạo Cuộc bầu cử HĐQT mới</h3>
-              <div className={styles.form}>
-                <div className={styles.formGroup}>
-                  <label>Mã cuộc họp</label>
-                  <input
-                    type="text"
-                    value={newElection.meetingCode}
-                    onChange={(e) => setNewElection({...newElection, meetingCode: e.target.value})}
-                    placeholder="Nhập mã cuộc họp"
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Tiêu đề cuộc bầu cử</label>
-                  <input
-                    type="text"
-                    value={newElection.title}
-                    onChange={(e) => setNewElection({...newElection, title: e.target.value})}
-                    placeholder="Nhập tiêu đề cuộc bầu cử"
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Mô tả</label>
-                  <textarea
-                    value={newElection.description}
-                    onChange={(e) => setNewElection({...newElection, description: e.target.value})}
-                    placeholder="Nhập mô tả cuộc bầu cử"
-                    rows={3}
-                  />
-                </div>
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label>Ngày bắt đầu</label>
-                    <input
-                      type="date"
-                      value={newElection.startDate}
-                      onChange={(e) => setNewElection({...newElection, startDate: e.target.value})}
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label>Ngày kết thúc</label>
-                    <input
-                      type="date"
-                      value={newElection.endDate}
-                      onChange={(e) => setNewElection({...newElection, endDate: e.target.value})}
-                    />
-                  </div>
-                </div>
-                <div className={styles.formActions}>
-                  <button className={styles.cancelButton} onClick={() => setShowCreateForm(false)}>
-                    Hủy
-                  </button>
-                  <button className={styles.saveButton} onClick={handleCreateElection}>
-                    Tạo
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+      {/* Search */}
+      <div className={styles.toolbar}>
+        <div className={styles.searchBox}>
+          <SearchOutlined className={styles.searchIcon} />
+          <input
+            type="text"
+            placeholder="Tìm kiếm nghị quyết, cuộc họp..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={styles.searchInput}
+          />
+        </div>
+      </div>
 
-        <div className={styles.electionGrid}>
-          {filteredElections.map((election) => (
-            <div key={election.id} className={styles.electionCard}>
-              <div className={styles.electionHeader}>
-                <div>
-                  <h3>{election.title || 'Không có tiêu đề'}</h3>
-                  <span className={styles.meetingCode}>{election.meetingCode}</span>
-                </div>
-                <span 
-                  className={styles.status}
-                  style={{ backgroundColor: getStatusColor(election.status) }}
+      {/* Meetings List */}
+      <div className={styles.meetingsList}>
+        {filteredMeetings.map((meeting) => {
+          const isExpanded = expandedMeetings.has(meeting.meetingCode);
+          
+          return (
+            <div key={meeting.meetingCode} className={styles.meetingCard}>
+              {/* Meeting Header */}
+              <div className={styles.meetingHeader}>
+                <div 
+                  className={styles.meetingInfo}
+                  onClick={() => toggleMeeting(meeting.meetingCode)}
                 >
-                  {getStatusLabel(election.status)}
-                </span>
-              </div>
-              
-              <p className={styles.description}>{election.description || 'Không có mô tả'}</p>
-
-              <div className={styles.electionDetails}>
-                <div className={styles.detail}>
-                  <CalendarOutlined />
-                  <span>
-                    {election.startDate ? new Date(election.startDate).toLocaleDateString('vi-VN') : 'Chưa có ngày'}
-                  </span>
-                </div>
-                <div className={styles.detail}>
-                  <TeamOutlined />
-                  <span>{election.candidates?.length || 0} ứng viên</span>
-                </div>
-                <div className={styles.detail}>
-                  <BarChartOutlined />
-                  <span>{election.totalVotes || 0} ứng viên tham gia</span>
-                </div>
-                <div className={styles.detail}>
-                  <UserOutlined />
-                  <span>{safeToLocaleString(election.totalShares)} tổng số phiếu</span>
-                </div>
-              </div>
-
-              {election.status === 'completed' && election.results && election.results.length > 0 && (
-                <div className={styles.results}>
-                  <h4>
-                    <TrophyOutlined />
-                    Kết quả bầu cử:
-                  </h4>
-                  <div className={styles.candidatesResults}>
-                    {election.results.slice(0, 3).map((result) => (
-                      <div key={result.candidateId} className={styles.candidateResult}>
-                        <div className={styles.candidateRank}>
-                          {getPositionIcon(result.position)}
-                          <span className={styles.rank}>#{result.position}</span>
-                        </div>
-                        <div className={styles.candidateInfo}>
-                          <span className={styles.candidateName}>{result.candidateName}</span>
-                          <span className={styles.voteInfo}>
-                            {result.percentage || 0}% • {safeToLocaleString(result.shares)} phiếu
-                          </span>
-                        </div>
-                        <div className={styles.votePercentage}>
-                          {result.percentage || 0}%
-                        </div>
+                  <div className={styles.meetingTitleSection}>
+                    <CalendarOutlined className={styles.meetingIcon} />
+                    <div>
+                      <div className={styles.meetingHeaderRow}>
+                        <h3 className={styles.meetingTitle}>{meeting.meetingTitle}</h3>
+                        <span className={`${styles.statusBadge} ${getStatusBadgeClass(meeting.status)}`}>
+                          {getStatusText(meeting.status)}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {election.status !== 'completed' && election.candidates && election.candidates.length > 0 && (
-                <div className={styles.candidatesPreview}>
-                  <h4>Danh sách ứng viên:</h4>
-                  <div className={styles.candidatesList}>
-                    {election.candidates.slice(0, 3).map((candidate, index) => (
-                      <div key={candidate.id} className={styles.candidatePreview}>
-                        <UserOutlined />
-                        <span>{candidate.candidateName || 'Không có tên'}</span>
-                        {index === 2 && election.candidates.length > 3 && (
-                          <span className={styles.moreCandidates}>
-                            +{election.candidates.length - 3} ứng viên khác
-                          </span>
+                      <div className={styles.meetingMeta}>
+                        <span className={styles.meetingCode}>{meeting.meetingCode}</span>
+                        <span className={styles.meetingDate}>{formatDate(meeting.meetingDate)}</span>
+                        {meeting.location && (
+                          <span className={styles.meetingLocation}>📍 {meeting.location}</span>
                         )}
                       </div>
-                    ))}
+                    </div>
+                  </div>
+                  <div className={styles.meetingStats}>
+                    <span className={styles.meetingStat}>
+                      {meeting.totalResolutions} nghị quyết
+                    </span>
+                    <span className={styles.meetingStat}>
+                      {meeting.approvedResolutions} đã thông qua
+                    </span>
+                    <span className={styles.meetingStat}>
+                      {meeting.totalVotes.toLocaleString()} lượt bỏ phiếu
+                    </span>
                   </div>
                 </div>
-              )}
+                
+                <div className={styles.meetingActions}>
+                  <button 
+                    className={styles.manageButton}
+                    onClick={() => handleManageClick(meeting.meetingCode)}
+                    disabled={meeting.status !== 'COMPLETED'}
+                    title={meeting.status !== 'COMPLETED' ? 'Chỉ có thể quản lý cuộc họp đã kết thúc' : 'Quản lý nghị quyết'}
+                  >
+                    <SettingOutlined />
+                    Quản lý
+                  </button>
+                  <div 
+                    className={styles.expandIcon}
+                    onClick={() => toggleMeeting(meeting.meetingCode)}
+                  >
+                    {isExpanded ? '▲' : '▼'}
+                  </div>
+                </div>
+              </div>
 
-              {(!election.candidates || election.candidates.length === 0) && (
-                <div className={styles.noCandidates}>
-                  <UserOutlined />
-                  <span>Chưa có ứng viên nào</span>
+              {/* Resolutions List - chỉ hiển thị với cuộc họp đã kết thúc và có nghị quyết */}
+              {isExpanded && meeting.status === 'COMPLETED' && meeting.resolutions.length > 0 && (
+                <div className={styles.resolutionsList}>
+                  {meeting.resolutions.map((resolution, index) => {
+                    const status = getResolutionStatus(resolution);
+                    
+                    return (
+                      <div key={`${resolution.resolutionCode}-${index}`} className={styles.resolutionItem}>
+                        <div className={styles.resolutionMain}>
+                          <div className={styles.resolutionInfo}>
+                            <h4 className={styles.resolutionTitle}>{resolution.title}</h4>
+                            <span className={styles.resolutionCode}>{resolution.resolutionCode}</span>
+                            <p className={styles.resolutionDescription}>{resolution.description}</p>
+                          </div>
+                          
+                          <div className={styles.resolutionStatus}>
+                            <span className={`${styles.status} ${status.statusClass}`}>
+                              {status.statusLabel}
+                            </span>
+                            <div className={styles.voteSummary}>
+                              <span className={styles.votePercentage}>{status.agreePercentage}% đồng ý</span>
+                              <span className={styles.voteCount}>({status.totalVotes.toLocaleString()} phiếu)</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Voting Details */}
+                        <div className={styles.votingDetails}>
+                          <div className={styles.voteBreakdown}>
+                            <div className={styles.voteItem}>
+                              <span className={styles.voteLabel}>Đồng ý:</span>
+                              <span className={styles.voteCountAgree}>{resolution.agreeVotes.toLocaleString()} phiếu</span>
+                            </div>
+                            <div className={styles.voteItem}>
+                              <span className={styles.voteLabel}>Không đồng ý:</span>
+                              <span className={styles.voteCountDisagree}>{resolution.notAgreeVotes.toLocaleString()} phiếu</span>
+                            </div>
+                            <div className={styles.voteItem}>
+                              <span className={styles.voteLabel}>Không ý kiến:</span>
+                              <span className={styles.voteCountAbstain}>{resolution.noIdeaVotes.toLocaleString()} phiếu</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
-              <div className={styles.actions}>
-                {election.status === 'upcoming' && (
-                  <button 
-                    className={styles.startButton}
-                    onClick={() => handleStartElection(election.id)}
-                  >
-                    <PlayCircleOutlined />
-                    Bắt đầu bầu cử
-                  </button>
-                )}
-                {election.status === 'pending' && (
-                  <button 
-                    className={styles.endButton}
-                    onClick={() => handleEndElection(election.id)}
-                  >
-                    <StopOutlined />
-                    Kết thúc bầu cử
-                  </button>
-                )}
-                {election.status === 'completed' && (
-                  <button className={styles.resultsButton}
-                  onClick={() => handleViewDetail(election)}>
-                    <BarChartOutlined />
-                    Chi tiết kết quả
-                  </button>
-                )}
-                <button 
-                  className={styles.editButton}
-                  onClick={() => handleManageCandidates(election.meetingCode)}
-                >
-                  <EditOutlined />
-                  Quản lý ứng viên
-                </button>
-                <button 
-                  className={styles.deleteButton}
-                  onClick={() => handleDeleteElection(election.id)}
-                >
-                  <DeleteOutlined />
-                  Xóa
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+              {/* Empty state cho resolutions */}
+              {isExpanded && meeting.status === 'COMPLETED' && meeting.resolutions.length === 0 && (
+                <div className={styles.noResolutions}>
+                  <TeamOutlined className={styles.noResolutionsIcon} />
+                  <p>Cuộc họp này chưa có nghị quyết nào</p>
+                </div>
+              )}
 
-        {filteredElections.length === 0 && !loading && (
-          <div className={styles.emptyState}>
-            <TeamOutlined />
-            <h3>Không có cuộc bầu cử nào</h3>
-            <p>Tạo cuộc bầu cử đầu tiên để bắt đầu quản lý</p>
-            <button 
-              className={styles.addButton}
-              onClick={() => setShowCreateForm(true)}
-            >
-              <PlusOutlined />
-              Tạo Cuộc bầu cử
-            </button>
-          </div>
-        )}
+              {/* Thông báo cho cuộc họp chưa kết thúc */}
+              {isExpanded && meeting.status !== 'COMPLETED' && (
+                <div className={styles.meetingInProgress}>
+                  <p>📋 Cuộc họp chưa kết thúc. Các nghị quyết sẽ được hiển thị sau khi cuộc họp kết thúc.</p>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
-      <VotingDetailModal
-        isOpen={showDetailModal}
-        election={selectedElection}
-        onClose={() => setShowDetailModal(false)}
-        onManageCandidates={handleManageCandidates}
-        onStartElection={handleStartElection}
-        onEndElection={handleEndElection}
-      />
-    </>
+
+      {/* Empty State */}
+      {filteredMeetings.length === 0 && !loading && (
+        <div className={styles.emptyState}>
+          <TeamOutlined className={styles.emptyIcon} />
+          <h3>Không có cuộc họp nào</h3>
+          <p>Không tìm thấy cuộc họp hoặc nghị quyết phù hợp với tìm kiếm</p>
+        </div>
+      )}
+    </div>
   );
 }

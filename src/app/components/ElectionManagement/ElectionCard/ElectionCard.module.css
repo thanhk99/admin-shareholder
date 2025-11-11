@@ -1,0 +1,281 @@
+.electionCard {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.electionCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border-color: #1890ff;
+}
+
+.electionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.electionHeader h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+  line-height: 1.4;
+}
+
+.meetingCode {
+  font-size: 12px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.description {
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.electionDetails {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.detail svg {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.results {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.results h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+}
+
+.candidatesResults {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.candidateResult {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.candidateRank {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 60px;
+}
+
+.rank {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.candidateInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.candidateName {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.voteInfo {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.votePercentage {
+  font-size: 14px;
+  font-weight: 600;
+  color: #059669;
+  min-width: 40px;
+  text-align: right;
+}
+
+.goldIcon {
+  color: #fbbf24 !important;
+}
+
+.silverIcon {
+  color: #9ca3af !important;
+}
+
+.bronzeIcon {
+  color: #f59e0b !important;
+}
+
+.candidatesPreview {
+  margin-bottom: 20px;
+}
+
+.candidatesPreview h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+}
+
+.candidatesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.candidatePreview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.moreCandidates {
+  font-size: 11px;
+  color: #6b7280;
+  margin-left: auto;
+}
+
+.noCandidates {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  color: #6b7280;
+  font-size: 13px;
+  margin-bottom: 20px;
+  justify-content: center;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.resultsButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  justify-content: center;
+}
+
+.resultsButton:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.editButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  justify-content: center;
+}
+
+.editButton:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+@media (max-width: 480px) {
+  .electionCard {
+    padding: 16px;
+  }
+  
+  .electionHeader {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  
+  .electionDetails {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .actions {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,33 @@
+.stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.stats span {
+  display: flex;
+  align-items: center;
+}
+
+.stats span:not(:last-child) {
+  padding-right: 12px;
+}
+
+@media (max-width: 768px) {
+  .stats {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .stats span {
+    padding-right: 0;
+  }
+}

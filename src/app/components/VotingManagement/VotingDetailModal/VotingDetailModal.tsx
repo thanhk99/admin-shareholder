@@ -1,159 +1,130 @@
-'use client';
-
-import { Modal, Progress } from 'antd';
-import { 
-  CalendarOutlined,
-  TeamOutlined,
-  BarChartOutlined,
-  UserOutlined,
-  TrophyOutlined,
-  CloseOutlined,
-  CrownOutlined,
-  CheckOutlined,
-  CloseOutlined as CloseIcon
-} from '@ant-design/icons';
+import { CloseOutlined, CalendarOutlined, UserOutlined, BarChartOutlined } from '@ant-design/icons';
 import styles from './VotingDetailModal.module.css';
-import { ElectionSession } from '@/app/types/candidate';
+import { VotingSession } from '@/app/types/voting';
 
 interface VotingDetailModalProps {
   isOpen: boolean;
-  election: ElectionSession | null;
+  voting: VotingSession | null;
   onClose: () => void;
-  onManageCandidates: (meetingCode: string) => void;
-  onStartElection?: (id: string) => void;
-  onEndElection?: (id: string) => void;
 }
 
-export default function VotingDetailModal({
-  isOpen,
-  election,
-  onClose,
-  onManageCandidates,
-  onStartElection,
-  onEndElection
-}: VotingDetailModalProps) {
-  if (!election) return null;
+export default function VotingDetailModal({ isOpen, voting, onClose }: VotingDetailModalProps) {
+  if (!isOpen || !voting) return null;
 
-  const getStatusLabel = (status: string) => {
-    const labels: { [key: string]: string } = {
-      upcoming: 'Chờ bắt đầu',
-      pending: 'Đang diễn ra',
-      completed: 'Đã kết thúc',
+  const getStatusInfo = (status: string) => {
+    const statusMap = {
+      upcoming: { label: 'Sắp diễn ra', color: '#f39c12' },
+      ongoing: { label: 'Đang diễn ra', color: '#27ae60' },
+      completed: { label: 'Đã kết thúc', color: '#7f8c8d' }
     };
-    return labels[status] || status;
+    return statusMap[status as keyof typeof statusMap] || statusMap.upcoming;
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: { [key: string]: string } = {
-      upcoming: '#f39c12',
-      pending: '#2ecc71',
-      completed: '#95a5a6',
-    };
-    return colors[status] || '#95a5a6';
-  };
-
-  const getPositionIcon = (position: number) => {
-    switch (position) {
-      case 1:
-        return <CrownOutlined className={styles.goldIcon} />;
-      case 2:
-        return <TrophyOutlined className={styles.silverIcon} />;
-      case 3:
-        return <TrophyOutlined className={styles.bronzeIcon} />;
-      default:
-        return <span className={styles.positionNumber}>#{position}</span>;
-    }
-  };
-
-  const getStatusIcon = (position: number, totalCandidates: number) => {
-    // Giả sử top 3 được chọn
-    return position <= 3 ? (
-      <CheckOutlined className={styles.checkIcon} />
-    ) : (
-      <CloseIcon className={styles.closeIcon} />
-    );
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const safeToLocaleString = (value: number | undefined | null): string => {
-    return value?.toLocaleString() || '0';
-  };
+  const statusInfo = getStatusInfo(voting.status);
 
   return (
-    <Modal
-      open={isOpen}
-      onCancel={onClose}
-      footer={null}
-      width={600}
-      closeIcon={<CloseOutlined />}
-      className={styles.modal}
-      style={{ top: 20 }}
-    >
-      <div className={styles.modalContent}>
-        {/* Header */}
-        <div className={styles.header}>
-          <div className={styles.titleSection}>
-            <h1>{election.title}</h1>
-            <span className={styles.meetingCode}>{election.meetingCode}</span>
-          </div>
+    <div className={styles.modalOverlay}>
+      <div className={styles.modal}>
+        <div className={styles.modalHeader}>
+          <h2>Chi tiết Biểu quyết</h2>
+          <button className={styles.closeButton} onClick={onClose}>
+            <CloseOutlined />
+          </button>
         </div>
 
-        {/* Description */}
-        <div className={styles.descriptionSection}>
-          <p>{election.description}</p>
-        </div>
-
-        <div className={styles.divider}></div>
-
-        {/* Scrollable Content Area */}
-        <div className={styles.scrollableContent}>
-          {/* Thông tin chung */}
-          <div className={styles.infoSection}>
-            <h3>Thông tin cuộc bầu cử</h3>
+        <div className={styles.modalContent}>
+          {/* Basic Info */}
+          <div className={styles.section}>
+            <h3>Thông tin cơ bản</h3>
             <div className={styles.infoGrid}>
               <div className={styles.infoItem}>
-                <CalendarOutlined className={styles.infoIcon} />
-                <div>
-                  <span className={styles.infoLabel}>Ngày diễn ra</span>
-                  <span className={styles.infoValue}>{formatDate(election.startDate)}</span>
-                </div>
+                <span className={styles.infoLabel}>Mã biểu quyết:</span>
+                <span className={styles.infoValue}>{voting.votingCode}</span>
               </div>
               <div className={styles.infoItem}>
-                <BarChartOutlined className={styles.infoIcon} />
+                <span className={styles.infoLabel}>Trạng thái:</span>
+                <span 
+                  className={styles.status}
+                  style={{ color: statusInfo.color }}
+                >
+                  {statusInfo.label}
+                </span>
+              </div>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>Ngày tạo:</span>
+                <span className={styles.infoValue}>
+                  {new Date(voting.createdAt).toLocaleDateString('vi-VN')}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Timeline */}
+          <div className={styles.section}>
+            <h3>Thời gian biểu quyết</h3>
+            <div className={styles.timeline}>
+              <div className={styles.timelineItem}>
+                <CalendarOutlined />
                 <div>
-                  <span className={styles.infoLabel}>Tổng số phiếu</span>
-                  <span className={styles.infoValue}>{safeToLocaleString(election.totalShares)} phiếu</span>
+                  <div className={styles.timelineLabel}>Bắt đầu</div>
+                  <div className={styles.timelineValue}>
+                    {new Date(voting.startDate).toLocaleString('vi-VN')}
+                  </div>
+                </div>
+              </div>
+              <div className={styles.timelineItem}>
+                <CalendarOutlined />
+                <div>
+                  <div className={styles.timelineLabel}>Kết thúc</div>
+                  <div className={styles.timelineValue}>
+                    {new Date(voting.endDate).toLocaleString('vi-VN')}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Kết quả bầu cử */}
-          {election.status === 'completed' && election.results && election.results.length > 0 && (
-            <div className={styles.resultsSection}>
-              <h3>Kết quả bầu cử</h3>
-              <div className={styles.resultsList}>
-                {election.results.map((result) => (
-                  <div key={result.candidateId} className={styles.resultItem}>
-                    <div className={styles.candidateStatus}>
-                      {getStatusIcon(result.position, election.results!.length)}
-                    </div>
-                    <div className={styles.candidateMainInfo}>
-                      <div className={styles.candidateHeader}>
-                        <span className={styles.candidateName}>{result.candidateName}</span>
+          {/* Statistics */}
+          <div className={styles.section}>
+            <h3>Thống kê</h3>
+            <div className={styles.statsGrid}>
+              <div className={styles.statItem}>
+                <UserOutlined className={styles.statIcon} />
+                <div className={styles.statContent}>
+                  <div className={styles.statValue}>{voting.totalVoters}</div>
+                  <div className={styles.statLabel}>Người tham gia</div>
+                </div>
+              </div>
+              <div className={styles.statItem}>
+                <BarChartOutlined className={styles.statIcon} />
+                <div className={styles.statContent}>
+                  <div className={styles.statValue}>{voting.totalVotes}</div>
+                  <div className={styles.statLabel}>Tổng lượt bầu</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Results */}
+          {voting.status === 'completed' && voting.results && voting.results.length > 0 && (
+            <div className={styles.section}>
+              <h3>Kết quả biểu quyết</h3>
+              <div className={styles.results}>
+                {voting.results.map((result, index) => (
+                  <div key={result.optionId} className={styles.resultItem}>
+                    <div className={styles.resultRank}>#{index + 1}</div>
+                    <div className={styles.resultContent}>
+                      <div className={styles.resultHeader}>
+                        <span className={styles.optionName}>{result.optionName}</span>
+                        <span className={styles.voteCount}>{result.votes} phiếu</span>
                       </div>
-                      <div className={styles.candidateStats}>
-                        <span className={styles.position}>#{result.position}</span>
-                        <span className={styles.votes}>{safeToLocaleString(result.shares)} phiếu</span>
-                        <span className={styles.percentage}>{result.percentage}%</span>
+                      <div className={styles.resultBar}>
+                        <div 
+                          className={styles.resultFill}
+                          style={{ width: `${result.percentage}%` }}
+                        />
                       </div>
+                      <div className={styles.resultPercentage}>{result.percentage}%</div>
                     </div>
                   </div>
                 ))}
@@ -161,50 +132,28 @@ export default function VotingDetailModal({
             </div>
           )}
 
-          {/* Thông tin bổ sung */}
-          <div className={styles.additionalInfo}>
-            <div className={styles.infoRow}>
-              <div className={styles.infoItemCompact}>
-                <TeamOutlined className={styles.infoIcon} />
-                <div>
-                  <span className={styles.infoLabel}>Tổng số ứng viên</span>
-                  <span className={styles.infoValue}>{election.candidates.length} ứng viên</span>
-                </div>
-              </div>
-              <div className={styles.infoItemCompact}>
-                <UserOutlined className={styles.infoIcon} />
-                <div>
-                  <span className={styles.infoLabel}>Trạng thái</span>
-                  <span 
-                    className={styles.infoValue}
-                    style={{ color: getStatusColor(election.status) }}
-                  >
-                    {getStatusLabel(election.status)}
-                  </span>
-                </div>
+          {/* Options */}
+          {voting.options && voting.options.length > 0 && (
+            <div className={styles.section}>
+              <h3>Lựa chọn biểu quyết</h3>
+              <div className={styles.optionsList}>
+                {voting.options.map((option, index) => (
+                  <div key={option.id} className={styles.optionItem}>
+                    <span className={styles.optionNumber}>{index + 1}</span>
+                    <span className={styles.optionText}>{option.name}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Actions */}
-        <div className={styles.actionsSection}>
-          <div className={styles.actions}>
-            <button 
-              className={styles.manageButton}
-              onClick={() => onManageCandidates(election.meetingCode)}
-            >
-              Quản lý ứng viên
-            </button>
-            <button 
-              className={styles.closeButton}
-              onClick={onClose}
-            >
-              Đóng
-            </button>
-          </div>
+        <div className={styles.modalActions}>
+          <button onClick={onClose} className={styles.closeActionButton}>
+            Đóng
+          </button>
         </div>
       </div>
-    </Modal>
+    </div>
   );
 }

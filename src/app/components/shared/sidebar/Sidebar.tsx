@@ -44,8 +44,14 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
       href: '/meetings',
     },
     {
-      id: 'voting',
+      id: 'election',
       label: 'Bầu cử',
+      icon: <CheckCircleOutlined />,
+      href: '/election',
+    },
+    {
+      id: 'voting',
+      label: 'Biểu quyết',
       icon: <CheckCircleOutlined />,
       href: '/voting',
     },
@@ -55,12 +61,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
       icon: <BarChartOutlined />,
       href: '/reports',
     },
-    {
-      id: 'settings',
-      label: 'Cài đặt',
-      icon: <SettingOutlined />,
-      href: '/settings',
-    },
+
   ];
 
   const isActive = (href: string) => {

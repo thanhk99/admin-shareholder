@@ -1,0 +1,33 @@
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.statItem {
+  background: white;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.statNumber {
+  display: block;
+  font-size: 24px;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 4px;
+}
+
+.statLabel {
+  font-size: 14px;
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

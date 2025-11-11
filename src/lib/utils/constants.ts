@@ -51,6 +51,13 @@ export const API_CONFIG = {
             UPDATECANDIDATE:'api/admin/candidate/update',
             DISABLECANDIDATE:'api/admin/candidate/toggle',
             GETALLCANDIDATES:'api/admin/candidate'
+        },
+        RESOLUTION:{
+            GETALLRESOLUTIONS: '/api/admin/resolutions',
+            GETBYMEETING: '/api/admin/resolutions/meeting',
+            CREATERESOLUTION: '/api/admin/resolutions/create',
+            UPDATERESOLUTION: '/api/admin/resolutions/update',
+            UPDATERESOLUTIONSTATUS: '/api/admin/resolutions/updateStatus',
         }
     }
 }
