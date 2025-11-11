@@ -2,56 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { SearchOutlined, TeamOutlined, CalendarOutlined, UserOutlined, SettingOutlined } from '@ant-design/icons';
+import { SearchOutlined, TeamOutlined, CalendarOutlined,  SettingOutlined } from '@ant-design/icons';
 import styles from './VotingManagement.module.css';
-
-// Interfaces dựa trên API response
-interface Meeting {
-  meetingCode: string;
-  title: string;
-  description: string;
-  meetingDate: string;
-  location?: string;
-  status: 'COMPLETED' | 'PENDING' | 'UPCOMING';
-  dayStart: string;
-  dayEnd: string;
-  createdAt: string;
-  updatedAt: string;
-  createBy: string | null;
-  updateBy: string | null;
-}
-
-interface ResolutionVote {
-  title: string;
-  description: string;
-  resolutionCode: string;
-  agreeVotes: number;
-  notAgreeVotes: number;
-  noIdeaVotes: number;
-}
-
-interface MeetingResponse {
-  meeting: Meeting;
-  resolutionCount: number;
-  resolutionVotes: ResolutionVote[];
-}
-
-interface ApiResponse {
-  status: string;
-  data: MeetingResponse[];
-}
-
-interface MeetingGroup {
-  meetingCode: string;
-  meetingTitle: string;
-  meetingDate: string;
-  location?: string;
-  status: 'COMPLETED' | 'PENDING' | 'UPCOMING';
-  resolutions: ResolutionVote[];
-  totalResolutions: number;
-  totalVotes: number;
-  approvedResolutions: number;
-}
+import { ResolutionService } from '@/lib/api/resolution';
+import { 
+  ResolutionVote, 
+  MeetingResponse, 
+  MeetingGroup, 
+} from '@/app/types/resolution';
+import VotingStats from './VotingStats/VotingStats';
 
 export default function VotingManagement() {
   const router = useRouter();
@@ -64,15 +23,13 @@ export default function VotingManagement() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Giả lập API call - thay thế bằng API thực tế của bạn
-        const response = await fetch('/api/meetings-with-resolutions');
-        const result: ApiResponse = await response.json();
-        
-        if (result.status === 'success') {
-          const meetingGroups = transformApiData(result.data);
+        const response = await ResolutionService.getAllResolutions();
+        console.log('API Response:', response);
+        if (response.status === 'success') {
+          const meetingGroups = transformApiData(response.data);
           setMeetings(meetingGroups);
         } else {
-          console.error('API returned error:', result);
+          console.error('API returned error:', response);
           setMeetings([]);
         }
         setLoading(false);
@@ -153,14 +110,6 @@ export default function VotingManagement() {
     )
   );
 
-  // Tính tổng số liệu thống kê
-  const totalStats = {
-    meetings: filteredMeetings.length,
-    resolutions: filteredMeetings.reduce((sum, meeting) => sum + meeting.totalResolutions, 0),
-    totalVotes: filteredMeetings.reduce((sum, meeting) => sum + meeting.totalVotes, 0),
-    approvedResolutions: filteredMeetings.reduce((sum, meeting) => sum + meeting.approvedResolutions, 0)
-  };
-
   // Format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN');
@@ -194,6 +143,38 @@ export default function VotingManagement() {
     }
   };
 
+  // Get manage button class based on meeting status
+  const getManageButtonClass = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return `${styles.manageButton} ${styles.completed}`;
+      case 'UPCOMING':
+        return `${styles.manageButton} ${styles.upcoming}`;
+      case 'PENDING':
+        return `${styles.manageButton} ${styles.pending}`;
+      default:
+        return styles.manageButton;
+    }
+  };
+
+  // Chuẩn bị dữ liệu cho VotingStats
+  const votingSessions = meetings.map(meeting => ({
+    id: meeting.meetingCode,
+    title: meeting.meetingTitle,
+    status: meeting.status.toLowerCase() as 'upcoming' | 'ongoing' | 'completed',
+    totalResolutions: meeting.totalResolutions,
+    totalVotes: meeting.totalVotes,
+    date: meeting.meetingDate
+  }));
+
+  // Tính tổng số liệu thống kê cho VotingStats
+  const totalStats = {
+    meetings: filteredMeetings.length,
+    resolutions: filteredMeetings.reduce((sum, meeting) => sum + meeting.totalResolutions, 0),
+    totalVotes: filteredMeetings.reduce((sum, meeting) => sum + meeting.totalVotes, 0),
+    approvedResolutions: filteredMeetings.reduce((sum, meeting) => sum + meeting.approvedResolutions, 0)
+  };
+
   if (loading) {
     return <div className={styles.loading}>Đang tải dữ liệu...</div>;
   }
@@ -208,25 +189,13 @@ export default function VotingManagement() {
         </div>
       </div>
 
-      {/* Statistics */}
-      <div className={styles.stats}>
-        <div className={styles.statItem}>
-          <span className={styles.statNumber}>{totalStats.meetings}</span>
-          <span className={styles.statLabel}>Cuộc họp</span>
-        </div>
-        <div className={styles.statItem}>
-          <span className={styles.statNumber}>{totalStats.resolutions}</span>
-          <span className={styles.statLabel}>Nghị quyết</span>
-        </div>
-        <div className={styles.statItem}>
-          <span className={styles.statNumber}>{totalStats.totalVotes.toLocaleString()}</span>
-          <span className={styles.statLabel}>Lượt bỏ phiếu</span>
-        </div>
-        <div className={styles.statItem}>
-          <span className={styles.statNumber}>{totalStats.approvedResolutions}</span>
-          <span className={styles.statLabel}>Đã thông qua</span>
-        </div>
-      </div>
+      {/* Statistics - Sử dụng VotingStats component */}
+      <VotingStats 
+        totalMeetings={totalStats.meetings}
+        totalResolutions={totalStats.resolutions}
+        totalVotes={totalStats.totalVotes}
+        approvedResolutions={totalStats.approvedResolutions}
+      />
 
       {/* Search */}
       <div className={styles.toolbar}>
@@ -288,10 +257,9 @@ export default function VotingManagement() {
                 
                 <div className={styles.meetingActions}>
                   <button 
-                    className={styles.manageButton}
+                    className={getManageButtonClass(meeting.status)}
                     onClick={() => handleManageClick(meeting.meetingCode)}
-                    disabled={meeting.status !== 'COMPLETED'}
-                    title={meeting.status !== 'COMPLETED' ? 'Chỉ có thể quản lý cuộc họp đã kết thúc' : 'Quản lý nghị quyết'}
+                    title={`Quản lý nghị quyết - ${getStatusText(meeting.status)}`}
                   >
                     <SettingOutlined />
                     Quản lý
@@ -305,9 +273,21 @@ export default function VotingManagement() {
                 </div>
               </div>
 
-              {/* Resolutions List - chỉ hiển thị với cuộc họp đã kết thúc và có nghị quyết */}
-              {isExpanded && meeting.status === 'COMPLETED' && meeting.resolutions.length > 0 && (
+              {/* Resolutions List - Hiển thị cho tất cả trạng thái cuộc họp */}
+              {isExpanded && meeting.resolutions.length > 0 && (
                 <div className={styles.resolutionsList}>
+                  {/* Meeting status info */}
+                  {meeting.status !== 'COMPLETED' && (
+                    <div className={`${styles.meetingStatusInfo} ${styles[meeting.status.toLowerCase()]}`}>
+                      <p>
+                        {meeting.status === 'PENDING' 
+                          ? '📊 Cuộc họp đang diễn ra - Các nghị quyết đang được biểu quyết'
+                          : '⏰ Cuộc họp sắp diễn ra - Các nghị quyết đã được chuẩn bị'
+                        }
+                      </p>
+                    </div>
+                  )}
+                  
                   {meeting.resolutions.map((resolution, index) => {
                     const status = getResolutionStatus(resolution);
                     
@@ -355,17 +335,16 @@ export default function VotingManagement() {
               )}
 
               {/* Empty state cho resolutions */}
-              {isExpanded && meeting.status === 'COMPLETED' && meeting.resolutions.length === 0 && (
+              {isExpanded && meeting.resolutions.length === 0 && (
                 <div className={styles.noResolutions}>
                   <TeamOutlined className={styles.noResolutionsIcon} />
                   <p>Cuộc họp này chưa có nghị quyết nào</p>
-                </div>
-              )}
-
-              {/* Thông báo cho cuộc họp chưa kết thúc */}
-              {isExpanded && meeting.status !== 'COMPLETED' && (
-                <div className={styles.meetingInProgress}>
-                  <p>📋 Cuộc họp chưa kết thúc. Các nghị quyết sẽ được hiển thị sau khi cuộc họp kết thúc.</p>
+                  <button 
+                    className={styles.addResolutionButton}
+                    onClick={() => handleManageClick(meeting.meetingCode)}
+                  >
+                    + Thêm nghị quyết
+                  </button>
                 </div>
               )}
             </div>

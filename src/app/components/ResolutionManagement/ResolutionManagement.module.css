@@ -142,6 +142,88 @@
     font-size: 14px;
 }
 
+.meetingDetails {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.meetingCode {
+  font-size: 14px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.meetingDate {
+  font-size: 14px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.meetingLocation {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.meetingStatus {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.meetingStatus.completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.meetingStatus.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.meetingStatus.upcoming {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+/* Statistics */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.statItem {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.statNumber {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.statLabel {
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.9;
+}
 /* Responsive */
 @media (max-width: 768px) {
     .management {

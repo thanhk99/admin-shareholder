@@ -56,17 +56,6 @@ export default function ResolutionEditModal({
         className={styles.editForm}
       >
         <Form.Item
-          name="resolutionCode"
-          label="Mã nghị quyết"
-          rules={[
-            { required: true, message: 'Vui lòng nhập mã nghị quyết' },
-            { max: 50, message: 'Mã nghị quyết không được vượt quá 50 ký tự' }
-          ]}
-        >
-          <Input placeholder="Nhập mã nghị quyết" />
-        </Form.Item>
-
-        <Form.Item
           name="title"
           label="Tiêu đề"
           rules={[
@@ -91,10 +80,6 @@ export default function ResolutionEditModal({
         </Form.Item>
 
         <div className={styles.readonlyInfo}>
-          <div className={styles.readonlyItem}>
-            <span>Người tạo:</span>
-            <strong>{resolution?.createBy}</strong>
-          </div>
           <div className={styles.readonlyItem}>
             <span>Ngày tạo:</span>
             <strong>

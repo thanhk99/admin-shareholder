@@ -1,35 +1,37 @@
-import { VotingSession } from '@/app/types/voting';
 import styles from './VotingStats.module.css';
 
 interface VotingStatsProps {
-  votingSessions: VotingSession[];
+  totalMeetings: number;
+  totalResolutions: number;
+  totalVotes: number;
+  approvedResolutions: number;
 }
 
-export default function VotingStats({ votingSessions }: VotingStatsProps) {
-  const stats = {
-    total: votingSessions.length,
-    upcoming: votingSessions.filter(v => v.status === 'upcoming').length,
-    ongoing: votingSessions.filter(v => v.status === 'ongoing').length,
-    completed: votingSessions.filter(v => v.status === 'completed').length,
-  };
+export default function VotingStats({ 
+  totalMeetings, 
+  totalResolutions, 
+  totalVotes, 
+  approvedResolutions 
+}: VotingStatsProps) {
+  const approvalRate = totalResolutions > 0 ? Math.round((approvedResolutions / totalResolutions) * 100) : 0;
 
   return (
     <div className={styles.stats}>
       <div className={styles.statItem}>
-        <span className={styles.statNumber}>{stats.total}</span>
-        <span className={styles.statLabel}>Tổng số</span>
+        <span className={styles.statNumber}>{totalMeetings}</span>
+        <span className={styles.statLabel}>Cuộc họp</span>
       </div>
       <div className={styles.statItem}>
-        <span className={styles.statNumber}>{stats.upcoming}</span>
-        <span className={styles.statLabel}>Sắp diễn ra</span>
+        <span className={styles.statNumber}>{totalResolutions}</span>
+        <span className={styles.statLabel}>Nghị quyết</span>
       </div>
       <div className={styles.statItem}>
-        <span className={styles.statNumber}>{stats.ongoing}</span>
-        <span className={styles.statLabel}>Đang diễn ra</span>
+        <span className={styles.statNumber}>{totalVotes.toLocaleString()}</span>
+        <span className={styles.statLabel}>Lượt bỏ phiếu</span>
       </div>
       <div className={styles.statItem}>
-        <span className={styles.statNumber}>{stats.completed}</span>
-        <span className={styles.statLabel}>Đã kết thúc</span>
+        <span className={styles.statNumber}>{approvalRate}%</span>
+        <span className={styles.statLabel}>Tỷ lệ thông qua</span>
       </div>
     </div>
   );

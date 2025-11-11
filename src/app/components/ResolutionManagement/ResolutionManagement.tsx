@@ -1,15 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import styles from './ResolutionManagement.module.css';
 import ResolutionCard from './ResolutionCard/ResolutionCard';
 import ResolutionViewModal from './ResolutionViewModal/ResolutionViewModal';
-import { Resolution } from '@/app/types/resolution';
+import { Resolution, ResolutionFormData, ResolutionVote } from '@/app/types/resolution';
 import ResolutionEditModal from './ResolutionEditModal/ResolutionEditModal';
 import ResolutionAddModal from './ResolutionAddModal/ResolutionAddModal';
+import { ResolutionService } from '@/lib/api/resolution';
+import { ApiResponse } from '@/app/types/voting';
+
+
 
 export default function ResolutionManagement() {
+  const params = useParams();
+  const meetingCode = params.meeting as string;
+  
   const [resolutions, setResolutions] = useState<Resolution[]>([]);
+  const [meetingInfo, setMeetingInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -17,50 +26,81 @@ export default function ResolutionManagement() {
   const [selectedResolution, setSelectedResolution] = useState<Resolution | null>(null);
   const [saveLoading, setSaveLoading] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Dữ liệu mẫu
-  const mockResolutions: Resolution[] = [
-    {
-      id: '1',
-      meetingCode: 'CLIENT-ABC-MEET',
-      resolutionCode: 'RES-2024-001',
-      title: 'Thông qua Báo cáo Tài chính năm 2023',
-      description: 'Biểu quyết thông qua Báo cáo Tài chính đã được kiểm toán cho năm tài chính 2023.',
-      totalAgree: 45,
-      totalNotAgree: 3,
-      totalNotIdea: 2,
-      createdAt: '2024-01-15T08:00:00',
-      createBy: 'admin',
-      isActive: true
-    },
-    {
-      id: '2',
-      meetingCode: 'CLIENT-ABC-MEET',
-      resolutionCode: 'RES-2024-002',
-      title: 'Thông qua Báo cáo Tài chính năm 2023',
-      description: 'Biểu quyết thông qua Báo cáo Tài chính đã được kiểm toán cho năm tài chính 2023.',
-      totalAgree: 45,
-      totalNotAgree: 3,
-      totalNotIdea: 2,
-      createdAt: '2024-01-15T08:00:00',
-      createBy: 'admin',
-      isActive: true
-    },
-  ];
+  // Fetch data từ API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('Fetching resolutions for meeting:', meetingCode);
+        const response: ApiResponse = await ResolutionService.getResolutionByMeeting(meetingCode);
+        console.log('API Response:', response);
+        
+        if (response.status === 'success') {
+          // Lưu thông tin cuộc họp
+          setMeetingInfo(response.data.meeting);
+          
+          const transformedResolutions: Resolution[] = response.data.resolutionVotes.map((item: ResolutionVote, index: number) => ({
+            id: (index + 1).toString(),
+            meetingCode: response.data.meeting.meetingCode,
+            resolutionCode: item.resolutionCode,
+            title: item.title,
+            description: item.description,
+            totalAgree: item.agreeVotes,
+            totalNotAgree: item.notAgreeVotes,
+            totalNotIdea: item.noIdeaVotes,
+            createdAt: response.data.meeting.createdAt,
+            createBy: response.data.meeting.createBy || 'system',
+            isActive: true
+          }));
+          
+          setResolutions(transformedResolutions);
+        } else {
+          setError('Không thể tải dữ liệu từ server');
+          setResolutions([]);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setError('Có lỗi xảy ra khi tải dữ liệu');
+        setResolutions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (meetingCode) {
+      fetchData();
+    } else {
+      setError('Không tìm thấy mã cuộc họp');
+      setLoading(false);
+    }
+  }, [meetingCode]);
+
   const handleAddResolution = async (resolutionData: any) => {
     setSaveLoading(true);
     try {
       // Gọi API để thêm nghị quyết mới
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Giả lập API call
-      
-      // Thêm vào state
-      const newResolution: Resolution = {
+      const response = await ResolutionService.createResolution({
         ...resolutionData,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-      };
+        meetingCode: meetingCode
+      });
       
-      setResolutions(prev => [...prev, newResolution]);
+      if (response.status === 'success') {
+        // Thêm vào state
+        const newResolution: Resolution = {
+          ...resolutionData,
+          id: (resolutions.length + 1).toString(),
+          createdAt: new Date().toISOString(),
+        };
+        
+        setResolutions(prev => [...prev, newResolution]);
+        setAddModalOpen(false);
+      } else {
+        throw new Error(response.message || 'Không thể thêm nghị quyết');
+      }
     } catch (error) {
       console.error('Error adding resolution:', error);
       throw error;
@@ -68,22 +108,6 @@ export default function ResolutionManagement() {
       setSaveLoading(false);
     }
   };
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setTimeout(() => {
-          setResolutions(mockResolutions);
-          setLoading(false);
-        }, 500);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setResolutions([]);
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
 
   const filteredResolutions = resolutions.filter(resolution =>
     resolution.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -101,32 +125,55 @@ export default function ResolutionManagement() {
     setEditModalOpen(true);
   };
 
-  const handleSaveEdit = async (formData: any) => {
+  const handleSaveEdit = async (formData: ResolutionFormData) => {
     setSaveLoading(true);
     try {
-      // Giả lập API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Gọi API để cập nhật nghị quyết
+      formData.meetingCode = meetingCode;
+      formData.resolutionCode = selectedResolution?.resolutionCode || '';
+      console.log('Saving edited resolution:', formData);
+
+      const response = await ResolutionService.updateResolution(formData);
       
-      setResolutions(prev => prev.map(res => 
-        res.id === selectedResolution?.id 
-          ? { ...res, ...formData }
-          : res
-      ));
-      
-      setEditModalOpen(false);
-      setSelectedResolution(null);
+      if (response.status === 'success') {
+        setResolutions(prev => prev.map(res => 
+          res.resolutionCode === selectedResolution?.resolutionCode 
+            ? { ...res, ...formData }
+            : res
+        ));
+        
+        setEditModalOpen(false);
+        setSelectedResolution(null);
+      } else {
+        throw new Error(response.message || 'Không thể cập nhật nghị quyết');
+      }
     } catch (error) {
       console.error('Error saving resolution:', error);
+      throw error;
     } finally {
       setSaveLoading(false);
     }
   };
 
-  const handleToggleActive = (resolutionId: string, currentStatus: boolean) => {
+  // Sửa hàm handleToggleActive để nhận resolutionCode và currentStatus
+  const handleToggleActive = async (resolutionCode: string, currentStatus: boolean) => {
     if (confirm(`Bạn có chắc muốn ${currentStatus ? 'khoá' : 'mở khoá'} nghị quyết này?`)) {
-      setResolutions(prev => prev.map(res => 
-        res.id === resolutionId ? { ...res, isActive: !currentStatus } : res
-      ));
+      
+      try {
+        const response = await ResolutionService.updateResolutionStatus(resolutionCode, !currentStatus);
+        
+        if (response.status === 'success') {
+          // Cập nhật state local
+          setResolutions(prev => prev.map(res => 
+            res.resolutionCode === resolutionCode ? { ...res, isActive: !currentStatus } : res
+          ));
+        } else {
+          alert('Không thể thay đổi trạng thái nghị quyết');
+        }
+      } catch (error) {
+        console.error('Error toggling resolution active:', error);
+        alert('Có lỗi xảy ra khi thay đổi trạng thái');
+      }
     }
   };
 
@@ -134,28 +181,87 @@ export default function ResolutionManagement() {
     return resolutions.filter(res => res.totalAgree > res.totalNotAgree).length;
   };
 
+  const getTotalVotes = () => {
+    return resolutions.reduce((total, res) => total + res.totalAgree + res.totalNotAgree + res.totalNotIdea, 0);
+  };
+
   if (loading) {
     return <div className={styles.loading}>Đang tải dữ liệu...</div>;
   }
 
+  if (error) {
+    return (
+      <div className={styles.errorContainer}>
+        <div className={styles.errorIcon}>⚠️</div>
+        <h3 className={styles.errorTitle}>Lỗi</h3>
+        <p className={styles.errorMessage}>{error}</p>
+        <button 
+          className={styles.retryButton}
+          onClick={() => window.location.reload()}
+        >
+          Thử lại
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.management}>
-      {/* Header */}
+      {/* Header với thông tin cuộc họp */}
       <div className={styles.header}>
         <div className={styles.headerInfo}>
           <div className={styles.headerIcon}>📋</div>
           <div>
             <h1 className={styles.headerTitle}>Quản lý Nghị quyết</h1>
             <p className={styles.headerSubtitle}>
-              {resolutions.length} nghị quyết • {getApprovedCount()} đã thông qua
+              {meetingInfo?.title} • {resolutions.length} nghị quyết • {getApprovedCount()} đã thông qua
             </p>
+            {meetingInfo && (
+              <div className={styles.meetingDetails}>
+                <span className={styles.meetingCode}>Mã: {meetingInfo.meetingCode}</span>
+                <span className={styles.meetingDate}>
+                  {new Date(meetingInfo.meetingDate).toLocaleDateString('vi-VN')}
+                </span>
+                {meetingInfo.location && (
+                  <span className={styles.meetingLocation}>📍 {meetingInfo.location}</span>
+                )}
+                <span className={`${styles.meetingStatus} ${styles[meetingInfo.status.toLowerCase()]}`}>
+                  {meetingInfo.status === 'COMPLETED' ? 'ĐÃ KẾT THÚC' : 
+                   meetingInfo.status === 'PENDING' ? 'ĐANG DIỄN RA' : 'SẮP DIỄN RA'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
-        <button className={styles.addButton}
-          onClick={() => setAddModalOpen(true)}>
+        <button 
+          className={styles.addButton}
+          onClick={() => setAddModalOpen(true)}
+        >
           <span>+</span>
           Thêm Nghị quyết
         </button>
+      </div>
+
+      {/* Statistics */}
+      <div className={styles.stats}>
+        <div className={styles.statItem}>
+          <span className={styles.statNumber}>{resolutions.length}</span>
+          <span className={styles.statLabel}>Tổng nghị quyết</span>
+        </div>
+        <div className={styles.statItem}>
+          <span className={styles.statNumber}>{getApprovedCount()}</span>
+          <span className={styles.statLabel}>Đã thông qua</span>
+        </div>
+        <div className={styles.statItem}>
+          <span className={styles.statNumber}>{getTotalVotes().toLocaleString()}</span>
+          <span className={styles.statLabel}>Tổng phiếu bầu</span>
+        </div>
+        <div className={styles.statItem}>
+          <span className={styles.statNumber}>
+            {resolutions.length > 0 ? Math.round((getApprovedCount() / resolutions.length) * 100) : 0}%
+          </span>
+          <span className={styles.statLabel}>Tỷ lệ thông qua</span>
+        </div>
       </div>
 
       {/* Search Section */}
@@ -196,16 +302,23 @@ export default function ResolutionManagement() {
           <p className={styles.emptyDescription}>
             {searchTerm ? 'Thử tìm kiếm với từ khoá khác' : 'Chưa có nghị quyết nào được tạo'}
           </p>
+          <button 
+            className={styles.addButton}
+            onClick={() => setAddModalOpen(true)}
+          >
+            + Thêm Nghị quyết đầu tiên
+          </button>
         </div>
       )}
 
+      {/* Modals */}
       <ResolutionAddModal
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         onSave={handleAddResolution}
         loading={saveLoading}
       />
-      {/* Modals */}
+
       <ResolutionViewModal
         isOpen={viewModalOpen}
         resolution={selectedResolution}

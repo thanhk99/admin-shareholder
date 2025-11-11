@@ -16,7 +16,7 @@ interface ResolutionCardProps {
   resolution: Resolution;
   onViewDetail: (resolution: Resolution) => void;
   onEdit: (resolution: Resolution) => void;
-  onToggleActive: (resolutionId: string, currentStatus: boolean) => void;
+  onToggleActive: (resolutionCode: string, currentStatus: boolean) => void;
 }
 
 export default function ResolutionCard({ 
@@ -46,16 +46,14 @@ export default function ResolutionCard({
   };
 
   const handleToggleActive = () => {
-    onToggleActive(resolution.id, resolution.isActive);
+    onToggleActive(resolution.resolutionCode, resolution.isActive);
   };
-
   return (
     <div className={`${styles.resolutionCard} ${!resolution.isActive ? styles.inactive : ''}`}>
       {/* Header */}
       <div className={styles.resolutionHeader}>
         <div>
           <h3 className={styles.resolutionTitle}>{resolution.title || 'Không có tiêu đề'}</h3>
-          <span className={styles.resolutionCode}>{resolution.resolutionCode}</span>
         </div>
         <div className={styles.headerRight}>
           <span className={`${styles.status} ${statusInfo.isApproved ? styles.approved : styles.rejected}`}>

@@ -53,11 +53,6 @@ export default function ResolutionAddModal({
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
-
-    if (!formData.meetingCode.trim()) {
-      newErrors.meetingCode = 'Vui lòng nhập mã cuộc họp';
-    }
-
     if (!formData.resolutionCode.trim()) {
       newErrors.resolutionCode = 'Vui lòng nhập mã nghị quyết';
     }
@@ -160,41 +155,6 @@ export default function ResolutionAddModal({
             <h3 className={styles.sectionTitle}>
               <InfoCircleOutlined /> Thông tin cơ bản
             </h3>
-            
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label className={`${styles.formLabel} ${styles.formLabelRequired}`}>
-                  Mã cuộc họp
-                </label>
-                <input
-                  type="text"
-                  className={`${styles.formInput} ${errors.meetingCode ? styles.formError : ''}`}
-                  value={formData.meetingCode}
-                  onChange={(e) => handleInputChange('meetingCode', e.target.value)}
-                  placeholder="VD: CLIENT-ABC-MEET"
-                />
-                {errors.meetingCode && (
-                  <div className={styles.errorMessage}>{errors.meetingCode}</div>
-                )}
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={`${styles.formLabel} ${styles.formLabelRequired}`}>
-                  Mã nghị quyết
-                </label>
-                <input
-                  type="text"
-                  className={`${styles.formInput} ${errors.resolutionCode ? styles.formError : ''}`}
-                  value={formData.resolutionCode}
-                  onChange={(e) => handleInputChange('resolutionCode', e.target.value)}
-                  placeholder="VD: RES-2024-001"
-                />
-                {errors.resolutionCode && (
-                  <div className={styles.errorMessage}>{errors.resolutionCode}</div>
-                )}
-              </div>
-            </div>
-
             <div className={styles.formGroup}>
               <label className={`${styles.formLabel} ${styles.formLabelRequired}`}>
                 Tiêu đề nghị quyết
@@ -225,84 +185,6 @@ export default function ResolutionAddModal({
               {errors.description && (
                 <div className={styles.errorMessage}>{errors.description}</div>
               )}
-            </div>
-          </div>
-
-          {/* Thông tin biểu quyết */}
-          <div className={styles.formSection}>
-            <h3 className={styles.sectionTitle}>
-              <UserOutlined /> Kết quả biểu quyết
-            </h3>
-            
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Số phiếu đồng ý</label>
-                <input
-                  type="number"
-                  min="0"
-                  className={`${styles.formInput} ${errors.totalAgree ? styles.formError : ''}`}
-                  value={formData.totalAgree}
-                  onChange={(e) => handleInputChange('totalAgree', parseInt(e.target.value) || 0)}
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Số phiếu không đồng ý</label>
-                <input
-                  type="number"
-                  min="0"
-                  className={styles.formInput}
-                  value={formData.totalNotAgree}
-                  onChange={(e) => handleInputChange('totalNotAgree', parseInt(e.target.value) || 0)}
-                />
-              </div>
-            </div>
-
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Số phiếu không ý kiến</label>
-                <input
-                  type="number"
-                  min="0"
-                  className={styles.formInput}
-                  value={formData.totalNotIdea}
-                  onChange={(e) => handleInputChange('totalNotIdea', parseInt(e.target.value) || 0)}
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={`${styles.formLabel} ${styles.formLabelRequired}`}>
-                  Người tạo
-                </label>
-                <input
-                  type="text"
-                  className={`${styles.formInput} ${errors.createBy ? styles.formError : ''}`}
-                  value={formData.createBy}
-                  onChange={(e) => handleInputChange('createBy', e.target.value)}
-                  placeholder="VD: admin"
-                />
-                {errors.createBy && (
-                  <div className={styles.errorMessage}>{errors.createBy}</div>
-                )}
-              </div>
-            </div>
-
-            {/* Voting Summary */}
-            <div className={styles.votingSettings}>
-              <div className={styles.votingItem}>
-                <span className={styles.votingLabel}>Tổng số phiếu:</span>
-                <span className={styles.votingValue}>{totalVotes}</span>
-              </div>
-              <div className={styles.votingItem}>
-                <span className={styles.votingLabel}>Tỷ lệ đồng ý:</span>
-                <span className={styles.votingValue}>{agreePercentage}%</span>
-              </div>
-              <div className={styles.votingItem}>
-                <span className={styles.votingLabel}>Kết quả:</span>
-                <span className={styles.votingValue}>
-                  {isApproved ? 'ĐÃ THÔNG QUA' : 'KHÔNG THÔNG QUA'}
-                </span>
-              </div>
             </div>
           </div>
 

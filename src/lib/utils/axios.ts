@@ -1,4 +1,3 @@
-// axiosInstance.ts
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import AuthService from '../api/auth';
 import TokenService from '../api/token';

@@ -1,3 +1,5 @@
+// types/resolution.ts
+
 export interface Resolution {
   id: string;
   meetingCode: string;
@@ -12,11 +14,82 @@ export interface Resolution {
   isActive: boolean;
 }
 
+// Interfaces cho VotingManagement
+export interface Meeting {
+  meetingCode: string;
+  title: string;
+  description: string;
+  meetingDate: string;
+  location?: string;
+  status: 'COMPLETED' | 'PENDING' | 'UPCOMING';
+  dayStart: string;
+  dayEnd: string;
+  createdAt: string;
+  updatedAt: string;
+  createBy: string | null;
+  updateBy: string | null;
+}
+
+export interface ResolutionVote {
+  title: string;
+  description: string;
+  resolutionCode: string;
+  agreeVotes: number;
+  notAgreeVotes: number;
+  noIdeaVotes: number;
+}
+
+export interface MeetingResponse {
+  meeting: Meeting;
+  resolutionCount: number;
+  resolutionVotes: ResolutionVote[];
+}
+
+export interface MeetingGroup {
+  meetingCode: string;
+  meetingTitle: string;
+  meetingDate: string;
+  location?: string;
+  status: 'COMPLETED' | 'PENDING' | 'UPCOMING';
+  resolutions: ResolutionVote[];
+  totalResolutions: number;
+  totalVotes: number;
+  approvedResolutions: number;
+}
+
+interface ApiResponse {
+  status: string;
+  data: {
+    meeting: {
+      meetingCode: string;
+      title: string;
+      description: string;
+      meetingDate: string;
+      location: string;
+      status: string;
+      dayStart: string;
+      dayEnd: string;
+      createdAt: string;
+      updatedAt: string;
+      createBy: string | null;
+      updateBy: string | null;
+    };
+    resolutionCount: number;
+    resolutionVotes: Array<{
+      title: string;
+      description: string;
+      resolutionCode: string;
+      agreeVotes: number;
+      notAgreeVotes: number;
+      noIdeaVotes: number;
+    }>;
+  };
+}
+
 export interface ResolutionFormData {
   resolutionCode: string;
-  resolutionTitle: string;
-  resolutionDescription: string;
-  resolutionType: 'ordinary' | 'special';
-  votingMethod: 'show_of_hands' | 'ballot' | 'electronic';
-  requiredApproval: number;
+  meetingCode: string;
+  title: string;
+  description: string;
+  createBy: string;
 }
