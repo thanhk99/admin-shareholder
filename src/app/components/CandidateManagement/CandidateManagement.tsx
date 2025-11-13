@@ -178,17 +178,17 @@ export default function CandidateManagement() {
         }
     };
 
-    const handleDeleteCandidate = async (id: string) => {
-        if (confirm('Bạn có chắc chắn muốn xóa ứng viên này?')) {
-            try {
-                await CandidateService.deleteCandidate(id);
-                await fetchCandidates();
-            } catch (error) {
-                console.error('Error deleting candidate:', error);
-                alert('Lỗi khi xóa ứng viên');
-            }
-        }
-    };
+    // const handleDeleteCandidate = async (id: string) => {
+    //     if (confirm('Bạn có chắc chắn muốn xóa ứng viên này?')) {
+    //         try {
+    //             await CandidateService.deleteCandidate(id);
+    //             await fetchCandidates();
+    //         } catch (error) {
+    //             console.error('Error deleting candidate:', error);
+    //             alert('Lỗi khi xóa ứng viên');
+    //         }
+    //     }
+    // };
 
     const handleToggleStatus = async (id: string) => {
         try {
@@ -224,7 +224,6 @@ export default function CandidateManagement() {
             <CandidateGrid
                 candidates={filteredCandidates}
                 onEdit={handleEdit}
-                onDelete={handleDeleteCandidate}
                 onToggleStatus={handleToggleStatus}
             />
         );

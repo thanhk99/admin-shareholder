@@ -1,7 +1,7 @@
 //API Constants 
 export const API_CONFIG = {
-    // BASE_URL : "https://remarkably-arriving-imp.ngrok-free.app",
-    BASE_URL : "http://localhost:8085",
+    BASE_URL : "https://remarkably-arriving-imp.ngrok-free.app",
+    // BASE_URL : "http://localhost:8085",
     TIMEOUT: 10000,
     ENDPOINTS: { 
         AUTH: {
@@ -41,7 +41,7 @@ export const API_CONFIG = {
             ADDSHAREHOLDER:'/api/admin/shareholder/addShareholder',
             GETSHAREHOLDERBYCODE :'/api/admin/shareholder/getShareholder',
             UPDATESHAREHOLDER : '/api/admin/shareholder/update',
-            GETLOGS: '/api/admin/shareholder/logs'
+            GETLOGS: '/api/admin/shareholder/getLogMeeting'
         },
         DASHBOARD:{
             GETHOME:'/api/dashboard/home'

@@ -5,15 +5,12 @@ import { useEffect, useState } from 'react';
 import { 
   Table, 
   Card, 
-  Select, 
-  DatePicker, 
   Tag, 
   Space,
   Empty
 } from 'antd';
 import { 
-  HistoryOutlined, 
-  UserOutlined,
+  HistoryOutlined,
   FileTextOutlined,
   TeamOutlined
 } from '@ant-design/icons';
@@ -21,22 +18,12 @@ import dayjs from 'dayjs';
 import styles from './ShareholderLogs.module.css';
 import ShareholderManage from '@/lib/api/shareholdermanagement';
 
-const { RangePicker } = DatePicker;
-const { Option } = Select;
-
 interface LogEntry {
-  id: string;
-  type: 'CANDIDATE_VOTE' | 'RESOLUTION_VOTE';
   resolutionCode?: string;
-  candidateCode?: string;
   choice?: string;
-  amount: number;
-  typeAction: string;
+  before: string;
+  after: string;
   timestamp: string;
-  shareholderCode: string;
-  shareholderName: string;
-  candidateName?: string;
-  resolutionTitle?: string;
 }
 
 interface ShareholderLogsProps {
@@ -47,35 +34,14 @@ interface ShareholderLogsProps {
 export default function ShareholderLogs({ shareholderCode, showFilter = true }: ShareholderLogsProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({
-    logType: 'ALL',
-    dateRange: [] as dayjs.Dayjs[],
-    actionType: 'ALL'
-  });
 
-  const fetchLogs = async () => {
+  const fetchLogs = async (page: number = 1) => {
+    if (!shareholderCode) return;
+    
     setLoading(true);
     try {
-      const params: any = {};
+      const response = await ShareholderManage.getLogs(shareholderCode, page);
       
-      if (shareholderCode) {
-        params.shareholderCode = shareholderCode;
-      }
-      
-      if (filters.logType !== 'ALL') {
-        params.type = filters.logType;
-      }
-      
-      if (filters.dateRange.length === 2) {
-        params.startDate = filters.dateRange[0].format('YYYY-MM-DD');
-        params.endDate = filters.dateRange[1].format('YYYY-MM-DD');
-      }
-      
-      if (filters.actionType !== 'ALL') {
-        params.action = filters.actionType;
-      }
-
-      const response = await ShareholderManage.getLogs(params);
       if (response.status === "success") {
         setLogs(response.data);
       }
@@ -87,24 +53,32 @@ export default function ShareholderLogs({ shareholderCode, showFilter = true }: 
   };
 
   useEffect(() => {
-    fetchLogs();
-  }, [shareholderCode, filters]);
+    fetchLogs(1);
+  }, [shareholderCode]);
 
-  const getActionColor = (action: string) => {
-    const colors: { [key: string]: string } = {
-      'CREATE': 'green',
-      'CHANGE_CHOICE': 'orange',
-      'FIRST_VOTE': 'blue',
-      'RE_CONFIRM': 'purple',
-      'INCREASE_SHARES': 'cyan',
-      'DECREASE_SHARES': 'volcano',
-      'DELETE': 'red'
-    };
-    return colors[action] || 'default';
+  // Xác định loại log dựa trên dữ liệu
+  const getLogType = (log: LogEntry): 'RESOLUTION' | 'CANDIDATE' => {
+    // Nếu có resolutionCode và choice là AGREE/NOIDEA/NOTAGREE → Biểu quyết
+    if (log.resolutionCode && ['AGREE', 'NOIDEA', 'NOTAGREE'].includes(log.choice || '')) {
+      return 'RESOLUTION';
+    }
+    // Ngược lại → Bầu cử
+    return 'CANDIDATE';
   };
 
-  const getTypeIcon = (type: string) => {
-    return type === 'CANDIDATE_VOTE' ? <TeamOutlined /> : <FileTextOutlined />;
+  const getTypeIcon = (log: LogEntry) => {
+    const type = getLogType(log);
+    return type === 'CANDIDATE' ? <TeamOutlined /> : <FileTextOutlined />;
+  };
+
+  const getTypeColor = (log: LogEntry) => {
+    const type = getLogType(log);
+    return type === 'CANDIDATE' ? 'blue' : 'green';
+  };
+
+  const getTypeText = (log: LogEntry) => {
+    const type = getLogType(log);
+    return type === 'CANDIDATE' ? 'Bầu cử' : 'Biểu quyết';
   };
 
   const getChoiceText = (choice: string) => {
@@ -125,6 +99,10 @@ export default function ShareholderLogs({ shareholderCode, showFilter = true }: 
     return colors[choice] || 'default';
   };
 
+  const isVoteChange = (log: LogEntry) => {
+    return log.before !== log.after;
+  };
+
   const columns = [
     {
       title: 'Thời gian',
@@ -141,103 +119,76 @@ export default function ShareholderLogs({ shareholderCode, showFilter = true }: 
     },
     {
       title: 'Loại',
-      dataIndex: 'type',
       key: 'type',
       width: 100,
-      render: (type: string) => (
-        <Tag icon={getTypeIcon(type)} color={type === 'CANDIDATE_VOTE' ? 'blue' : 'green'}>
-          {type === 'CANDIDATE_VOTE' ? 'Bầu cử' : 'Biểu quyết'}
+      render: (_: any, record: LogEntry) => (
+        <Tag icon={getTypeIcon(record)} color={getTypeColor(record)}>
+          {getTypeText(record)}
         </Tag>
-      ),
-      filters: [
-        { text: 'Bầu cử', value: 'CANDIDATE_VOTE' },
-        { text: 'Biểu quyết', value: 'RESOLUTION_VOTE' }
-      ],
-      onFilter: (value: string, record: LogEntry) => record.type === value
+      )
     },
     {
-      title: 'Hành động',
-      dataIndex: 'typeAction',
-      key: 'typeAction',
-      width: 140,
-      render: (typeAction: string) => (
-        <Tag color={getActionColor(typeAction)}>
-          {getActionText(typeAction)}
+      title: 'Trạng thái',
+      key: 'status',
+      width: 120,
+      render: (_: any, record: LogEntry) => (
+        <Tag color={isVoteChange(record) ? 'orange' : 'green'}>
+          {isVoteChange(record) ? 'Thay đổi' : 'Giữ nguyên'}
         </Tag>
       )
     },
     {
       title: 'Nội dung',
       key: 'content',
-      render: (record: LogEntry) => (
-        <div className={styles.content}>
-          {record.type === 'CANDIDATE_VOTE' ? (
-            <div className={styles.candidateContent}>
-              <div className={styles.itemName}>
-                <strong>{record.candidateName || `Ứng viên ${record.candidateCode}`}</strong>
+      render: (_: any, record: LogEntry) => {
+        const type = getLogType(record);
+        
+        return (
+          <div className={styles.content}>
+            {type === 'CANDIDATE' ? (
+              <div className={styles.candidateContent}>
+                <div className={styles.itemName}>
+                  <strong>{record.choice || 'Ứng viên'}</strong>
+                </div>
+                <div className={styles.voteInfo}>
+                  <span className={styles.change}>
+                    {record.before} → {record.after} phiếu
+                  </span>
+                  {isVoteChange(record) && (
+                    <span className={styles.changeIndicator}>
+                      {parseInt(record.after) > parseInt(record.before) ? '📈' : '📉'}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className={styles.voteInfo}>
-                <span className={styles.amount}>
-                  Số phiếu: <strong>{record.amount}</strong>
-                </span>
+            ) : (
+              <div className={styles.resolutionContent}>
+                <div className={styles.itemName}>
+                  <strong>{record.resolutionCode || 'Nghị quyết'}</strong>
+                </div>
+                <div className={styles.choiceInfo}>
+                  <div className={styles.choiceChange}>
+                    <Tag color={getChoiceColor(record.before)}>
+                      {getChoiceText(record.before)}
+                    </Tag>
+                    <span className={styles.arrow}>→</span>
+                    <Tag color={getChoiceColor(record.after)}>
+                      {getChoiceText(record.after)}
+                    </Tag>
+                  </div>
+                  {isVoteChange(record) && (
+                    <div className={styles.changeNote}>
+                      Đã thay đổi lựa chọn
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className={styles.resolutionContent}>
-              <div className={styles.itemName}>
-                <strong>{record.resolutionTitle || `Nghị quyết ${record.resolutionCode}`}</strong>
-              </div>
-              <div className={styles.voteInfo}>
-                {record.choice && (
-                  <Tag color={getChoiceColor(record.choice)}>
-                    {getChoiceText(record.choice)}
-                  </Tag>
-                )}
-                <span className={styles.amount}>
-                  Số cổ phần: <strong>{record.amount}</strong>
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      )
-    },
-    ...(shareholderCode ? [] : [{
-      title: 'Cổ đông',
-      dataIndex: 'shareholderName',
-      key: 'shareholderName',
-      width: 180,
-      render: (name: string, record: LogEntry) => (
-        <div className={styles.shareholderInfo}>
-          <UserOutlined />
-          <div>
-            <div className={styles.shareholderName}>{name}</div>
-            <div className={styles.shareholderCode}>{record.shareholderCode}</div>
+            )}
           </div>
-        </div>
-      )
-    } as any])
+        );
+      }
+    }
   ];
-
-  const getActionText = (action: string) => {
-    const texts: { [key: string]: string } = {
-      'CREATE': 'Tạo mới',
-      'CHANGE_CHOICE': 'Thay đổi lựa chọn',
-      'FIRST_VOTE': 'Bầu lần đầu',
-      'RE_CONFIRM': 'Xác nhận lại',
-      'INCREASE_SHARES': 'Tăng cổ phần',
-      'DECREASE_SHARES': 'Giảm cổ phần',
-      'DELETE': 'Xóa'
-    };
-    return texts[action] || action;
-  };
-
-  const handleFilterChange = (key: string, value: any) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
 
   return (
     <div className={styles.logsContainer}>
@@ -249,53 +200,12 @@ export default function ShareholderLogs({ shareholderCode, showFilter = true }: 
             {shareholderCode && ` - ${shareholderCode}`}
           </Space>
         }
-        extra={
-          showFilter && (
-            <Space>
-              <Select
-                value={filters.logType}
-                onChange={(value) => handleFilterChange('logType', value)}
-                style={{ width: 150 }}
-                placeholder="Loại log"
-              >
-                <Option value="ALL">Tất cả loại</Option>
-                <Option value="CANDIDATE_VOTE">Bầu cử</Option>
-                <Option value="RESOLUTION_VOTE">Biểu quyết</Option>
-              </Select>
-
-              <Select
-                value={filters.actionType}
-                onChange={(value) => handleFilterChange('actionType', value)}
-                style={{ width: 180 }}
-                placeholder="Loại hành động"
-              >
-                <Option value="ALL">Tất cả hành động</Option>
-                <Option value="CREATE">Tạo mới</Option>
-                <Option value="CHANGE_CHOICE">Thay đổi lựa chọn</Option>
-                <Option value="FIRST_VOTE">Bầu lần đầu</Option>
-                <Option value="RE_CONFIRM">Xác nhận lại</Option>
-                <Option value="INCREASE_SHARES">Tăng cổ phần</Option>
-                <Option value="DECREASE_SHARES">Giảm cổ phần</Option>
-              </Select>
-
-              <RangePicker
-                value={[
-                  filters.dateRange[0] ?? null,
-                  filters.dateRange[1] ?? null
-                ]}
-                onChange={(dates) => handleFilterChange('dateRange', dates || [])}
-                format="DD/MM/YYYY"
-                placeholder={['Từ ngày', 'Đến ngày']}
-              />
-            </Space>
-          )
-        }
       >
         <Table
           columns={columns}
-          dataSource={logs}
+          dataSource={logs.map((log, index) => ({ ...log, key: index }))}
           loading={loading}
-          rowKey="id"
+          rowKey="key"
           pagination={{
             pageSize: 10,
             showSizeChanger: true,

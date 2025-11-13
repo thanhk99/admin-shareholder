@@ -35,9 +35,9 @@ export default class ShareholderManage{
         }
     }
 
-    static async getLogs(params: string) {
+    static async getLogs(shareholderCode: string, page: number) {
         try {
-          const response = await axiosInstance.get(API_CONFIG.ENDPOINTS.SHAREHOLDER.GETLOGS, { params });
+          const response = await axiosInstance.get(API_CONFIG.ENDPOINTS.SHAREHOLDER.GETLOGS+"/"+shareholderCode, { params: { page } });
           return response.data;
         } catch (error) {
           throw error;

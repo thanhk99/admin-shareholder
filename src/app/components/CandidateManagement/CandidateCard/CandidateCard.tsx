@@ -13,14 +13,12 @@ import { Candidate } from '@/app/types/candidate';
 interface CandidateCardProps {
     candidate: Candidate;
     onEdit: (candidate: Candidate) => void;
-    onDelete: (id: string) => void;
     onToggleStatus: (id: string) => void;
 }
 
 export default function CandidateCard({ 
     candidate, 
     onEdit, 
-    onDelete, 
     onToggleStatus 
 }: CandidateCardProps) {
     const [isClient, setIsClient] = useState(false);
@@ -127,13 +125,6 @@ export default function CandidateCard({
                     >
                         {candidate.isActive ? <CloseCircleOutlined /> : <CheckCircleOutlined />}
                         {candidate.isActive ? 'Khóa' : 'Kích hoạt'}
-                    </button>
-                    <button 
-                        className={styles.deleteButton}
-                        onClick={() => onDelete(candidate.id)}
-                    >
-                        <DeleteOutlined />
-                        Xóa
                     </button>
                 </div>
             </div>

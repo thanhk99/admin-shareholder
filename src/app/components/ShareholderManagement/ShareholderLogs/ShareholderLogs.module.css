@@ -16,7 +16,7 @@
 .candidateContent, .resolutionContent {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .itemName {
@@ -27,41 +27,57 @@
 .voteInfo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   font-size: 13px;
 }
 
-.amount {
-  color: #666;
-  font-size: 13px;
+.change {
+  font-family: 'Courier New', monospace;
+  font-weight: 500;
+  color: #333;
 }
 
-.amount strong {
-  color: #1890ff;
-  font-weight: 600;
+.changeIndicator {
+  font-size: 14px;
 }
 
-.shareholderInfo {
+.choiceInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.choiceChange {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.shareholderName {
+.arrow {
+  color: #999;
   font-weight: 500;
-  color: #1890ff;
 }
 
-.shareholderCode {
+.changeNote {
   font-size: 11px;
-  color: #999;
-  font-family: 'Courier New', monospace;
+  color: #f5222d;
+  font-style: italic;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .logsContainer {
     margin-top: 16px;
+  }
+  
+  .choiceChange {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .arrow {
+    display: none;
   }
   
   .voteInfo {
