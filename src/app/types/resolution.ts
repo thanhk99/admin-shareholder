@@ -37,6 +37,7 @@ export interface ResolutionVote {
   agreeVotes: number;
   notAgreeVotes: number;
   noIdeaVotes: number;
+  isActive: boolean;
 }
 
 export interface MeetingResponse {
@@ -87,9 +88,8 @@ interface ApiResponse {
 }
 
 export interface ResolutionFormData {
-  resolutionCode: string;
+  resolutionCode?: string;
   meetingCode: string;
   title: string;
   description: string;
-  createBy: string;
 }

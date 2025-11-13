@@ -19,13 +19,29 @@ export default function ElectionStats({ electionSessions }: ElectionStatsProps) 
 
   return (
     <div className={styles.stats}>
-      <span>Tổng: {stats.total} cuộc bầu cử</span>
-      <span>•</span>
-      <span>Chờ bắt đầu: {stats.upcoming}</span>
-      <span>•</span>
-      <span>Đang diễn ra: {stats.pending}</span>
-      <span>•</span>
-      <span>Đã kết thúc: {stats.completed}</span>
+      {/* Cuộc họp - Blue gradient */}
+      <div className={`${styles.statItem} ${styles.meetingGradient}`}>
+        <span className={styles.statNumber}>{stats.total}</span>
+        <span className={styles.statLabel}>Cuộc họp</span>
+      </div>
+
+      {/* Chờ bắt đầu - Orange gradient */}
+      <div className={`${styles.statItem} ${styles.upcomingGradient}`}>
+        <span className={styles.statNumber}>{stats.upcoming}</span>
+        <span className={styles.statLabel}>Chờ bắt đầu</span>
+      </div>
+
+      {/* Đang diễn ra - Red gradient */}
+      <div className={`${styles.statItem} ${styles.pendingGradient}`}>
+        <span className={styles.statNumber}>{stats.pending}</span>
+        <span className={styles.statLabel}>Đang diễn ra</span>
+      </div>
+
+      {/* Đã kết thúc - Purple gradient */}
+      <div className={`${styles.statItem} ${styles.completedGradient}`}>
+        <span className={styles.statNumber}>{stats.completed}</span>
+        <span className={styles.statLabel}>Đã kết thúc</span>
+      </div>
     </div>
   );
 }

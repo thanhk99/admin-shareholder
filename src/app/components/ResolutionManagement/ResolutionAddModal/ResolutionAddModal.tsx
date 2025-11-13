@@ -2,29 +2,22 @@ import { useState } from 'react';
 import { Modal, Spin } from 'antd';
 import { 
   InfoCircleOutlined,
-  CalendarOutlined,
-  UserOutlined
 } from '@ant-design/icons';
 import styles from './ResolutionAddModal.module.css';
-import { Resolution } from '@/app/types/resolution';
+import { ResolutionFormData } from '@/app/types/resolution';
 
 interface ResolutionAddModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (resolutionData: Omit<Resolution, 'id' | 'createdAt'>) => Promise<void>;
+  onSave: (resolutionData: ResolutionFormData) => Promise<void>;
   loading?: boolean;
 }
 
 interface FormData {
-  meetingCode: string;
   resolutionCode: string;
+  meetingCode: string;
   title: string;
   description: string;
-  totalAgree: number;
-  totalNotAgree: number;
-  totalNotIdea: number;
-  createBy: string;
-  isActive: boolean;
 }
 
 interface FormErrors {
@@ -42,21 +35,12 @@ export default function ResolutionAddModal({
     resolutionCode: '',
     title: '',
     description: '',
-    totalAgree: 0,
-    totalNotAgree: 0,
-    totalNotIdea: 0,
-    createBy: '',
-    isActive: true
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
-    if (!formData.resolutionCode.trim()) {
-      newErrors.resolutionCode = 'Vui lòng nhập mã nghị quyết';
-    }
-
     if (!formData.title.trim()) {
       newErrors.title = 'Vui lòng nhập tiêu đề nghị quyết';
     }
@@ -64,20 +48,6 @@ export default function ResolutionAddModal({
     if (!formData.description.trim()) {
       newErrors.description = 'Vui lòng nhập mô tả nghị quyết';
     }
-
-    if (!formData.createBy.trim()) {
-      newErrors.createBy = 'Vui lòng nhập người tạo';
-    }
-
-    if (formData.totalAgree < 0 || formData.totalNotAgree < 0 || formData.totalNotIdea < 0) {
-      newErrors.totalAgree = 'Số phiếu không được âm';
-    }
-
-    const totalVotes = formData.totalAgree + formData.totalNotAgree + formData.totalNotIdea;
-    if (totalVotes === 0) {
-      newErrors.totalAgree = 'Tổng số phiếu phải lớn hơn 0';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -103,7 +73,7 @@ export default function ResolutionAddModal({
     if (!validateForm()) {
       return;
     }
-
+    console.log('Submitting form data:', formData);
     try {
       await onSave(formData);
       handleClose();
@@ -118,19 +88,10 @@ export default function ResolutionAddModal({
       resolutionCode: '',
       title: '',
       description: '',
-      totalAgree: 0,
-      totalNotAgree: 0,
-      totalNotIdea: 0,
-      createBy: '',
-      isActive: true
     });
     setErrors({});
     onClose();
   };
-
-  const totalVotes = formData.totalAgree + formData.totalNotAgree + formData.totalNotIdea;
-  const agreePercentage = totalVotes > 0 ? Math.round((formData.totalAgree / totalVotes) * 100) : 0;
-  const isApproved = formData.totalAgree > formData.totalNotAgree;
 
   return (
     <Modal

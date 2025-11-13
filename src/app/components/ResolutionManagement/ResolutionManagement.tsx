@@ -29,74 +29,62 @@ export default function ResolutionManagement() {
   const [error, setError] = useState<string | null>(null);
 
   // Fetch data từ API
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response: ApiResponse = await ResolutionService.getResolutionByMeeting(meetingCode);
+      
+      if (response.status === 'success') {
+        // Lưu thông tin cuộc họp
+        setMeetingInfo(response.data.meeting);
         
-        console.log('Fetching resolutions for meeting:', meetingCode);
-        const response: ApiResponse = await ResolutionService.getResolutionByMeeting(meetingCode);
-        console.log('API Response:', response);
+        const transformedResolutions: Resolution[] = response.data.resolutionVotes.map((item: ResolutionVote, index: number) => ({
+          id: (index + 1).toString(),
+          meetingCode: response.data.meeting.meetingCode,
+          resolutionCode: item.resolutionCode,
+          title: item.title,
+          description: item.description,
+          totalAgree: item.agreeVotes,
+          totalNotAgree: item.notAgreeVotes,
+          totalNotIdea: item.noIdeaVotes,
+          createdAt: response.data.meeting.createdAt,
+          createBy: response.data.meeting.createBy || 'system',
+          isActive: item.isActive
+        }));
         
-        if (response.status === 'success') {
-          // Lưu thông tin cuộc họp
-          setMeetingInfo(response.data.meeting);
-          
-          const transformedResolutions: Resolution[] = response.data.resolutionVotes.map((item: ResolutionVote, index: number) => ({
-            id: (index + 1).toString(),
-            meetingCode: response.data.meeting.meetingCode,
-            resolutionCode: item.resolutionCode,
-            title: item.title,
-            description: item.description,
-            totalAgree: item.agreeVotes,
-            totalNotAgree: item.notAgreeVotes,
-            totalNotIdea: item.noIdeaVotes,
-            createdAt: response.data.meeting.createdAt,
-            createBy: response.data.meeting.createBy || 'system',
-            isActive: true
-          }));
-          
-          setResolutions(transformedResolutions);
-        } else {
-          setError('Không thể tải dữ liệu từ server');
-          setResolutions([]);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setError('Có lỗi xảy ra khi tải dữ liệu');
+        setResolutions(transformedResolutions);
+      } else {
+        setError('Không thể tải dữ liệu từ server');
         setResolutions([]);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    if (meetingCode) {
-      fetchData();
-    } else {
-      setError('Không tìm thấy mã cuộc họp');
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError('Có lỗi xảy ra khi tải dữ liệu');
+      setResolutions([]);
+    } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+   
+    fetchData();
   }, [meetingCode]);
 
-  const handleAddResolution = async (resolutionData: any) => {
+  const handleAddResolution = async (resolutionData: ResolutionFormData) => {
     setSaveLoading(true);
+    resolutionData.meetingCode = meetingCode;
     try {
       // Gọi API để thêm nghị quyết mới
       const response = await ResolutionService.createResolution({
         ...resolutionData,
-        meetingCode: meetingCode
       });
       
       if (response.status === 'success') {
         // Thêm vào state
-        const newResolution: Resolution = {
-          ...resolutionData,
-          id: (resolutions.length + 1).toString(),
-          createdAt: new Date().toISOString(),
-        };
-        
-        setResolutions(prev => [...prev, newResolution]);
+        fetchData();
         setAddModalOpen(false);
       } else {
         throw new Error(response.message || 'Không thể thêm nghị quyết');
