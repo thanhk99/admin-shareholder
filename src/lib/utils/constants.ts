@@ -40,7 +40,8 @@ export const API_CONFIG = {
             GETLIST:'/api/admin/shareholder/getAllShareholder',
             ADDSHAREHOLDER:'/api/admin/shareholder/addShareholder',
             GETSHAREHOLDERBYCODE :'/api/admin/shareholder/getShareholder',
-            UPDATESHAREHOLDER : '/api/admin/shareholder/update'
+            UPDATESHAREHOLDER : '/api/admin/shareholder/update',
+            GETLOGS: '/api/admin/shareholder/logs'
         },
         DASHBOARD:{
             GETHOME:'/api/dashboard/home'

@@ -331,6 +331,9 @@
   gap: 8px;
   align-items: center;
 }
+.logsSection {
+  margin-top: 32px;
+}
 @media (max-width: 768px) {
   .header {
     flex-direction: column;

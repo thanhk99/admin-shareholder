@@ -19,6 +19,7 @@ import styles from './ShareholderDetail.module.css';
 import EditShareholderModal from '../ShareholderManagement/EditShareholderModal/EditShareholderModal';
 import { Shareholder } from '@/app/types/shareholder';
 import ShareholderManage from '@/lib/api/shareholdermanagement';
+import ShareholderLogs from '../ShareholderManagement/ShareholderLogs/ShareholderLogs';
 
 export default function ShareholderDetail() {
   const params = useParams();
@@ -243,7 +244,10 @@ export default function ShareholderDetail() {
           </div>
         </div>
       </div>
-
+      <ShareholderLogs 
+        shareholderCode={shareholderId} 
+        showFilter={false}
+      />
       {/* Edit Modal */}
       {shareholder && (
         <EditShareholderModal
