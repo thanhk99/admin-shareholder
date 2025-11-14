@@ -15,36 +15,41 @@ import { DashboardService } from '@/lib/api/dashboard';
 
 interface DashboardStats {
   totalShareholders: number;
-  totalMeetings: number;
-  activeVotings: number;
+  totalMeeting: number; 
   totalShares: number;
 }
 
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     totalShareholders: 0,
-    totalMeetings: 0,
-    activeVotings: 0,
+    totalMeeting: 0, 
     totalShares: 0,
   });
-  const [showAddModal , setShowAddModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
 
-  const fetchDataDashboard = async ()=>{
+  const formatNumber = (num: number): string => {
+    return new Intl.NumberFormat('vi-VN').format(num);
+  };
+
+  const fetchDataDashboard = async () => {
     try {
       const response = await DashboardService.getHome();
-      if(response.status === "success"){
-        setStats(response.data);
+      if (response.status === "success") {
+        setStats({
+          ...response.data,
+          activeVotings: response.data.activeVotings || 0 
+        });
       }
     } catch (error) {
+      console.error('Error fetching dashboard data:', error);
       setStats({
         totalShareholders: 0,
-        totalMeetings: 0,
-        activeVotings: 0,
+        totalMeeting: 0,
         totalShares: 0
       });
     }
-    
-  }
+  };
+
   useEffect(() => {
     fetchDataDashboard();
   }, []);
@@ -67,7 +72,7 @@ export default function Dashboard() {
         {icon}
       </div>
       <div className={styles.statContent}>
-        <h3 className={styles.statValue}>{value}</h3>
+        <h3 className={styles.statValue}>{formatNumber(value)}</h3>
         <p className={styles.statTitle}>{title}</p>
         {growth !== undefined && (
           <div className={`${styles.growth} ${growth >= 0 ? styles.positive : styles.negative}`}>
@@ -110,13 +115,15 @@ export default function Dashboard() {
     }
   ];
 
-  const handleAddShareholder = async() =>{
+  const handleAddShareholder = () => {
     setShowAddModal(true);
-  }
+  };
 
-  const handleAddSuccess = async() =>{
-    console.log("ok2")
-  }
+  const handleAddSuccess = async () => {
+    console.log("ok2");
+    await fetchDataDashboard(); // Refresh data after successful addition
+  };
+
   return (
     <div className={styles.dashboard}>
       <div className={styles.header}>
@@ -133,15 +140,9 @@ export default function Dashboard() {
         />
         <StatCard
           title="Cuộc họp"
-          value={stats.totalMeetings}
+          value={stats.totalMeeting}
           icon={<CalendarOutlined />}
           color="#e74c3c"
-        />
-        <StatCard
-          title="Bầu cử đang diễn ra"
-          value={stats.activeVotings}
-          icon={<CheckSquareOutlined />}
-          color="#2ecc71"
         />
         <StatCard
           title="Tổng Cổ phần"
@@ -197,8 +198,8 @@ export default function Dashboard() {
         </div>
       </div>
       <AddShareholderModal
-        isOpen ={showAddModal}
-        onClose={()=>{setShowAddModal(false)}}
+        isOpen={showAddModal}
+        onClose={() => { setShowAddModal(false); }}
         onSuccess={handleAddSuccess}
       />
     </div>

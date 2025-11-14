@@ -52,13 +52,51 @@ export default function EditShareholderModal({
     shares: 0,
     cccd: '',
     phone: '',
-    status:true,
+    status: true,
     address: '',
     birthDay: '',
     nation: ''
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+
+  // Hàm chuyển đổi định dạng ngày từ dd/MM/yyyy sang yyyy-MM-dd
+  const formatDateForInput = (dateString: string): string => {
+    if (!dateString) return '';
+    
+    // Nếu đã là định dạng yyyy-MM-dd thì giữ nguyên
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      return dateString;
+    }
+    
+    // Chuyển từ dd/MM/yyyy sang yyyy-MM-dd
+    const parts = dateString.split('/');
+    if (parts.length === 3) {
+      const [day, month, year] = parts;
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    
+    return dateString;
+  };
+
+  // Hàm chuyển đổi ngược lại từ yyyy-MM-dd sang dd/MM/yyyy để gửi API
+  const formatDateForAPI = (dateString: string): string => {
+    if (!dateString) return '';
+    
+    // Nếu đã là định dạng dd/MM/yyyy thì giữ nguyên
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+      return dateString;
+    }
+    
+    // Chuyển từ yyyy-MM-dd sang dd/MM/yyyy
+    const parts = dateString.split('-');
+    if (parts.length === 3) {
+      const [year, month, day] = parts;
+      return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+    }
+    
+    return dateString;
+  };
 
   // Cập nhật form data khi shareholder prop thay đổi
   useEffect(() => {
@@ -69,9 +107,9 @@ export default function EditShareholderModal({
         shares: shareholder.ownShares || 0,
         cccd: shareholder.cccd || '',
         phone: shareholder.phone || '',
-        status: shareholder.status || true,
+        status: shareholder.status ?? true,
         address: shareholder.address || '',
-        birthDay: shareholder.birthDay || '',
+        birthDay: formatDateForInput(shareholder.birthDay || ''),
         nation: shareholder.nation || ''
       });
     }
@@ -128,8 +166,10 @@ export default function EditShareholderModal({
 
     setLoading(true);
     try {
-      console.log(formData.status)
-      const response = await ShareholderManage.updateShareholder({
+      console.log(formData.status);
+      
+      // Chuẩn bị dữ liệu để gửi API, chuyển đổi ngày về định dạng dd/MM/yyyy
+      const apiData = {
         fullname: formData.fullname,
         email: formData.email,
         shares: formData.shares,
@@ -137,9 +177,13 @@ export default function EditShareholderModal({
         phone: formData.phone,
         status: formData.status,
         address: formData.address,
-        birthDay: formData.birthDay,
+        birthDay: formatDateForAPI(formData.birthDay || ''),
         nation: formData.nation
-      });
+      };
+
+      console.log('Data sent to API:', apiData);
+
+      const response = await ShareholderManage.updateShareholder(apiData);
       if (response.status === "success") {
         onSuccess();
         onClose();
@@ -179,9 +223,9 @@ export default function EditShareholderModal({
         shares: shareholder.ownShares,
         cccd: shareholder.cccd,
         phone: shareholder.phone,
-        status: shareholder.status,
+        status: shareholder.status ?? true,
         address: shareholder.address,
-        birthDay: shareholder.birthDay || '',
+        birthDay: formatDateForInput(shareholder.birthDay || ''),
         nation: shareholder.nation || ''
       });
     }
@@ -350,15 +394,15 @@ export default function EditShareholderModal({
               <label className={modalStyles.formLabel}>
                 Trạng thái
               </label>
-            <select
-              value={formData.status.toString()}
-              onChange={(e) => handleInputChange('status', e.target.value === 'true')}
-              disabled={loading}
-              className={modalStyles.formSelect}
-            >
-              <option value="true">Hoạt động</option>
-              <option value="false">Không hoạt động</option>
-            </select>
+              <select
+                value={formData.status.toString()}
+                onChange={(e) => handleInputChange('status', e.target.value === 'true')}
+                disabled={loading}
+                className={modalStyles.formSelect}
+              >
+                <option value="true">Hoạt động</option>
+                <option value="false">Không hoạt động</option>
+              </select>
             </div>
           </div>
 
