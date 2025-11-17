@@ -1,7 +1,7 @@
 //API Constants 
 export const API_CONFIG = {
-    BASE_URL : "https://remarkably-arriving-imp.ngrok-free.app",
-    // BASE_URL : "http://localhost:8085",
+    // BASE_URL : "https://remarkably-arriving-imp.ngrok-free.app",
+    BASE_URL : "http://localhost:8085",
     TIMEOUT: 10000,
     ENDPOINTS: { 
         AUTH: {
@@ -59,6 +59,9 @@ export const API_CONFIG = {
             CREATERESOLUTION: '/api/admin/resolution/create',
             UPDATERESOLUTION: '/api/admin/resolution/update',
             UPDATERESOLUTIONSTATUS: '/api/admin/resolution/toggle',
+        },
+        REPORT:{
+            GET_ALL: '/api/admin/reports/getReportMeeting'
         }
     }
 }
