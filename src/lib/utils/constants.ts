@@ -1,7 +1,7 @@
 //API Constants 
 export const API_CONFIG = {
     // BASE_URL : "https://remarkably-arriving-imp.ngrok-free.app",
-    BASE_URL : "http://localhost:8085",
+    BASE_URL : "http://dhcd.vix.local:8085",
     TIMEOUT: 10000,
     ENDPOINTS: { 
         AUTH: {
