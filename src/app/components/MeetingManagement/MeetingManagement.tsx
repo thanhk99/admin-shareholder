@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  PlusOutlined, 
+import {
+  PlusOutlined,
   SearchOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
@@ -23,7 +23,7 @@ export default function MeetingManagement() {
   const [loading, setLoading] = useState(true);
   const [formLoading, setFormLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Modal states
   const [showFormModal, setShowFormModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -81,12 +81,11 @@ export default function MeetingManagement() {
       const createdMeeting = await MeetingService.createMeeting({
         ...meetingData,
       });
-      console.log(createdMeeting);
-      
+
       if (createdMeeting.status === "success") {
-        await fetchMeetings(); 
+        await fetchMeetings();
       }
-      
+
       setShowFormModal(false);
     } catch (error) {
       console.error('Error creating meeting:', error);
@@ -105,13 +104,12 @@ export default function MeetingManagement() {
       const updatedMeeting = await MeetingService.updateMeeting(
         meetingData
       );
-      console.log(updatedMeeting);
-      
+
 
       if (updatedMeeting.status === "success") {
-        await fetchMeetings(); 
+        await fetchMeetings();
       }
-      
+
       setShowFormModal(false);
     } catch (error) {
       console.error('Error updating meeting:', error);
@@ -127,9 +125,9 @@ export default function MeetingManagement() {
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('vi-VN', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(dateString).toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -162,7 +160,7 @@ export default function MeetingManagement() {
           <h1>Quản lý Cuộc họp</h1>
           <p>Tổ chức và quản lý các cuộc họp</p>
         </div>
-        <button 
+        <button
           className={styles.addButton}
           onClick={handleCreateNew}
         >
@@ -217,7 +215,7 @@ export default function MeetingManagement() {
                 <h3>{meeting.title}</h3>
                 <span className={styles.meetingCode}>{meeting.meetingCode}</span>
               </div>
-              <span 
+              <span
                 className={styles.status}
                 style={{ backgroundColor: getStatusColor(meeting.status) }}
               >
@@ -225,7 +223,7 @@ export default function MeetingManagement() {
               </span>
             </div>
             <p className={styles.description}>{meeting.description}</p>
-            
+
             <div className={styles.meetingDetails}>
               <div className={styles.detail}>
                 <CalendarOutlined />
@@ -273,14 +271,14 @@ export default function MeetingManagement() {
             )}
 
             <div className={styles.actions}>
-              <button 
+              <button
                 className={styles.viewButton}
                 onClick={() => handleViewDetail(meeting)}
               >
                 <EyeOutlined />
                 Xem chi tiết
               </button>
-              <button 
+              <button
                 className={styles.editButton}
                 onClick={() => handleEdit(meeting)}
               >

@@ -119,7 +119,6 @@ export default function ResolutionManagement() {
       // Gọi API để cập nhật nghị quyết
       formData.meetingCode = meetingCode;
       formData.resolutionCode = selectedResolution?.resolutionCode || '';
-      console.log('Saving edited resolution:', formData);
 
       const response = await ResolutionService.updateResolution(formData);
       

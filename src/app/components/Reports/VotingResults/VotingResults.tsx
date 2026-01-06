@@ -20,9 +20,6 @@ interface VotingResultsProps {
 }
 
 export default function VotingResults({ resolutions, loading = false }: VotingResultsProps) {
-  // Debug: kiểm tra props
-  console.log('VotingResults - resolutions:', resolutions);
-  console.log('VotingResults - loading:', loading);
 
   if (loading) {
     return (
@@ -33,11 +30,9 @@ export default function VotingResults({ resolutions, loading = false }: VotingRe
   }
 
   if (!resolutions || resolutions.length === 0) {
-    console.log('VotingResults - No resolutions data');
     return null;
   }
 
-  console.log('VotingResults - Rendering with resolutions:', resolutions);
 
   const totalResolutions = resolutions.length;
   const approvedResolutions = resolutions.filter(resolution => {

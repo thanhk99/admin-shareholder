@@ -109,7 +109,6 @@ export default function ShareholderManagement() {
   const fetchShareholder = async () => {
     try {
       const response = await ShareholderManage.getList();
-      console.log(response);
       if (response.status === "success") {
         setShareholders(response.data);
       }

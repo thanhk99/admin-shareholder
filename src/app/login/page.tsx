@@ -41,7 +41,6 @@ export default function Login() {
     } catch (error) {
       if(axios.isAxiosError(error)){
         if(error.response){
-          console.log(error.response.data)
         }
       }
     }finally{

@@ -5,11 +5,11 @@ export interface Meeting {
   meetingDate: string;
   dayStart: string;
   location: string;
-  dayEnd:string;
+  dayEnd: string;
   status: 'UPCOMING' | 'PENDING' | 'COMPLETED';
   participants: number;
   agenda: string[];
-  candidates:string[];
+  candidates: string[];
 }
 export interface MeetingRequest {
   meetingCode: string;
@@ -18,6 +18,7 @@ export interface MeetingRequest {
   meetingDate: string;
   dayStart: string;
   location: string;
-  dayEnd:string;
+  dayEnd: string;
   status: 'UPCOMING' | 'PENDING' | 'COMPLETED';
+  isVotingOpen?: boolean;
 }

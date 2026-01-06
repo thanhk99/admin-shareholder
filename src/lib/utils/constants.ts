@@ -1,14 +1,14 @@
 //API Constants 
 export const API_CONFIG = {
-    // BASE_URL : "https://remarkably-arriving-imp.ngrok-free.app",
-    BASE_URL : "http://dhcd.vix.local:8085",
+    // BASE_URL : "http://dhcd.vix.local:8085",
+    BASE_URL: "http://localhost:8085",
     TIMEOUT: 10000,
-    ENDPOINTS: { 
+    ENDPOINTS: {
         AUTH: {
             LOGIN: '/api/auth/login',
-            SIGNUP : '/api/auth/signup',
-            LOGOUT :'/api/auth/logout',
-            REFRESH : '/api/auth/refreshAdmin',
+            SIGNUP: '/api/auth/signup',
+            LOGOUT: '/api/auth/logout',
+            REFRESH: '/api/auth/refreshAdmin',
             EXISTEMAIL: '/api/auth/existEmail'
         },
         ADMIN: {
@@ -17,57 +17,57 @@ export const API_CONFIG = {
             UPDATE_PROFILE: '/api/shareholders/editShareholder',
             UPDATE_SHAREHOLDER_NAME: '/api/shareholders/changeName'
         },
-        MEETING :{
+        MEETING: {
             GETMEETINGALL: 'api/admin/meetings/getMeetings',
             CREATEMEETING: 'api/admin/meetings/create',
             UPDATEMEETING: 'api/admin/meetings/update',
-            
+
         },
         ATTENED: {
-            REGISTER:'api/attend/regis',
-            ISATTENDED:'api/attend/attended'
+            REGISTER: 'api/attend/regis',
+            ISATTENDED: 'api/attend/attended'
         },
         PROXY: {
             PROXYPERSON: '/api/proxy/proxyPerson',
             PROXYDELEGATE: '/api/proxy/proxyDelegate',
-            PROXYLIST:'/api/proxy/listProxy',
+            PROXYLIST: '/api/proxy/listProxy',
             CANCLEPROXY: '/api/proxy/cancle'
         },
         PASSWORD: {
-            CHANGEPASSWORD:'/api/auth/changePassword'
+            CHANGEPASSWORD: '/api/auth/changePassword'
         },
-        SHAREHOLDER:{
-            GETLIST:'/api/admin/shareholder/getAllShareholder',
-            ADDSHAREHOLDER:'/api/admin/shareholder/addShareholder',
-            GETSHAREHOLDERBYCODE :'/api/admin/shareholder/getShareholder',
-            UPDATESHAREHOLDER : '/api/admin/shareholder/update',
+        SHAREHOLDER: {
+            GETLIST: '/api/admin/shareholder/getAllShareholder',
+            ADDSHAREHOLDER: '/api/admin/shareholder/addShareholder',
+            GETSHAREHOLDERBYCODE: '/api/admin/shareholder/getShareholder',
+            UPDATESHAREHOLDER: '/api/admin/shareholder/update',
             GETLOGS: '/api/admin/shareholder/getLogMeeting'
         },
-        DASHBOARD:{
-            GETHOME:'/api/dashboard/home'
+        DASHBOARD: {
+            GETHOME: '/api/dashboard/home'
         },
-        CANDIDATE:{
+        CANDIDATE: {
             GETBYMEETING: 'api/admin/candidate',
-            CREATECANDIDATE:'api/admin/candidate/create',
-            UPDATECANDIDATE:'api/admin/candidate/update',
-            DISABLECANDIDATE:'api/admin/candidate/toggle',
-            GETALLCANDIDATES:'api/admin/candidate'
+            CREATECANDIDATE: 'api/admin/candidate/create',
+            UPDATECANDIDATE: 'api/admin/candidate/update',
+            DISABLECANDIDATE: 'api/admin/candidate/toggle',
+            GETALLCANDIDATES: 'api/admin/candidate'
         },
-        RESOLUTION:{
+        RESOLUTION: {
             GETALLRESOLUTIONS: '/api/admin/resolution',
             GETBYMEETING: '/api/admin/resolution',
             CREATERESOLUTION: '/api/admin/resolution/create',
             UPDATERESOLUTION: '/api/admin/resolution/update',
             UPDATERESOLUTIONSTATUS: '/api/admin/resolution/toggle',
         },
-        REPORT:{
+        REPORT: {
             GET_ALL: '/api/admin/reports/getReportMeeting'
         }
     }
 }
 
 export const KEY_CONFIG = {
-    ACCESS_TOKEN_KEY:"accessToken",
+    ACCESS_TOKEN_KEY: "accessToken",
     REFRESH_TOKEN_KEY: "refreshToken"
 
 }

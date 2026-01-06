@@ -29,8 +29,6 @@ const getStatusBadge = (status: string) => {
 };
 
 export default function ElectionResults({ candidates, loading = false }: ElectionResultsProps) {
-  console.log('ElectionResults - candidates:', candidates);
-  console.log('ElectionResults - loading:', loading);
 
   if (loading) {
     return (
@@ -41,11 +39,9 @@ export default function ElectionResults({ candidates, loading = false }: Electio
   }
 
   if (!candidates || candidates.length === 0) {
-    console.log('ElectionResults - No candidates data');
     return null;
   }
 
-  console.log('ElectionResults - Rendering with candidates:', candidates);
 
   const totalVotes = candidates.reduce((sum, candidate) => sum + candidate.amountVotes, 0);
   

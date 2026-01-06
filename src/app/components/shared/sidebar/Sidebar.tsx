@@ -8,10 +8,8 @@ import {
   CalendarOutlined,
   CheckCircleOutlined,
   BarChartOutlined,
-  SettingOutlined,
-  QuestionCircleOutlined,
-  BookOutlined,
-  BankOutlined
+  BankOutlined,
+  CopyrightOutlined
 } from '@ant-design/icons';
 import { MenuItem } from '@/app/types/types';
 import styles from './Sidebar.module.css';
@@ -61,15 +59,12 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
       icon: <BarChartOutlined />,
       href: '/reports',
     },
-
   ];
 
   const isActive = (href: string) => {
-    
     if (href === '/') {
       return pathname === '/';
     }
-    
     return pathname.startsWith(href);
   };
 
@@ -83,7 +78,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 <BankOutlined />
               </div>
               <div className={styles.logoText}>
-                <div className={styles.logoTitle}>Công ty CP</div>
+                <div className={styles.logoTitle}>VIX DHCD</div>
                 <div className={styles.logoSubtitle}>Admin Panel</div>
               </div>
             </div>
@@ -127,24 +122,23 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
         <div className={styles.sidebarFooter}>
           {isOpen ? (
             <div className={styles.footerContent}>
-              <div className={styles.footerHelp}>
-                <div className={styles.helpIcon}>
-                  <QuestionCircleOutlined />
+              <div className={styles.copyrightInfo}>
+                <div className={styles.copyrightIcon}>
+                  <CopyrightOutlined />
                 </div>
-                <div className={styles.helpText}>
-                  <div className={styles.helpTitle}>Cần trợ giúp?</div>
-                  <div className={styles.helpSubtitle}>Kiểm tra tài liệu</div>
+                <div className={styles.copyrightText}>
+                  <div className={styles.copyrightTitle}>Copyright</div>
+                  <div className={styles.copyrightSubtitle}>Phạm Như Thành</div>
                 </div>
               </div>
-              <button className={styles.footerButton}>
-                <BookOutlined />
-                Tài liệu
-              </button>
+              <div className={styles.copyrightPeriod}>
+                Tháng 9/2025 - 11/2025
+              </div>
             </div>
           ) : (
             <div className={styles.footerCollapsed}>
-              <button className={styles.helpButton} title="Help">
-                <QuestionCircleOutlined />
+              <button className={styles.copyrightButton} title="Bản quyền">
+                <CopyrightOutlined />
               </button>
             </div>
           )}

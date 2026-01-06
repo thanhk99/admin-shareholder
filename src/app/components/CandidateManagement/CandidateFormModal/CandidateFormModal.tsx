@@ -40,7 +40,7 @@ export default function CandidateFormModal({
             <div className={styles.modalContent}>
                 <div className={styles.modalHeader}>
                     <h3>{formMode === 'create' ? 'Thêm Ứng viên Mới' : 'Chỉnh sửa Ứng viên'}</h3>
-                    <button 
+                    <button
                         className={styles.closeButton}
                         onClick={onClose}
                         disabled={formLoading}
@@ -48,11 +48,24 @@ export default function CandidateFormModal({
                         ×
                     </button>
                 </div>
-                
+
                 <form onSubmit={(e) => {
                     e.preventDefault();
                     onSubmit();
                 }} className={styles.form}>
+                    <div className={styles.formGroup}>
+                        <label>Loại ứng viên *</label>
+                        <select
+                            value={formData.candidateType}
+                            onChange={(e) => handleInputChange('candidateType', e.target.value)}
+                            disabled={true}
+                            className={`${styles.select} ${styles.readOnlyInput}`}
+                        >
+                            <option value="BOD">Hội đồng quản trị (BOD)</option>
+                            <option value="BOS">Ban kiểm soát (BOS)</option>
+                        </select>
+                    </div>
+
                     <div className={styles.formGroup}>
                         <label>Tên ứng viên *</label>
                         <input
@@ -112,7 +125,7 @@ export default function CandidateFormModal({
                     </div>
 
                     <div className={styles.formActions}>
-                        <button 
+                        <button
                             type="button"
                             className={styles.cancelButton}
                             onClick={onClose}
@@ -120,7 +133,7 @@ export default function CandidateFormModal({
                         >
                             Hủy
                         </button>
-                        <button 
+                        <button
                             type="submit"
                             className={styles.saveButton}
                             disabled={formLoading || !formData.candidateName || !formData.currentPosition || !displayMeetingCode}

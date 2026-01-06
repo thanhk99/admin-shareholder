@@ -1,174 +1,44 @@
 .management {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+    padding: 24px;
+    background: #fff;
+    border-radius: 8px;
+    min-height: calc(100vh - 100px);
 }
 
-.loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 200px;
-  font-size: 16px;
-  color: #666;
-}.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 20px;
+.tabs {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #e8e8e8;
+    padding-bottom: 0;
 }
 
-.modalContent {
-  background: white;
-  border-radius: 8px;
-  width: 100%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+.tab {
+    padding: 12px 24px;
+    border: none;
+    background: none;
+    font-size: 16px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s;
 }
 
-.modalHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #e8e8e8;
+.tab:hover {
+    color: #1890ff;
 }
 
-.modalHeader h3 {
-  margin: 0;
-  font-size: 18px;
-  color: #333;
+.activeTab {
+    color: #1890ff;
 }
 
-.closeButton {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #999;
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.closeButton:hover {
-  color: #666;
-}
-
-.closeButton:disabled {
-  color: #ccc;
-  cursor: not-allowed;
-}
-
-.form {
-  padding: 20px;
-}
-
-.formGroup {
-  margin-bottom: 20px;
-}
-
-.formGroup label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 500;
-  color: #333;
-}
-
-.formGroup input,
-.formGroup textarea {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #d9d9d9;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: border 0.3s;
-  box-sizing: border-box;
-}
-
-.formGroup input:focus,
-.formGroup textarea:focus {
-  outline: none;
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-}
-
-.formGroup input:disabled,
-.formGroup textarea:disabled {
-  background: #f5f5f5;
-  cursor: not-allowed;
-}
-
-.formGroup textarea {
-  resize: vertical;
-  min-height: 100px;
-}
-
-/* Style cho input read-only */
-.readOnlyInput {
-  background-color: #f9f9f9 !important;
-  border-color: #e8e8e8 !important;
-  color: #666 !important;
-}
-
-.helperText {
-  font-size: 12px;
-  color: #999;
-  margin-top: 4px;
-  font-style: italic;
-}
-
-.formActions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  margin-top: 30px;
-}
-
-.cancelButton {
-  padding: 10px 20px;
-  border: 1px solid #d9d9d9;
-  background: white;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s;
-}
-
-.cancelButton:hover:not(:disabled) {
-  border-color: #1890ff;
-  color: #1890ff;
-}
-
-.saveButton {
-  padding: 10px 20px;
-  border: none;
-  background: #1890ff;
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.3s;
-}
-
-.saveButton:hover:not(:disabled) {
-  background: #40a9ff;
-}
-
-.cancelButton:disabled,
-.saveButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.activeTab::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: #1890ff;
 }

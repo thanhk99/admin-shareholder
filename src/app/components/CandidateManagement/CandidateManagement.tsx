@@ -17,30 +17,31 @@ import CandidateStatus from './CandidateStatus/CandidateStatus';
 
 // Interface cho API response
 interface ApiCandidate {
-  id: number;
-  meeting: {
-    meetingCode: string;
-    title: string;
-    description: string;
-    meetingDate: string;
-    location: string;
-    status: string;
-    dayStart: string;
-    dayEnd: string;
-    createdAt: string;
-    updatedAt: string;
-    createBy: string | null;
-    updateBy: string;
-  };
-  candidateName: string;
-  candidateInfo: string;
-  currentPosition: string;
-  amountVotes: number | null;
-  createAt: string;
-  createBy: string;
-  updateAt: string | null;
-  updateBy: string | null;
-  active: boolean;
+    id: number;
+    meeting: {
+        meetingCode: string;
+        title: string;
+        description: string;
+        meetingDate: string;
+        location: string;
+        status: string;
+        dayStart: string;
+        dayEnd: string;
+        createdAt: string;
+        updatedAt: string;
+        createBy: string | null;
+        updateBy: string;
+    };
+    candidateName: string;
+    candidateInfo: string;
+    currentPosition: string;
+    amountVotes: number | null;
+    createAt: string;
+    createBy: string;
+    updateAt: string | null;
+    updateBy: string | null;
+    active: boolean;
+    candidate_type?: 'BOD' | 'BOS';
 }
 
 export default function CandidateManagement() {
@@ -52,14 +53,17 @@ export default function CandidateManagement() {
     const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
     const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
     const [formLoading, setFormLoading] = useState(false);
+
     const meetingCode = searchParams.meeting as string;
+    const [activeTab, setActiveTab] = useState<'BOD' | 'BOS'>('BOD');
 
     const [formData, setFormData] = useState<CandidateFormData>({
-        id:'',
+        id: '',
         candidateName: '',
         candidateInfo: '',
         currentPosition: '',
-        meetingCode: ''
+        meetingCode: '',
+        candidateType: 'BOD'
     });
 
     // Hàm chuyển đổi từ API candidate sang Candidate type
@@ -73,7 +77,8 @@ export default function CandidateManagement() {
             amountVotes: apiCandidate.amountVotes || 0,
             isActive: apiCandidate.active,
             createAt: apiCandidate.createAt,
-            updateAt: apiCandidate.updateAt || undefined    
+            updateAt: apiCandidate.updateAt || undefined,
+            candidateType: apiCandidate.candidate_type || 'BOD'
         };
     };
 
@@ -83,7 +88,7 @@ export default function CandidateManagement() {
             if (meetingCode) {
                 const response = await CandidateService.getCandidateMeeting(meetingCode);
                 if (response.status === "success") {
-                    const mappedCandidates = response.data.map((apiCandidate: ApiCandidate) => 
+                    const mappedCandidates = response.data.map((apiCandidate: ApiCandidate) =>
                         mapApiCandidateToCandidate(apiCandidate)
                     );
                     setCandidates(mappedCandidates);
@@ -107,8 +112,9 @@ export default function CandidateManagement() {
     }, [meetingCode]);
 
     const filteredCandidates = candidates.filter(candidate =>
-        candidate.candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        candidate.currentPosition.toLowerCase().includes(searchTerm.toLowerCase())
+        (candidate.candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            candidate.currentPosition.toLowerCase().includes(searchTerm.toLowerCase())) &&
+        candidate.candidateType === activeTab
     );
 
     // Reset form khi mở modal
@@ -116,23 +122,25 @@ export default function CandidateManagement() {
         if (showForm) {
             if (formMode === 'edit' && selectedCandidate) {
                 setFormData({
-                    id:selectedCandidate.id,
+                    id: selectedCandidate.id,
                     candidateName: selectedCandidate.candidateName,
                     candidateInfo: selectedCandidate.candidateInfo,
                     currentPosition: selectedCandidate.currentPosition,
-                    meetingCode: selectedCandidate.meetingCode
+                    meetingCode: selectedCandidate.meetingCode,
+                    candidateType: selectedCandidate.candidateType
                 });
             } else {
                 setFormData({
-                    id:'',
+                    id: '',
                     candidateName: '',
                     candidateInfo: '',
                     currentPosition: '',
-                    meetingCode: meetingCode || ''
+                    meetingCode: meetingCode || '',
+                    candidateType: activeTab
                 });
             }
         }
-    }, [showForm, formMode, selectedCandidate, meetingCode]);
+    }, [showForm, formMode, selectedCandidate, meetingCode, activeTab]);
 
     const handleCreateCandidate = async () => {
         setFormLoading(true);
@@ -143,11 +151,12 @@ export default function CandidateManagement() {
                 await fetchCandidates();
                 setShowForm(false);
                 setFormData({
-                    id:'',
+                    id: '',
                     candidateName: '',
                     candidateInfo: '',
                     currentPosition: '',
-                    meetingCode: ''
+                    meetingCode: '',
+                    candidateType: 'BOD'
                 });
             }
         } catch (error) {
@@ -160,10 +169,10 @@ export default function CandidateManagement() {
 
     const handleUpdateCandidate = async () => {
         if (!selectedCandidate) return;
-        
+
         setFormLoading(true);
         try {
-            formData.id=selectedCandidate.id;
+            formData.id = selectedCandidate.id;
             const response = await CandidateService.updateCandidate(formData);
             if (response.status === "success") {
                 await fetchCandidates();
@@ -178,21 +187,9 @@ export default function CandidateManagement() {
         }
     };
 
-    // const handleDeleteCandidate = async (id: string) => {
-    //     if (confirm('Bạn có chắc chắn muốn xóa ứng viên này?')) {
-    //         try {
-    //             await CandidateService.deleteCandidate(id);
-    //             await fetchCandidates();
-    //         } catch (error) {
-    //             console.error('Error deleting candidate:', error);
-    //             alert('Lỗi khi xóa ứng viên');
-    //         }
-    //     }
-    // };
-
     const handleToggleStatus = async (id: string) => {
         try {
-            await CandidateService.toggleCandidateStatus(id,meetingCode);
+            await CandidateService.toggleCandidateStatus(id, meetingCode);
             await fetchCandidates();
         } catch (error) {
             console.error('Error toggling candidate status:', error);
@@ -211,6 +208,7 @@ export default function CandidateManagement() {
         setFormMode('create');
         setShowForm(true);
     };
+
     const renderContent = () => {
         if (loading) {
             return <CandidateStatus type="loading" />;
@@ -228,12 +226,28 @@ export default function CandidateManagement() {
             />
         );
     };
+
     return (
         <div className={styles.management}>
-            <CandidateHeader 
+            <CandidateHeader
                 meetingCode={meetingCode}
                 onAddCandidate={handleCreateNew}
             />
+
+            <div className={styles.tabs}>
+                <button
+                    className={`${styles.tab} ${activeTab === 'BOD' ? styles.activeTab : ''}`}
+                    onClick={() => setActiveTab('BOD')}
+                >
+                    Hội đồng quản trị
+                </button>
+                <button
+                    className={`${styles.tab} ${activeTab === 'BOS' ? styles.activeTab : ''}`}
+                    onClick={() => setActiveTab('BOS')}
+                >
+                    Ban kiểm soát
+                </button>
+            </div>
 
             <CandidateToolbar
                 searchTerm={searchTerm}

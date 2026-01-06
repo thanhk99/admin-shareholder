@@ -74,7 +74,6 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
         address:formData.address,
         phone: formData.phone
       });
-      console.log(response)
       if (response.status === "success") {
         // Reset form
         setFormData({

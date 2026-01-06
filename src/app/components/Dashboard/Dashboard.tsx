@@ -120,7 +120,6 @@ export default function Dashboard() {
   };
 
   const handleAddSuccess = async () => {
-    console.log("ok2");
     await fetchDataDashboard(); // Refresh data after successful addition
   };
 

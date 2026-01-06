@@ -24,7 +24,6 @@ export default function VotingManagement() {
     const fetchData = async () => {
       try {
         const response = await ResolutionService.getAllResolutions();
-        console.log('API Response:', response);
         if (response.status === 'success') {
           const meetingGroups = transformApiData(response.data);
           setMeetings(meetingGroups);

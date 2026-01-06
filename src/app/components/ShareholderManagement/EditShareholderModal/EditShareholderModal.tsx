@@ -166,7 +166,6 @@ export default function EditShareholderModal({
 
     setLoading(true);
     try {
-      console.log(formData.status);
       
       // Chuẩn bị dữ liệu để gửi API, chuyển đổi ngày về định dạng dd/MM/yyyy
       const apiData = {
@@ -180,8 +179,6 @@ export default function EditShareholderModal({
         birthDay: formatDateForAPI(formData.birthDay || ''),
         nation: formData.nation
       };
-
-      console.log('Data sent to API:', apiData);
 
       const response = await ShareholderManage.updateShareholder(apiData);
       if (response.status === "success") {

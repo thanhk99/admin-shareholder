@@ -35,7 +35,6 @@ export default function ShareholderDetail() {
     try {
       setLoading(true);
       const response = await ShareholderManage.getShareholderByCode(shareholderId);
-      console.log(response)
       if(response.status === "success"){
         setShareholder(response.data);
       }else{
@@ -173,7 +172,7 @@ export default function ShareholderDetail() {
               <label>Ngày sinh</label>
               <span>
                 <CalendarOutlined />
-                {formatDate(shareholder.birthDay)}
+                {shareholder.birthDay}
               </span>
             </div>
             <div className={styles.infoItem}>
@@ -229,11 +228,11 @@ export default function ShareholderDetail() {
           <div className={styles.infoGrid}>
             <div className={styles.infoItem}>
               <label>Ngày tạo</label>
-              <span>{formatDate(shareholder.createdAt)}</span>
+              <span>{formatDate(shareholder.createAt)}</span>
             </div>
             <div className={styles.infoItem}>
               <label>Ngày cập nhật</label>
-              <span>{formatDate(shareholder.updatedAt)}</span>
+              <span>{formatDate(shareholder.updateAt)}</span>
             </div>
             <div className={styles.infoItem}>
               <label>Trạng thái</label>

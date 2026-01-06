@@ -47,9 +47,9 @@ export interface Shareholder {
   authorizedShares: number;
   representedShares: number;
   status: boolean;
-  createdAt: string;
+  createAt: string;
   createBy: string;
-  updatedAt: string;
+  updateAt: string;
   updatedBy: string;
   nation: string;
   birthDay: string;

@@ -73,7 +73,6 @@ export default function ResolutionAddModal({
     if (!validateForm()) {
       return;
     }
-    console.log('Submitting form data:', formData);
     try {
       await onSave(formData);
       handleClose();

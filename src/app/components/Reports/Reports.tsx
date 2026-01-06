@@ -37,7 +37,6 @@ export default function Reports() {
   const fetchMeetings = async () => {
     try {
       const response = await MeetingService.getAllMeetings();
-      console.log('Meetings Response:', response);
       if(response.status === 'success'){
         setMeetings(response.data);
       }
@@ -55,7 +54,6 @@ export default function Reports() {
     setLoading(true);
     try {
       const response = await ReportService.getReportMeeting(meetingCode);
-      console.log('Meeting Results Response:', response);
       
       // SỬA QUAN TRỌNG: Xử lý response đúng cách
       if (response.status === 'success'){
@@ -142,10 +140,6 @@ export default function Reports() {
 
   const stats = getStats();
 
-  console.log('Selected Meeting:', selectedMeeting);
-  console.log('Meeting Results:', meetingResults);
-  console.log('Loading:', loading);
-
   const renderResults = () => {
     if (!selectedMeeting) {
       return (
@@ -179,9 +173,6 @@ export default function Reports() {
 
     const hasCandidates = meetingResults.candidates && meetingResults.candidates.length > 0;
     const hasResolutions = meetingResults.resolutions && meetingResults.resolutions.length > 0;
-
-    console.log('Has Candidates:', hasCandidates);
-    console.log('Has Resolutions:', hasResolutions);
 
     if (!hasCandidates && !hasResolutions) {
       return (

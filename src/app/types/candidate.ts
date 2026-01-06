@@ -8,6 +8,7 @@ export interface Candidate {
   isActive: boolean;
   createAt: string;
   updateAt?: string;
+  candidateType: 'BOD' | 'BOS';
 }
 
 export interface CandidateVote {
@@ -47,11 +48,12 @@ export interface ElectionResult {
 }
 
 export interface CandidateFormData {
-  id:string;
+  id: string;
   candidateName: string;
   candidateInfo: string;
   currentPosition: string;
   meetingCode: string;
+  candidateType: 'BOD' | 'BOS';
 }
 
 
@@ -91,6 +93,7 @@ export interface Candidate {
   amountVotes: number;
   isActive: boolean;
   createAt: string;
+  candidateType: 'BOD' | 'BOS';
 }
 
 export interface ElectionResult {

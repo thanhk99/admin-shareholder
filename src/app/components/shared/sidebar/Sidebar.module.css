@@ -285,6 +285,93 @@
   backdrop-filter: blur(2px); /* Hiệu ứng blur */
 }
 
+.sidebarFooter {
+  padding: 16px;
+  border-top: 1px solid #e1e5e9;
+  background: white;
+  flex-shrink: 0;
+}
+
+.footerContent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.copyrightInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.copyrightIcon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  background: #e9ecef;
+  border-radius: 4px;
+  color: #6b7280;
+}
+
+.copyrightText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.copyrightTitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  line-height: 1;
+}
+
+.copyrightSubtitle {
+  font-size: 10px;
+  color: #9ca3af;
+  line-height: 1;
+}
+
+.copyrightPeriod {
+  font-size: 10px;
+  color: #9ca3af;
+  text-align: center;
+  padding: 4px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  font-style: italic;
+}
+
+.footerCollapsed {
+  display: flex;
+  justify-content: center;
+}
+
+.copyrightButton {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #6b7280;
+  transition: background-color 0.2s ease;
+}
+
+.copyrightButton:hover {
+  background: #e9ecef;
+}
+
 /* Trên desktop, ẩn overlay */
 @media (min-width: 769px) {
   .overlay {
