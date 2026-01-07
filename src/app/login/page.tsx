@@ -8,6 +8,8 @@ import TokenService from '@/lib/api/token';
 import { useNotify } from '../hooks/useNotificationHook';
 import axios from 'axios';
 import { useAuth } from '@/lib/context/AuthProvider';
+import { tokenManager } from '@/utils/tokenManager';
+import { loginAction } from '@/actions/auth';
 
 export default function Login() {
   const [account, setAccount] = useState('');
@@ -15,8 +17,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
-  const notify =useNotify();
-  const { onLoginSuccess} = useAuth();
+  const notify = useNotify();
+  const { onLoginSuccess } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,20 +32,28 @@ export default function Login() {
     }
 
     try {
-      const response = await AuthService.login(account, password);
-      // Lưu token và user info vào localStorage
-      if (response && response.message === "success") {
-        TokenService.setToken(response.data.accessToken ,response.data.refreshToken)
+      const response: any = await AuthService.login(account, password);
+
+      if (response && response.accessToken) {
+        // 1. Set in-memory token for immediate Client-Side use
+        tokenManager.setAccessToken(response.accessToken);
+
+        // 2. Call Server Action to set HttpOnly cookies
+        await loginAction({
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken
+        });
+
         onLoginSuccess();
         notify.success('Đăng nhập thành công', 'Chào mừng trở lại!');
         router.push('/');
       }
     } catch (error) {
-      if(axios.isAxiosError(error)){
-        if(error.response){
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
         }
       }
-    }finally{
+    } finally {
       setLoading(false);
     }
   };
@@ -78,7 +88,7 @@ export default function Login() {
           }}>
             <BankOutlined style={{ fontSize: '24px', color: 'white' }} />
           </div>
-          <h1 style={{ 
+          <h1 style={{
             margin: '0 0 0.5rem 0',
             color: '#2d3748',
             fontSize: '1.5rem',
@@ -86,7 +96,7 @@ export default function Login() {
           }}>
             Đăng nhập
           </h1>
-          <p style={{ 
+          <p style={{
             margin: 0,
             color: '#718096',
             fontSize: '0.9rem'

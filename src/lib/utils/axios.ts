@@ -3,7 +3,7 @@ import AuthService from '../api/auth';
 import TokenService from '../api/token';
 import { API_CONFIG } from './constants';
 
-const access_token_key = "accessToken"; 
+const access_token_key = "accessToken";
 let isRefreshing = false;
 
 // Tạo event emitter đơn giản để thông báo khi token được refresh
@@ -38,13 +38,13 @@ const axiosInstance: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'ngrok-skip-browser-warning': 'true',
-    'Access-Control-Allow-Origin': '*' 
+    'Access-Control-Allow-Origin': '*'
   },
 });
 
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem(access_token_key); 
+    const token = localStorage.getItem(access_token_key);
     if (token) {
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
@@ -62,20 +62,20 @@ axiosInstance.interceptors.response.use(
   },
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-    
+
     if (error.response?.status === 403 && !originalRequest._retry && !isRefreshing) {
       originalRequest._retry = true;
       isRefreshing = true;
 
       try {
         const response = await AuthService.refreshToken();
-        TokenService.setToken(response.data.accessToken, response.data.refreshToken);
-        
+        TokenService.setToken(response.accessToken, response.refreshToken);
+
         // Thông báo cho tất cả listeners biết token đã được refresh
         tokenRefreshEvents.emit();
-        
+
         // Retry request gốc
-        originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
+        originalRequest.headers.Authorization = `Bearer ${response.accessToken}`;
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         clearAuthData();
@@ -84,7 +84,7 @@ axiosInstance.interceptors.response.use(
         isRefreshing = false;
       }
     }
-    
+
     if (error.response) {
       switch (error.response.status) {
         case 401:
@@ -97,7 +97,7 @@ axiosInstance.interceptors.response.use(
           console.error('Server error:', error.response.status);
       }
     }
-    
+
     return Promise.reject(error);
   }
 );

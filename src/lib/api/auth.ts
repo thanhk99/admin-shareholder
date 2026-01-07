@@ -1,49 +1,42 @@
-import axiosInstance  from "../utils/axios";
-import { API_CONFIG } from "../utils/constants";
-import TokenService from "./token";
+import apiClient from "../api-client";
+import { API_CONFIG } from "../api-config";
 
-class AuthService{
+class AuthService {
 
-    static apiLogin:string =API_CONFIG.ENDPOINTS.AUTH.LOGIN;
-    static apiRefreshToken :string =API_CONFIG.ENDPOINTS.AUTH.REFRESH
-    static aoiSignUp : string = API_CONFIG.ENDPOINTS.AUTH.SIGNUP
+  static apiLogin: string = API_CONFIG.ENDPOINTS.AUTH.LOGIN;
+  static apiRefreshToken: string = API_CONFIG.ENDPOINTS.AUTH.REFRESH;
+  static apiRegister: string = API_CONFIG.ENDPOINTS.AUTH.REGISTER;
 
-  static async login(identify: string, password: string){
-    const body= {
-      identify: identify,
-      password: password
-    };
-    
+  static async register(data: any) {
     try {
-      const response = await axiosInstance.post(this.apiLogin, body);
-      return response.data;
+      const response = await apiClient.post(this.apiRegister, data);
+      return response;
     } catch (error) {
       throw error;
     }
   }
 
-  static async refreshToken(){
-      const refreshToken = await TokenService.getRefresh()
-      if (!refreshToken) {
-          throw new Error('No refresh token available');
-      }
-      
-      const body = {
-          refreshToken: refreshToken
-      };
-      
-      try {
-          const response = await axiosInstance.post(AuthService.apiRefreshToken, body, {
-              headers: {
-                  'Content-Type': 'application/json'
-              }
-          });
-          
-          return response.data;
-      } catch (error) {
-          // console.error('Refresh token failed:', error.response?.status, error.response?.data);
-          // throw error;
-      }
+  static async login(identifier: string, password: string) {
+    const body = {
+      identifier: identifier,
+      password: password
+    };
+
+    try {
+      const response = await apiClient.post(this.apiLogin, body);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async refreshToken() {
+    try {
+      const response = await apiClient.post(this.apiRefreshToken, {});
+      return response;
+    } catch (error) {
+      throw error;
+    }
   }
 }
 

@@ -1,85 +1,140 @@
-import { 
+import {
   EditOutlined,
   EyeOutlined,
   LockOutlined,
   UnlockOutlined,
   CalendarOutlined,
-  UserOutlined,
   CheckOutlined,
   CloseOutlined,
   QuestionOutlined
 } from '@ant-design/icons';
 import styles from './ResolutionCard.module.css';
-import { Resolution } from '@/app/types/resolution';
+import { VotingItem, VotingResult } from '@/app/types/resolution';
 
 interface ResolutionCardProps {
-  resolution: Resolution;
-  onViewDetail: (resolution: Resolution) => void;
-  onEdit: (resolution: Resolution) => void;
-  onToggleActive: (resolutionCode: string, currentStatus: boolean) => void;
+  votingItem: VotingItem;
+  result?: VotingResult;
+  onViewDetail: (item: VotingItem) => void;
+  onEdit: (item: VotingItem) => void;
+  onToggleActive: (itemId: string, currentStatus: boolean) => void;
+  onVote?: (item: VotingItem) => void;
+  meetingStatus?: string;
 }
 
-export default function ResolutionCard({ 
-  resolution, 
-  onViewDetail, 
+export default function ResolutionCard({
+  votingItem,
+  result,
+  onViewDetail,
   onEdit,
-  onToggleActive 
+  onToggleActive,
+  onVote,
+  meetingStatus
 }: ResolutionCardProps) {
-  
+
+  const getStats = () => {
+    let agree = 0;
+    let disagree = 0;
+    let noIdea = 0;
+
+    if (result && result.results) {
+      result.results.forEach((r: any) => {
+        const id = (r.votingOptionId || '').toLowerCase();
+        const name = (r.votingOptionName || r.candidateName || '').toLowerCase();
+
+        // Check by ID first (most reliable)
+        if (id === 'yes') {
+          agree += r.voteCount;
+        } else if (id === 'no') {
+          disagree += r.voteCount;
+        } else if (id === 'not_agree') {
+          noIdea += r.voteCount;
+        }
+        // Fallback to name matching if ID is not standard
+        else {
+          if (name.includes('không đồng ý') || name.includes('không tán thành') || name.includes('disagree')) {
+            disagree += r.voteCount;
+          } else if (name.includes('không ý kiến') || name.includes('no opinion') || name.includes('abstain')) {
+            noIdea += r.voteCount;
+          } else if (name.includes('đồng ý') || name.includes('tán thành') || name.includes('agree')) {
+            agree += r.voteCount;
+          }
+        }
+      });
+    }
+    return { agree, disagree, noIdea, total: result?.totalVoters || 0 };
+  };
+
+  const stats = getStats();
+
   const getStatusInfo = () => {
-    const totalVotes = resolution.totalAgree + resolution.totalNotAgree + resolution.totalNotIdea;
-    const agreePercentage = totalVotes > 0 ? Math.round((resolution.totalAgree / totalVotes) * 100) : 0;
-    const isApproved = resolution.totalAgree > resolution.totalNotAgree;
-    
+    const currentTotal = stats.agree + stats.disagree + stats.noIdea;
+    const totalVotes = (stats.total > currentTotal) ? stats.total : currentTotal;
+    const agreePercentage = totalVotes > 0 ? Math.round((stats.agree / totalVotes) * 100) : 0;
+
+    // Logic mới:
+    // 1. Nếu bị khoá (isActive = false)
+    if (!votingItem.isActive) {
+      return { totalVotes, agreePercentage, isApproved: false, statusLabel: 'ĐÃ KHOÁ', statusClass: styles.locked };
+    }
+
+    // 2. Nếu đang biểu quyết (Meeting ONGOING)
+    const isOngoing = meetingStatus === 'STARTED' || meetingStatus === 'ONGOING';
+    if (isOngoing) {
+      return { totalVotes, agreePercentage, isApproved: true, statusLabel: 'ĐANG BIỂU QUYẾT', statusClass: styles.ongoing };
+    }
+
+    // 3. Nếu đã kết thúc
+    const isApproved = stats.agree > stats.disagree;
     return {
       totalVotes,
       agreePercentage,
       isApproved,
       statusLabel: isApproved ? 'ĐÃ THÔNG QUA' : 'KHÔNG THÔNG QUA',
+      statusClass: isApproved ? styles.approved : styles.rejected,
     };
   };
 
   const statusInfo = getStatusInfo();
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN');
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('vi-VN');
   };
 
   const handleToggleActive = () => {
-    onToggleActive(resolution.resolutionCode, resolution.isActive);
+    onToggleActive(votingItem.id, votingItem.isActive);
   };
+
   return (
-    <div className={`${styles.resolutionCard} ${!resolution.isActive ? styles.inactive : ''}`}>
+    <div className={styles.resolutionCard}>
       {/* Header */}
       <div className={styles.resolutionHeader}>
         <div>
-          <h3 className={styles.resolutionTitle}>{resolution.title || 'Không có tiêu đề'}</h3>
+          <h3 className={styles.resolutionTitle}>{votingItem.title || 'Không có tiêu đề'}</h3>
         </div>
         <div className={styles.headerRight}>
-          <span className={`${styles.status} ${statusInfo.isApproved ? styles.approved : styles.rejected}`}>
+          <span className={`${styles.status} ${statusInfo.statusClass}`}>
             {statusInfo.statusLabel}
           </span>
-          {!resolution.isActive && (
-            <span className={styles.inactiveBadge}>
-              ĐÃ KHOÁ
-            </span>
-          )}
         </div>
       </div>
-      
+
       {/* Description */}
-      <p className={styles.description}>{resolution.description || 'Không có mô tả'}</p>
+      <p className={styles.description}>{votingItem.description || 'Không có mô tả'}</p>
 
       {/* Details */}
       <div className={styles.resolutionDetails}>
         <div className={styles.detail}>
           <CalendarOutlined className={styles.detailIcon} />
-          <span>Ngày tạo: {formatDate(resolution.createdAt)}</span>
+          <span>Ngày tạo: {formatDate(votingItem.createdAt)}</span>
         </div>
-        <div className={styles.detail}>
-          <UserOutlined className={styles.detailIcon} />
-          <span>Người tạo: {resolution.createBy}</span>
-        </div>
+        {votingItem.updatedAt && (
+          <div className={styles.detail}>
+            <CalendarOutlined className={styles.detailIcon} />
+            <span>Cập nhật: {formatDate(votingItem.updatedAt)}</span>
+          </div>
+        )}
       </div>
 
       {/* Voting Results */}
@@ -96,13 +151,13 @@ export default function ResolutionCard({
               <span>Đồng ý</span>
             </div>
             <div className={styles.voteStats}>
-              <span className={styles.voteCount}>{resolution.totalAgree} phiếu</span>
+              <span className={styles.voteCount}>{stats.agree} phiếu</span>
               <span className={styles.votePercentage}>
-                {statusInfo.totalVotes > 0 ? Math.round((resolution.totalAgree / statusInfo.totalVotes) * 100) : 0}%
+                {statusInfo.totalVotes > 0 ? Math.round((stats.agree / statusInfo.totalVotes) * 100) : 0}%
               </span>
             </div>
           </div>
-          
+
           {/* Disagree Votes */}
           <div className={`${styles.voteItem} ${styles.voteDisagree}`}>
             <div className={styles.voteType}>
@@ -110,13 +165,13 @@ export default function ResolutionCard({
               <span>Không đồng ý</span>
             </div>
             <div className={styles.voteStats}>
-              <span className={styles.voteCount}>{resolution.totalNotAgree} phiếu</span>
+              <span className={styles.voteCount}>{stats.disagree} phiếu</span>
               <span className={styles.votePercentage}>
-                {statusInfo.totalVotes > 0 ? Math.round((resolution.totalNotAgree / statusInfo.totalVotes) * 100) : 0}%
+                {statusInfo.totalVotes > 0 ? Math.round((stats.disagree / statusInfo.totalVotes) * 100) : 0}%
               </span>
             </div>
           </div>
-          
+
           {/* No Idea Votes */}
           <div className={`${styles.voteItem} ${styles.voteNoIdea}`}>
             <div className={styles.voteType}>
@@ -124,9 +179,9 @@ export default function ResolutionCard({
               <span>Không ý kiến</span>
             </div>
             <div className={styles.voteStats}>
-              <span className={styles.voteCount}>{resolution.totalNotIdea} phiếu</span>
+              <span className={styles.voteCount}>{stats.noIdea} phiếu</span>
               <span className={styles.votePercentage}>
-                {statusInfo.totalVotes > 0 ? Math.round((resolution.totalNotIdea / statusInfo.totalVotes) * 100) : 0}%
+                {statusInfo.totalVotes > 0 ? Math.round((stats.noIdea / statusInfo.totalVotes) * 100) : 0}%
               </span>
             </div>
           </div>
@@ -135,7 +190,7 @@ export default function ResolutionCard({
         {/* Progress Bar */}
         <div className={styles.progressSection}>
           <div className={styles.progressBar}>
-            <div 
+            <div
               className={styles.progressFill}
               style={{ width: `${statusInfo.agreePercentage}%` }}
             />
@@ -148,27 +203,28 @@ export default function ResolutionCard({
 
       {/* Actions */}
       <div className={styles.actions}>
-        <button 
+        <button
           className={styles.viewButton}
-          onClick={() => onViewDetail(resolution)}
+          onClick={() => onViewDetail(votingItem)}
         >
           <EyeOutlined />
           Xem
         </button>
-        <button 
+        {votingItem.isActive && (
+          <button
+            className={styles.voteButton}
+            onClick={() => onVote?.(votingItem)}
+          >
+            <CheckOutlined />
+            Bỏ phiếu
+          </button>
+        )}
+        <button
           className={styles.editButton}
-          onClick={() => onEdit(resolution)}
-          disabled={!resolution.isActive}
+          onClick={() => onEdit(votingItem)}
         >
           <EditOutlined />
           Sửa
-        </button>
-        <button 
-          className={`${styles.toggleButton} ${!resolution.isActive ? styles.unlock : ''}`}
-          onClick={handleToggleActive}
-        >
-          {resolution.isActive ? <LockOutlined /> : <UnlockOutlined />}
-          {resolution.isActive ? 'Khoá' : 'Mở khoá'}
         </button>
       </div>
     </div>

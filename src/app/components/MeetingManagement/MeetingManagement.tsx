@@ -5,20 +5,24 @@ import {
   PlusOutlined,
   SearchOutlined,
   CalendarOutlined,
-  ClockCircleOutlined,
   EnvironmentOutlined,
   TeamOutlined,
   EyeOutlined,
   EditOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  UnorderedListOutlined,
+  TrophyOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import styles from './MeetingManagement.module.css';
 import { Meeting, MeetingRequest } from '@/app/types/meeting';
 import { MeetingService } from '@/lib/api/meetings';
 import MeetingFormModal from './MeetingAddModal/MeetingAddModal';
 import MeetingDetailModal from './MeetingDetailsModal/MeetingDetailsModal';
+import { useRouter } from 'next/navigation';
 
 export default function MeetingManagement() {
+  const router = useRouter();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [formLoading, setFormLoading] = useState(false);
@@ -35,7 +39,9 @@ export default function MeetingManagement() {
     try {
       setLoading(true);
       const meetingsData = await MeetingService.getAllMeetings();
-      setMeetings(meetingsData.data);
+      // Handle response structure if needed (assuming service returns array)
+      const data = Array.isArray(meetingsData) ? meetingsData : (meetingsData as any).data || [];
+      setMeetings(data);
     } catch (error) {
       console.error('Error fetching meetings:', error);
     } finally {
@@ -50,7 +56,7 @@ export default function MeetingManagement() {
   const filteredMeetings = meetings.filter(meeting =>
     (meeting.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (meeting.description?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (meeting.meetingCode?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    (meeting.id?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   // Xem chi tiết cuộc họp
@@ -58,6 +64,19 @@ export default function MeetingManagement() {
     setSelectedMeeting(meeting);
     setShowDetailModal(true);
   };
+
+  const handleManageContent = (meetingId: string) => {
+    router.push(`/resolution/${meetingId}`);
+  };
+
+  const handleManageCandidates = (meetingId: string) => {
+    router.push(`/candidate/${meetingId}`);
+  };
+
+  const handleManageElections = (meetingId: string) => {
+    router.push(`/election/${meetingId}`);
+  };
+
 
   // Mở form tạo mới
   const handleCreateNew = () => {
@@ -74,18 +93,25 @@ export default function MeetingManagement() {
     setShowFormModal(true);
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa cuộc họp này?')) return;
+    try {
+      await MeetingService.deleteMeeting(id);
+      fetchMeetings();
+    } catch (error) {
+      console.error("Error deleting meeting", error);
+      alert("Không thể xóa cuộc họp");
+    }
+  }
+
   // Tạo cuộc họp mới
   const handleCreateMeeting = async (meetingData: MeetingRequest) => {
     try {
       setFormLoading(true);
-      const createdMeeting = await MeetingService.createMeeting({
+      await MeetingService.createMeeting({
         ...meetingData,
       });
-
-      if (createdMeeting.status === "success") {
-        await fetchMeetings();
-      }
-
+      await fetchMeetings();
       setShowFormModal(false);
     } catch (error) {
       console.error('Error creating meeting:', error);
@@ -100,17 +126,13 @@ export default function MeetingManagement() {
 
     try {
       setFormLoading(true);
-      meetingData.meetingCode = selectedMeeting.meetingCode;
-      const updatedMeeting = await MeetingService.updateMeeting(
+      await MeetingService.updateMeeting(
+        selectedMeeting.id,
         meetingData
       );
-
-
-      if (updatedMeeting.status === "success") {
-        await fetchMeetings();
-      }
-
+      await fetchMeetings();
       setShowFormModal(false);
+      setSelectedMeeting(null);
     } catch (error) {
       console.error('Error updating meeting:', error);
     } finally {
@@ -118,33 +140,33 @@ export default function MeetingManagement() {
     }
   };
 
+  const formatDate = (dateString: string | undefined | null) => {
+    if (!dateString) return 'Chưa cập nhật';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Chưa cập nhật';
 
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN');
-  };
-
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString('vi-VN', {
+      year: 'numeric', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
     });
   };
 
   const getStatusLabel = (status: string) => {
     const labels: { [key: string]: string } = {
-      UPCOMING: 'Sắp diễn ra',
-      PENDING: 'Đang diễn ra',
-      COMPLETED: 'Đã kết thúc'
+      SCHEDULED: 'Sắp diễn ra',
+      ONGOING: 'Đang diễn ra',
+      COMPLETED: 'Đã kết thúc',
+      CANCELLED: 'Đã hủy'
     };
     return labels[status] || status;
   };
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {
-      UPCOMING: '#3498db',
-      PENDING: '#f39c12',
-      COMPLETED: '#95a5a6'
+      SCHEDULED: '#3498db',
+      ONGOING: '#f39c12',
+      COMPLETED: '#27ae60',
+      CANCELLED: '#e74c3c'
     };
     return colors[status] || '#95a5a6';
   };
@@ -174,17 +196,17 @@ export default function MeetingManagement() {
           <SearchOutlined />
           <input
             type="text"
-            placeholder="Tìm kiếm cuộc họp theo tiêu đề, mô tả hoặc mã..."
+            placeholder="Tìm kiếm..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className={styles.stats}>
-          <span>Tổng: {meetings.length} cuộc họp</span>
+          <span>Tổng: {meetings.length}</span>
           <span>•</span>
-          <span>Sắp tới: {meetings.filter(m => m.status === 'UPCOMING').length}</span>
+          <span>Sắp tới: {meetings.filter(m => m.status === 'SCHEDULED').length}</span>
           <span>•</span>
-          <span>Đang diễn ra: {meetings.filter(m => m.status === 'PENDING').length}</span>
+          <span>Đang diễn ra: {meetings.filter(m => m.status === 'ONGOING').length}</span>
         </div>
       </div>
 
@@ -209,11 +231,11 @@ export default function MeetingManagement() {
       {/* Danh sách cuộc họp */}
       <div className={styles.meetingsGrid}>
         {filteredMeetings.map((meeting) => (
-          <div key={meeting.meetingCode} className={styles.meetingCard}>
+          <div key={meeting.id} className={styles.meetingCard}>
             <div className={styles.meetingHeader}>
               <div>
                 <h3>{meeting.title}</h3>
-                <span className={styles.meetingCode}>{meeting.meetingCode}</span>
+                <span className={styles.meetingCode}>ID: {meeting.id}</span>
               </div>
               <span
                 className={styles.status}
@@ -227,64 +249,53 @@ export default function MeetingManagement() {
             <div className={styles.meetingDetails}>
               <div className={styles.detail}>
                 <CalendarOutlined />
-                <span>{formatDate(meeting.meetingDate)}</span>
-              </div>
-              <div className={styles.detail}>
-                <ClockCircleOutlined />
-                <span>{meeting.dayStart} - {meeting.dayEnd}</span>
+                <span>{formatDate(meeting.startTime || meeting.meetingDate)}</span>
               </div>
               <div className={styles.detail}>
                 <EnvironmentOutlined />
                 <span>{meeting.location}</span>
               </div>
-              <div className={styles.detail}>
-                <TeamOutlined />
-                <span>{meeting.participants} người tham gia</span>
-              </div>
+              {meeting.participants !== undefined && (
+                <div className={styles.detail}>
+                  <TeamOutlined />
+                  <span>{meeting.participants} người tham gia</span>
+                </div>
+              )}
             </div>
 
-            {meeting.agenda && meeting.agenda.length > 0 && (
-              <div className={styles.agenda}>
-                <h4>Biểu quyết:</h4>
-                <ul>
-                  {meeting.agenda.slice(0, 2).map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                  {meeting.agenda.length > 2 && (
-                    <li className={styles.moreItems}>+{meeting.agenda.length - 2} mục khác</li>
-                  )}
-                </ul>
+            <div className={styles.cardActions}>
+              <div className={styles.primaryActions}>
+                <button
+                  className={styles.actionBtn}
+                  onClick={() => handleManageContent(meeting.id)}
+                >
+                  <UnorderedListOutlined /> Nội dung
+                </button>
+                <button
+                  className={styles.actionBtn}
+                  onClick={() => handleManageElections(meeting.id)}
+                >
+                  <TrophyOutlined /> Bầu cử
+                </button>
+                <button
+                  className={styles.actionBtn}
+                  onClick={() => handleManageCandidates(meeting.id)}
+                >
+                  <UserOutlined /> Ứng viên
+                </button>
               </div>
-            )}
-            {meeting.candidates && meeting.candidates.length > 0 && (
-              <div className={styles.agenda}>
-                <h4>Danh sách ứng viên:</h4>
-                <ul>
-                  {meeting.candidates.slice(0, 2).map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                  {meeting.candidates.length > 2 && (
-                    <li className={styles.moreItems}>+{meeting.candidates.length - 2} mục khác</li>
-                  )}
-                </ul>
-              </div>
-            )}
 
-            <div className={styles.actions}>
-              <button
-                className={styles.viewButton}
-                onClick={() => handleViewDetail(meeting)}
-              >
-                <EyeOutlined />
-                Xem chi tiết
-              </button>
-              <button
-                className={styles.editButton}
-                onClick={() => handleEdit(meeting)}
-              >
-                <EditOutlined />
-                Sửa
-              </button>
+              <div className={styles.secondaryActions}>
+                <button className={styles.iconBtn} onClick={() => handleViewDetail(meeting)} title="Xem chi tiết">
+                  <EyeOutlined />
+                </button>
+                <button className={styles.iconBtn} onClick={() => handleEdit(meeting)} title="Sửa">
+                  <EditOutlined />
+                </button>
+                <button className={styles.iconBtn} onClick={() => handleDelete(meeting.id)} title="Xóa">
+                  <DeleteOutlined />
+                </button>
+              </div>
             </div>
           </div>
         ))}

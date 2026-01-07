@@ -1,7 +1,7 @@
 'use client';
 
-import { 
-  EditOutlined, 
+import {
+  EditOutlined,
   DeleteOutlined,
   CloseOutlined,
   CalendarOutlined,
@@ -21,33 +21,41 @@ interface MeetingDetailModalProps {
   loading?: boolean;
 }
 
-export default function MeetingDetailModal({ 
-  isOpen, 
-  meeting, 
-  onClose, 
-  onEdit, 
-  loading = false 
+export default function MeetingDetailModal({
+  isOpen,
+  meeting,
+  onClose,
+  onEdit,
+  loading = false
 }: MeetingDetailModalProps) {
   if (!isOpen || !meeting) return null;
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('vi-VN');
+  const formatDate = (dateString: string | undefined | null) => {
+    if (!dateString) return 'Chưa cập nhật';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Chưa cập nhật';
+    return date.toLocaleDateString('vi-VN', {
+      year: 'numeric', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
   };
 
   const getStatusLabel = (status: string) => {
     const labels: { [key: string]: string } = {
-      UPCOMING: 'Sắp diễn ra',
-      PENDING: 'Đang diễn ra',
-      COMPLETED: 'Đã kết thúc'
+      SCHEDULED: 'Sắp diễn ra',
+      ONGOING: 'Đang diễn ra',
+      COMPLETED: 'Đã kết thúc',
+      CANCELLED: 'Đã hủy'
     };
     return labels[status] || status;
   };
 
   const getStatusColor = (status: string) => {
     const colors: { [key: string]: string } = {
-      UPCOMING: '#3498db',
-      PENDING: '#f39c12',
-      COMPLETED: '#95a5a6'
+      SCHEDULED: '#3498db',
+      ONGOING: '#f39c12',
+      COMPLETED: '#27ae60',
+      CANCELLED: '#e74c3c'
     };
     return colors[status] || '#95a5a6';
   };
@@ -57,7 +65,7 @@ export default function MeetingDetailModal({
       <div className={styles.modalContent}>
         <div className={styles.modalHeader}>
           <h3>Chi tiết Cuộc họp</h3>
-          <button 
+          <button
             className={styles.closeButton}
             onClick={onClose}
             disabled={loading}
@@ -65,20 +73,20 @@ export default function MeetingDetailModal({
             <CloseOutlined />
           </button>
         </div>
-        
+
         <div className={styles.detailContent}>
           <div className={styles.detailHeader}>
             <h2>{meeting.title}</h2>
-            <span 
+            <span
               className={styles.status}
               style={{ backgroundColor: getStatusColor(meeting.status) }}
             >
               {getStatusLabel(meeting.status)}
             </span>
           </div>
-          
+
           <p className={styles.detailDescription}>{meeting.description}</p>
-          
+
           <div className={styles.detailGrid}>
             <div className={styles.detailSection}>
               <h4><CalendarOutlined /> Thông tin thời gian</h4>
@@ -87,12 +95,12 @@ export default function MeetingDetailModal({
                 <span>{meeting.meetingCode}</span>
               </div>
               <div className={styles.detailItem}>
-                <strong>Ngày họp:</strong>
-                <span>{formatDate(meeting.meetingDate)}</span>
+                <strong>Thời gian bắt đầu:</strong>
+                <span>{formatDate(meeting.startTime)}</span>
               </div>
               <div className={styles.detailItem}>
-                <strong>Thời gian:</strong>
-                <span>{meeting.dayStart} - {meeting.dayEnd}</span>
+                <strong>Thời gian kết thúc:</strong>
+                <span>{formatDate(meeting.endTime)}</span>
               </div>
               <div className={styles.detailItem}>
                 <strong>Địa điểm:</strong>
@@ -101,17 +109,17 @@ export default function MeetingDetailModal({
             </div>
 
             <div className={styles.detailSection}>
-            <h4><TeamOutlined /> Người tham gia</h4>
-            <div className={styles.participants}>
+              <h4><TeamOutlined /> Người tham gia</h4>
+              <div className={styles.participants}>
                 {meeting.participants > 0 ? (
-                <div className={styles.participant}>
+                  <div className={styles.participant}>
                     <UserOutlined />
                     <span>{meeting.participants} người tham gia</span>
-                </div>
+                  </div>
                 ) : (
-                <p className={styles.noData}>Chưa có người tham gia</p>
+                  <p className={styles.noData}>Chưa có người tham gia</p>
                 )}
-            </div>
+              </div>
             </div>
           </div>
 
@@ -143,7 +151,7 @@ export default function MeetingDetailModal({
           )}
 
           <div className={styles.detailActions}>
-            <button 
+            <button
               className={styles.editButton}
               onClick={() => onEdit(meeting)}
               disabled={loading}
@@ -151,7 +159,7 @@ export default function MeetingDetailModal({
               <EditOutlined />
               Chỉnh sửa
             </button>
-            <button 
+            <button
               onClick={() => onClose()}
               className={styles.deleteButton}
               disabled={loading}

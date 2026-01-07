@@ -1,95 +1,57 @@
-// types/resolution.ts
+export type VotingType = 'RESOLUTION' | 'BOARD_OF_DIRECTORS' | 'SUPERVISORY_BOARD' | 'YES_NO';
 
-export interface Resolution {
+export interface VotingItem {
   id: string;
-  meetingCode: string;
-  resolutionCode: string;
+  meetingId: string;
   title: string;
   description: string;
-  totalAgree: number;
-  totalNotAgree: number;
-  totalNotIdea: number;
-  createdAt: string;
-  createBy: string;
+  votingType: VotingType;
+  maxSelections: number;
+  startTime: string;
+  endTime: string;
+  createdAt?: string;
+  updatedAt?: string;
   isActive: boolean;
+  displayOrder: number;
+  votingOptions?: any[];
 }
 
-// Interfaces cho VotingManagement
-export interface Meeting {
-  meetingCode: string;
+export interface VotingOption {
+  id: string;
+  name: string;
+  position: string | null;
+  bio: string | null;
+  photoUrl: string | null;
+  displayOrder: number;
+}
+
+export interface VotingItemRequest {
   title: string;
   description: string;
-  meetingDate: string;
-  location?: string;
-  status: 'COMPLETED' | 'PENDING' | 'UPCOMING';
-  dayStart: string;
-  dayEnd: string;
-  createdAt: string;
-  updatedAt: string;
-  createBy: string | null;
-  updateBy: string | null;
+  displayOrder?: number;
+  // Giữ lại các trường cũ cho Election nếu cần, hoặc tạo request riêng
+  votingType?: VotingType;
+  startTime?: string;
+  endTime?: string;
+  maxSelections?: number;
 }
 
-export interface ResolutionVote {
-  title: string;
-  description: string;
-  resolutionCode: string;
-  agreeVotes: number;
-  notAgreeVotes: number;
-  noIdeaVotes: number;
-  isActive: boolean;
-}
-
-export interface MeetingResponse {
-  meeting: Meeting;
-  resolutionCount: number;
-  resolutionVotes: ResolutionVote[];
-}
-
-export interface MeetingGroup {
-  meetingCode: string;
-  meetingTitle: string;
-  meetingDate: string;
-  location?: string;
-  status: 'COMPLETED' | 'PENDING' | 'UPCOMING';
-  resolutions: ResolutionVote[];
-  totalResolutions: number;
-  totalVotes: number;
-  approvedResolutions: number;
-}
-
-interface ApiResponse {
-  status: string;
-  data: {
-    meeting: {
-      meetingCode: string;
-      title: string;
-      description: string;
-      meetingDate: string;
-      location: string;
-      status: string;
-      dayStart: string;
-      dayEnd: string;
-      createdAt: string;
-      updatedAt: string;
-      createBy: string | null;
-      updateBy: string | null;
-    };
-    resolutionCount: number;
-    resolutionVotes: Array<{
-      title: string;
-      description: string;
-      resolutionCode: string;
-      agreeVotes: number;
-      notAgreeVotes: number;
-      noIdeaVotes: number;
-    }>;
-  };
-}
-
-export interface ResolutionFormData {
-  resolutionCode?: string;
-  meetingCode: string;
-  title: string;
-  description: string;
+export interface VotingResult {
+  meetingId?: string;
+  meetingTitle?: string;
+  resolutionId?: string;
+  resolutionTitle?: string;
+  electionId?: string;
+  electionTitle?: string;
+  totalVoters: number;
+  totalWeight: number;
+  results: {
+    votingOptionId?: string;
+    votingOptionName?: string;
+    candidateId?: string; // Tương thích cũ
+    candidateName?: string; // Tương thích cũ
+    voteCount: number;
+    totalWeight: number;
+    percentage: number;
+  }[];
 }

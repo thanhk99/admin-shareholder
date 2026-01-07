@@ -1,148 +1,136 @@
 import styles from './CandidateFormModal.module.css';
-import { CandidateFormData } from '@/app/types/candidate';
+import { CandidateRequest } from '@/app/types/candidate';
+import { useState, useEffect } from 'react';
+import { Modal, Form, Input, Select, InputNumber } from 'antd';
+import { VotingItem } from '@/app/types/resolution';
+
+const { TextArea } = Input;
+const { Option } = Select;
 
 interface CandidateFormModalProps {
     showForm: boolean;
     formMode: 'create' | 'edit';
-    formData: CandidateFormData;
+    initialData?: CandidateRequest;
     formLoading: boolean;
-    onFormDataChange: (data: CandidateFormData) => void;
     onClose: () => void;
-    onSubmit: () => void;
-    meetingCode?: string; // Thêm prop meetingCode
+    onSubmit: (data: CandidateRequest, electionId: string) => void;
+    elections: VotingItem[];
+    defaultElectionId?: string;
 }
 
 export default function CandidateFormModal({
     showForm,
     formMode,
-    formData,
+    initialData,
     formLoading,
-    onFormDataChange,
     onClose,
     onSubmit,
-    meetingCode = '' // Giá trị mặc định
+    elections,
+    defaultElectionId
 }: CandidateFormModalProps) {
-    if (!showForm) return null;
+    const [form] = Form.useForm();
+    const [selectedId, setSelectedId] = useState<string>('');
 
-    const handleInputChange = (field: keyof CandidateFormData, value: string) => {
-        onFormDataChange({
-            ...formData,
-            [field]: value
-        });
+    useEffect(() => {
+        if (showForm) {
+            if (formMode === 'edit' && initialData) {
+                form.setFieldsValue(initialData);
+                if (defaultElectionId) setSelectedId(defaultElectionId);
+            } else {
+                form.resetFields();
+                form.setFieldsValue({ displayOrder: 1 });
+                if (defaultElectionId) {
+                    setSelectedId(defaultElectionId);
+                    form.setFieldsValue({ electionId: defaultElectionId });
+                } else if (elections.length > 0) {
+                    setSelectedId(elections[0].id);
+                    form.setFieldsValue({ electionId: elections[0].id });
+                }
+            }
+        }
+    }, [showForm, formMode, initialData, defaultElectionId, elections, form]);
+
+    const handleSubmit = async () => {
+        try {
+            const values = await form.validateFields();
+            const electionId = values.electionId || selectedId;
+            const { electionId: _, ...candidateData } = values;
+            onSubmit(candidateData as CandidateRequest, electionId);
+        } catch (error) {
+            console.error('Validation failed:', error);
+        }
     };
 
-    // Trong chế độ tạo mới, tự động điền meetingCode từ prop
-    const displayMeetingCode = formMode === 'create' ? meetingCode : formData.meetingCode;
-    const isMeetingCodeEditable = formMode === 'edit';
-
     return (
-        <div className={styles.modal}>
-            <div className={styles.modalContent}>
-                <div className={styles.modalHeader}>
-                    <h3>{formMode === 'create' ? 'Thêm Ứng viên Mới' : 'Chỉnh sửa Ứng viên'}</h3>
-                    <button
-                        className={styles.closeButton}
-                        onClick={onClose}
-                        disabled={formLoading}
-                    >
-                        ×
-                    </button>
-                </div>
+        <Modal
+            title={formMode === 'create' ? 'Thêm Ứng viên Mới' : 'Chỉnh sửa Ứng viên'}
+            open={showForm}
+            onCancel={onClose}
+            onOk={handleSubmit}
+            confirmLoading={formLoading}
+            okText={formMode === 'create' ? 'Thêm' : 'Cập nhật'}
+            cancelText="Hủy"
+            width={600}
+            destroyOnClose
+        >
+            <Form
+                form={form}
+                layout="vertical"
+                autoComplete="off"
+                initialValues={{ displayOrder: 1 }}
+            >
+                <Form.Item
+                    name="electionId"
+                    label="Loại bầu cử (Category)"
+                    rules={[{ required: true, message: 'Vui lòng chọn loại bầu cử' }]}
+                >
+                    <Select placeholder="Chọn cuộc bầu cử">
+                        {elections.map(election => (
+                            <Option key={election.id} value={election.id}>
+                                {election.title} ({(election as any).electionType === 'BOARD_OF_DIRECTORS' ? 'HĐQT' : 'BKS'})
+                            </Option>
+                        ))}
+                    </Select>
+                </Form.Item>
 
-                <form onSubmit={(e) => {
-                    e.preventDefault();
-                    onSubmit();
-                }} className={styles.form}>
-                    <div className={styles.formGroup}>
-                        <label>Loại ứng viên *</label>
-                        <select
-                            value={formData.candidateType}
-                            onChange={(e) => handleInputChange('candidateType', e.target.value)}
-                            disabled={true}
-                            className={`${styles.select} ${styles.readOnlyInput}`}
-                        >
-                            <option value="BOD">Hội đồng quản trị (BOD)</option>
-                            <option value="BOS">Ban kiểm soát (BOS)</option>
-                        </select>
-                    </div>
+                <Form.Item
+                    name="name"
+                    label="Họ và tên"
+                    rules={[{ required: true, message: 'Vui lòng nhập họ tên ứng viên' }]}
+                >
+                    <Input placeholder="Nhập tên ứng viên" />
+                </Form.Item>
 
-                    <div className={styles.formGroup}>
-                        <label>Tên ứng viên *</label>
-                        <input
-                            type="text"
-                            value={formData.candidateName}
-                            onChange={(e) => handleInputChange('candidateName', e.target.value)}
-                            placeholder="Nhập họ tên ứng viên"
-                            required
-                            disabled={formLoading}
-                        />
-                    </div>
+                <Form.Item
+                    name="position"
+                    label="Vị trí/Chức vụ"
+                    rules={[{ required: true, message: 'Vui lòng nhập vị trí' }]}
+                >
+                    <Input placeholder="VD: Ứng viên HĐQT" />
+                </Form.Item>
 
-                    <div className={styles.formGroup}>
-                        <label>Vị trí hiện tại *</label>
-                        <input
-                            type="text"
-                            value={formData.currentPosition}
-                            onChange={(e) => handleInputChange('currentPosition', e.target.value)}
-                            placeholder="Nhập vị trí/chức vụ hiện tại"
-                            required
-                            disabled={formLoading}
-                        />
-                    </div>
+                <Form.Item
+                    name="displayOrder"
+                    label="Thứ tự hiển thị"
+                    rules={[{ required: true, message: 'Vui lòng nhập thứ tự' }]}
+                >
+                    <InputNumber min={1} style={{ width: '100%' }} />
+                </Form.Item>
 
-                    <div className={styles.formGroup}>
-                        <label>Mã cuộc họp *</label>
-                        <input
-                            type="text"
-                            value={displayMeetingCode}
-                            onChange={(e) => {
-                                if (isMeetingCodeEditable) {
-                                    handleInputChange('meetingCode', e.target.value);
-                                }
-                            }}
-                            placeholder="Nhập mã cuộc họp"
-                            required
-                            disabled={formLoading || !isMeetingCodeEditable}
-                            readOnly={!isMeetingCodeEditable}
-                            className={!isMeetingCodeEditable ? styles.readOnlyInput : ''}
-                        />
-                        {!isMeetingCodeEditable && (
-                            <div className={styles.helperText}>
-                                Mã cuộc họp được tự động điền từ cuộc họp hiện tại
-                            </div>
-                        )}
-                    </div>
+                <Form.Item
+                    name="photoUrl"
+                    label="URL Ảnh đại diện"
+                >
+                    <Input placeholder="https://..." />
+                </Form.Item>
 
-                    <div className={styles.formGroup}>
-                        <label>Thông tin ứng viên</label>
-                        <textarea
-                            value={formData.candidateInfo}
-                            onChange={(e) => handleInputChange('candidateInfo', e.target.value)}
-                            placeholder="Nhập thông tin chi tiết về ứng viên (kinh nghiệm, thành tích, ...)"
-                            rows={4}
-                            disabled={formLoading}
-                        />
-                    </div>
-
-                    <div className={styles.formActions}>
-                        <button
-                            type="button"
-                            className={styles.cancelButton}
-                            onClick={onClose}
-                            disabled={formLoading}
-                        >
-                            Hủy
-                        </button>
-                        <button
-                            type="submit"
-                            className={styles.saveButton}
-                            disabled={formLoading || !formData.candidateName || !formData.currentPosition || !displayMeetingCode}
-                        >
-                            {formLoading ? 'Đang xử lý...' : formMode === 'create' ? 'Thêm' : 'Cập nhật'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                <Form.Item
+                    name="bio"
+                    label="Tiểu sử / Giới thiệu"
+                >
+                    <TextArea rows={4} placeholder="Nhập thông tin giới thiệu về ứng viên..." />
+                </Form.Item>
+            </Form>
+        </Modal>
     );
 }

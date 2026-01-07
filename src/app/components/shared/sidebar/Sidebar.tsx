@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
+import {
   DashboardOutlined,
   TeamOutlined,
   CalendarOutlined,
@@ -27,31 +27,19 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
       id: 'dashboard',
       label: 'Dashboard',
       icon: <DashboardOutlined />,
-      href: '/', 
+      href: '/',
     },
     {
-      id: 'shareholders',
-      label: 'Quản lý Cổ đông',
+      id: 'users',
+      label: 'Quản lý Người dùng',
       icon: <TeamOutlined />,
-      href: '/shareholders',
+      href: '/users',
     },
     {
       id: 'meetings',
       label: 'Cuộc họp',
       icon: <CalendarOutlined />,
       href: '/meetings',
-    },
-    {
-      id: 'election',
-      label: 'Bầu cử',
-      icon: <CheckCircleOutlined />,
-      href: '/election',
-    },
-    {
-      id: 'voting',
-      label: 'Biểu quyết',
-      icon: <CheckCircleOutlined />,
-      href: '/voting',
     },
     {
       id: 'reports',
@@ -100,9 +88,8 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 <li key={item.id} className={styles.navItem}>
                   <Link
                     href={item.href}
-                    className={`${styles.navLink} ${
-                      isActive(item.href) ? styles.active : ''
-                    }`}
+                    className={`${styles.navLink} ${isActive(item.href) ? styles.active : ''
+                      }`}
                     title={!isOpen ? item.label : undefined}
                   >
                     <span className={styles.navIcon}>{item.icon}</span>
@@ -147,7 +134,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
 
       {/* Mobile overlay */}
       {isOpen && (
-        <div 
+        <div
           className={styles.overlay}
           onClick={onToggle}
         />

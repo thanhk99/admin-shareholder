@@ -1,126 +1,89 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  TeamOutlined, 
-  CalendarOutlined, 
-  CheckSquareOutlined, 
+import {
+  TeamOutlined,
+  CalendarOutlined,
+  CheckSquareOutlined,
   PieChartOutlined,
   ArrowUpOutlined,
-  ArrowDownOutlined
+  ArrowDownOutlined,
+  ScheduleOutlined,
+  SyncOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined
 } from '@ant-design/icons';
 import styles from './Dashboard.module.css';
-import AddShareholderModal from '../ShareholderManagement/AddShareholderModal/AddShareholderModal';
+import AddShareholderModal from '../UserManagement/AddShareholderModal/AddShareholderModal';
 import { DashboardService } from '@/lib/api/dashboard';
-
-interface DashboardStats {
-  totalShareholders: number;
-  totalMeeting: number; 
-  totalShares: number;
-}
+import { useAuth } from '@/lib/context/AuthProvider';
+import { DashboardStatsResponse } from '@/app/types/dashboard';
+import {
+  UserOutlined,
+  MailOutlined,
+  IdcardOutlined,
+  PhoneOutlined,
+  SafetyCertificateOutlined,
+  GlobalOutlined
+} from '@ant-design/icons';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalShareholders: 0,
-    totalMeeting: 0, 
-    totalShares: 0,
-  });
+  const [stats, setStats] = useState<DashboardStatsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const { admin } = useAuth();
 
   const formatNumber = (num: number): string => {
     return new Intl.NumberFormat('vi-VN').format(num);
   };
 
-  const fetchDataDashboard = async () => {
+  const fetchDashboardStats = async () => {
     try {
-      const response = await DashboardService.getHome();
-      if (response.status === "success") {
-        setStats({
-          ...response.data,
-          activeVotings: response.data.activeVotings || 0 
-        });
-      }
+      setLoading(true);
+      const data = await DashboardService.getSummary();
+      setStats(data);
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      setStats({
-        totalShareholders: 0,
-        totalMeeting: 0,
-        totalShares: 0
-      });
+      console.error('Error fetching dashboard stats:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchDataDashboard();
+    fetchDashboardStats();
   }, []);
 
-  const StatCard = ({ 
-    title, 
-    value, 
-    icon, 
-    color, 
-    growth  
-  }: { 
-    title: string; 
-    value: number; 
+  const StatCard = ({
+    title,
+    value,
+    icon,
+    color,
+    subValue
+  }: {
+    title: string;
+    value: string | number;
     icon: React.ReactNode;
-    color: string; 
-    growth?: number;
+    color: string;
+    subValue?: string;
   }) => (
     <div className={styles.statCard}>
       <div className={styles.statIcon} style={{ backgroundColor: color }}>
         {icon}
       </div>
       <div className={styles.statContent}>
-        <h3 className={styles.statValue}>{formatNumber(value)}</h3>
+        <h3 className={styles.statValue}>{value}</h3>
         <p className={styles.statTitle}>{title}</p>
-        {growth !== undefined && (
-          <div className={`${styles.growth} ${growth >= 0 ? styles.positive : styles.negative}`}>
-            {growth >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-            {Math.abs(growth)}%
-          </div>
-        )}
+        {subValue && <span className={styles.subValue}>{subValue}</span>}
       </div>
     </div>
   );
-
-  const recentActivities = [
-    {
-      id: 1,
-      type: 'shareholder',
-      message: 'Cổ đông mới Nguyễn Văn A đã đăng ký',
-      time: '2 giờ trước',
-      icon: <TeamOutlined />
-    },
-    {
-      id: 2,
-      type: 'meeting',
-      message: 'Cuộc họp ĐHCĐ thường niên đã được lên lịch',
-      time: '1 ngày trước',
-      icon: <CalendarOutlined />
-    },
-    {
-      id: 3,
-      type: 'voting',
-      message: 'Phiên bầu cử Chủ tịch HĐQT đã bắt đầu',
-      time: '3 ngày trước',
-      icon: <CheckSquareOutlined />
-    },
-    {
-      id: 4,
-      type: 'shareholder',
-      message: 'Cập nhật thông tin cổ đông Trần Thị B',
-      time: '5 ngày trước',
-      icon: <TeamOutlined />
-    }
-  ];
 
   const handleAddShareholder = () => {
     setShowAddModal(true);
   };
 
   const handleAddSuccess = async () => {
-    await fetchDataDashboard(); // Refresh data after successful addition
+    await fetchDashboardStats();
   };
 
   return (
@@ -130,48 +93,118 @@ export default function Dashboard() {
         <p>Tổng quan hệ thống quản lý cổ đông</p>
       </div>
 
+      {admin && (
+        <div className={styles.adminProfileSection}>
+          <div className={styles.profileHeader}>
+            <div className={styles.profileAvatar}>
+              {admin.fullName?.split(' ').map(n => n[0]).join('')}
+            </div>
+            <div className={styles.profileBaseInfo}>
+              <h2>{admin.fullName}</h2>
+              <span className={styles.adminBadge}>Administrator</span>
+              <p className={styles.username}>@{admin.username}</p>
+            </div>
+          </div>
+
+          <div className={styles.profileDetailsGrid}>
+            <div className={styles.detailItem}>
+              <MailOutlined />
+              <div className={styles.detailContent}>
+                <span className={styles.detailLabel}>Email</span>
+                <span className={styles.detailValue}>{admin.email}</span>
+              </div>
+            </div>
+            <div className={styles.detailItem}>
+              <IdcardOutlined />
+              <div className={styles.detailContent}>
+                <span className={styles.detailLabel}>Mã nhà đầu tư / CCCD</span>
+                <span className={styles.detailValue}>{admin.investorCode} / {admin.cccd}</span>
+              </div>
+            </div>
+            <div className={styles.detailItem}>
+              <PhoneOutlined />
+              <div className={styles.detailContent}>
+                <span className={styles.detailLabel}>Số điện thoại</span>
+                <span className={styles.detailValue}>{admin.phoneNumber}</span>
+              </div>
+            </div>
+            <div className={styles.detailItem}>
+              <SafetyCertificateOutlined />
+              <div className={styles.detailContent}>
+                <span className={styles.detailLabel}>Cổ phần sở hữu</span>
+                <span className={styles.detailValue}>{formatNumber(admin.sharesOwned)} CP</span>
+              </div>
+            </div>
+            <div className={styles.detailItem}>
+              <GlobalOutlined />
+              <div className={styles.detailContent}>
+                <span className={styles.detailLabel}>Địa chỉ</span>
+                <span className={styles.detailValue}>{admin.address}</span>
+              </div>
+            </div>
+            <div className={styles.detailItem}>
+              <CalendarOutlined />
+              <div className={styles.detailContent}>
+                <span className={styles.detailLabel}>Ngày tham gia</span>
+                <span className={styles.detailValue}>{new Date(admin.createdAt).toLocaleDateString('vi-VN')}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Stats Grid */}
       <div className={styles.statsGrid}>
         <StatCard
-          title="Tổng Cổ đông"
-          value={stats.totalShareholders}
+          title="Tổng Người dùng"
+          value={stats ? formatNumber(stats.userStats.totalShareholders) : '...'}
           icon={<TeamOutlined />}
           color="#3498db"
         />
         <StatCard
-          title="Cuộc họp"
-          value={stats.totalMeeting}
-          icon={<CalendarOutlined />}
-          color="#e74c3c"
-        />
-        <StatCard
-          title="Tổng Cổ phần"
-          value={stats.totalShares}
+          title="Tổng Cổ phần Đại diện"
+          value={stats ? formatNumber(stats.userStats.totalSharesRepresented) : '...'}
           icon={<PieChartOutlined />}
           color="#f39c12"
+        />
+        <StatCard
+          title="Tổng Cuộc họp"
+          value={stats ? formatNumber(stats.meetingStats.totalMeetings) : '...'}
+          icon={<CalendarOutlined />}
+          color="#9b59b6"
+        />
+      </div>
+
+      {/* Meeting Status Grid */}
+      <h2 className={styles.sectionTitle}>Trạng thái Cuộc họp</h2>
+      <div className={styles.statsGrid}>
+        <StatCard
+          title="Sắp diễn ra"
+          value={stats ? stats.meetingStats.scheduled : 0}
+          icon={<ScheduleOutlined />}
+          color="#3498db"
+        />
+        <StatCard
+          title="Đang diễn ra"
+          value={stats ? stats.meetingStats.ongoing : 0}
+          icon={<SyncOutlined spin />}
+          color="#e67e22"
+        />
+        <StatCard
+          title="Đã kết thúc"
+          value={stats ? stats.meetingStats.completed : 0}
+          icon={<CheckCircleOutlined />}
+          color="#27ae60"
+        />
+        <StatCard
+          title="Đã hủy"
+          value={stats ? stats.meetingStats.cancelled : 0}
+          icon={<CloseCircleOutlined />}
+          color="#c0392b"
         />
       </div>
 
       <div className={styles.contentGrid}>
-        <div className={styles.recentActivity}>
-          <div className={styles.sectionHeader}>
-            <h2>Hoạt động gần đây</h2>
-            <button className={styles.viewAllButton}>Xem tất cả</button>
-          </div>
-          <div className={styles.activityList}>
-            {recentActivities.map((activity) => (
-              <div key={activity.id} className={styles.activityItem}>
-                <div className={styles.activityIcon}>
-                  {activity.icon}
-                </div>
-                <div className={styles.activityContent}>
-                  <p className={styles.activityMessage}>{activity.message}</p>
-                  <span className={styles.activityTime}>{activity.time}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         <div className={styles.quickActions}>
           <div className={styles.sectionHeader}>
             <h2>Thao tác nhanh</h2>
@@ -179,7 +212,7 @@ export default function Dashboard() {
           <div className={styles.actionsGrid}>
             <button className={styles.actionButton} onClick={handleAddShareholder}>
               <TeamOutlined />
-              <span>Thêm cổ đông</span>
+              <span>Thêm người dùng</span>
             </button>
             <button className={styles.actionButton}>
               <CalendarOutlined />

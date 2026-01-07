@@ -16,25 +16,6 @@ interface MeetingFormModalProps {
   loading?: boolean;
 }
 
-// Hàm format thời gian cho input type="time"
-const formatTimeForInput = (timeString: string | undefined) => {
-  if (!timeString) return '';
-
-  // Loại bỏ khoảng trắng ở đầu và cuối chuỗi
-  const trimmedTime = timeString.trim();
-  if (!trimmedTime) return '';
-
-  // Tách chuỗi thời gian thành các phần
-  const parts = trimmedTime.split(':');
-  if (parts.length < 2) return '';
-
-  // Đảm bảo giờ và phút có 2 chữ số
-  const hours = parts[0].padStart(2, '0');
-  const minutes = parts[1].padStart(2, '0');
-
-  return `${hours}:${minutes}`;
-};
-
 export default function MeetingFormModal({
   isOpen,
   mode,
@@ -46,11 +27,10 @@ export default function MeetingFormModal({
   const [formData, setFormData] = useState({
     title: meeting?.title || '',
     description: meeting?.description || '',
-    meetingDate: meeting?.meetingDate ? meeting.meetingDate.split('T')[0] : '',
-    dayStart: formatTimeForInput(meeting?.dayStart), // Format ngay từ đầu
-    dayEnd: formatTimeForInput(meeting?.dayEnd), // Format ngay từ đầu
+    startTime: meeting?.startTime || '',
+    endTime: meeting?.endTime || '',
     location: meeting?.location || '',
-    status: meeting?.status || 'PENDING'
+    status: meeting?.status || 'SCHEDULED'
   });
 
   // Cập nhật form data khi meeting thay đổi
@@ -59,9 +39,8 @@ export default function MeetingFormModal({
       setFormData({
         title: meeting.title,
         description: meeting.description,
-        meetingDate: meeting.meetingDate.split('T')[0],
-        dayStart: formatTimeForInput(meeting.dayStart),
-        dayEnd: formatTimeForInput(meeting.dayEnd),
+        startTime: meeting.startTime,
+        endTime: meeting.endTime,
         location: meeting.location,
         status: meeting.status
       });
@@ -69,19 +48,25 @@ export default function MeetingFormModal({
       setFormData({
         title: '',
         description: '',
-        meetingDate: '',
-        dayStart: '',
-        dayEnd: '',
+        startTime: '',
+        endTime: '',
         location: '',
-        status: 'PENDING'
+        status: 'SCHEDULED'
       });
     }
   }, [meeting]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    onSubmit({
+      ...formData
+    });
   };
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }
 
   if (!isOpen) return null;
 
@@ -105,7 +90,7 @@ export default function MeetingFormModal({
             <input
               type="text"
               value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              onChange={(e) => handleInputChange('title', e.target.value)}
               placeholder="Nhập tiêu đề cuộc họp"
               required
               disabled={loading}
@@ -116,44 +101,33 @@ export default function MeetingFormModal({
             <label>Mô tả</label>
             <textarea
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) => handleInputChange('description', e.target.value)}
               placeholder="Nhập mô tả cuộc họp"
               rows={3}
               disabled={loading}
             />
           </div>
 
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label>Ngày họp *</label>
-              <input
-                type="date"
-                value={formData.meetingDate}
-                onChange={(e) => setFormData({ ...formData, meetingDate: e.target.value })}
-                required
-                disabled={loading}
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label>Giờ bắt đầu *</label>
-              <input
-                type="time"
-                value={formData.dayStart}
-                onChange={(e) => setFormData({ ...formData, dayStart: e.target.value })}
-                required
-                disabled={loading}
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label>Giờ kết thúc *</label>
-              <input
-                type="time"
-                value={formData.dayEnd}
-                onChange={(e) => setFormData({ ...formData, dayEnd: e.target.value })}
-                required
-                disabled={loading}
-              />
-            </div>
+          <div className={styles.formGroup}>
+            <label>Thời gian bắt đầu *</label>
+            <input
+              type="datetime-local"
+              value={formData.startTime ? formData.startTime.slice(0, 16) : ''}
+              onChange={(e) => handleInputChange('startTime', e.target.value + ':00')}
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label>Thời gian kết thúc *</label>
+            <input
+              type="datetime-local"
+              value={formData.endTime ? formData.endTime.slice(0, 16) : ''}
+              onChange={(e) => handleInputChange('endTime', e.target.value + ':00')}
+              required
+              disabled={loading}
+            />
           </div>
 
           <div className={styles.formGroup}>
@@ -161,7 +135,7 @@ export default function MeetingFormModal({
             <input
               type="text"
               value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              onChange={(e) => handleInputChange('location', e.target.value)}
               placeholder="Nhập địa điểm tổ chức"
               required
               disabled={loading}
@@ -172,12 +146,13 @@ export default function MeetingFormModal({
             <label>Trạng thái</label>
             <select
               value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as 'PENDING' | 'UPCOMING' | 'COMPLETED' })}
+              onChange={(e) => handleInputChange('status', e.target.value)}
               disabled={loading}
             >
-              <option value="UPCOMING">Sắp diễn ra</option>
-              <option value="PENDING">Đang diễn ra</option>
+              <option value="SCHEDULED">Sắp diễn ra</option>
+              <option value="ONGOING">Đang diễn ra</option>
               <option value="COMPLETED">Đã kết thúc</option>
+              <option value="CANCELLED">Đã hủy</option>
             </select>
           </div>
 
@@ -196,9 +171,8 @@ export default function MeetingFormModal({
               disabled={
                 loading ||
                 !formData.title ||
-                !formData.meetingDate ||
-                !formData.dayStart ||
-                !formData.dayEnd ||
+                !formData.startTime ||
+                !formData.endTime ||
                 !formData.location
               }
             >

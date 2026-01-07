@@ -1,52 +1,58 @@
-'use client' ; 
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
-import TokenService from "../api/token";
-import { onTokenRefreshed } from "../utils/axios";
 import { adminInfo } from "@/app/types/admin";
 import AdminService from "../api/admin";
+import AuthService from "../api/auth";
+import { tokenManager } from "@/utils/tokenManager";
 
 interface AuthContextType {
-  admin: adminInfo | null;
-  loading: boolean;
-  refreshUser: () => Promise<void>;
-  onLoginSuccess: () => void;
+    admin: adminInfo | null;
+    loading: boolean;
+    refreshUser: () => Promise<void>;
+    onLoginSuccess: () => void;
 }
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
-    const [admin , setAdmin] = useState<adminInfo | null>(null);
+    const [admin, setAdmin] = useState<adminInfo | null>(null);
 
-    const fetchAdmin = async ()=>{
-        try{
+    const fetchAdmin = async () => {
+        try {
             setLoading(true);
-            const isLogin = TokenService.isLogin();
-            if(!isLogin){
-                setAdmin(null);
-                return;
-            }
             const response = await AdminService.getBaseInfo();
-            console.log(response)
-            setAdmin(response.data);
-        }catch(error){
-            TokenService.clearToken();
+            if (response && response.data) {
+                setAdmin(response.data);
+            } else {
+                setAdmin(response); // Handle flat response direct data
+            }
+        } catch (error) {
             setAdmin(null);
+        } finally {
+            setLoading(false);
         }
     }
+
     const handleLoginSuccess = () => {
         fetchAdmin();
     };
+
     useEffect(() => {
-        fetchAdmin();
-        
-        // Lắng nghe sự kiện token được refresh để fetch lại user data
-        const unsubscribe = onTokenRefreshed(() => {
-        fetchAdmin();
-        });
-        
-        return () => {
-        unsubscribe();
+        const initializeAuth = async () => {
+            try {
+                // Try to refresh token on app load to restore session from HttpOnly cookie
+                const response: any = await AuthService.refreshToken();
+                if (response && response.accessToken) {
+                    tokenManager.setAccessToken(response.accessToken);
+                    await fetchAdmin();
+                }
+            } catch (error) {
+                console.log('No active session found');
+            } finally {
+                setLoading(false);
+            }
         };
+
+        initializeAuth();
     }, []);
     const value = {
         admin,
@@ -62,9 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 }
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
 };

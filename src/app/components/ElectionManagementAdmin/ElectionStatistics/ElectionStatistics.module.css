@@ -1,0 +1,78 @@
+.container {
+    padding-top: 16px;
+}
+
+.groupTitle {
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #2c3e50;
+    margin-bottom: 16px;
+    padding-left: 8px;
+    border-left: 4px solid #1890ff;
+}
+
+.electionCard {
+    border-radius: 8px;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.headerLeft {
+    flex: 1;
+}
+
+.electionTitle {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    color: #1f1f1f;
+}
+
+.electionDesc {
+    color: #8c8c8c;
+    margin: 0 0 8px 0;
+    font-size: 13px;
+}
+
+.headerRight {
+    margin-left: 16px;
+}
+
+.resultSection {
+    background: #fafafa;
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.candidateName {
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #262626;
+}
+
+.voteCount {
+    color: #1890ff;
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.loadingContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 60px;
+    min-height: 200px;
+}

@@ -1,0 +1,121 @@
+.modalContent {
+    padding: 8px 0;
+}
+
+.infoSection {
+    background: #f0f5ff;
+    padding: 12px 16px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.weightBadge .label {
+    color: #595959;
+    margin-right: 8px;
+}
+
+.weightBadge .value {
+    color: #1890ff;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.usageSummary {
+    display: flex;
+    gap: 16px;
+}
+
+.usageSummary span {
+    font-size: 0.95rem;
+}
+
+.usageSummary strong {
+    margin-left: 4px;
+}
+
+.error {
+    color: #ff4d4f;
+}
+
+.loading {
+    padding: 40px;
+    text-align: center;
+}
+
+.candidatesList {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.candidateItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.2s;
+}
+
+.candidateItem:hover {
+    background: #fafafa;
+}
+
+.candidateInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.candidateAvatar {
+    width: 44px;
+    height: 44px;
+    background: #f5f5f5;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #bfbfbf;
+    overflow: hidden;
+}
+
+.candidateAvatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.candidateName {
+    font-weight: 600;
+    color: #262626;
+    font-size: 1rem;
+}
+
+.candidatePosition {
+    font-size: 0.85rem;
+    color: #8c8c8c;
+}
+
+.voteInput {
+    width: 160px;
+}
+
+.pInput {
+    width: 100%;
+}
+
+.noData {
+    padding: 32px;
+    text-align: center;
+    color: #8c8c8c;
+}
+
+.actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}

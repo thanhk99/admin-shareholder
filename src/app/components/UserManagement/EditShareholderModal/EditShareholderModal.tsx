@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
+import {
   UserOutlined,
   MailOutlined,
   IdcardOutlined,
@@ -40,11 +40,11 @@ interface FormErrors {
   address?: string;
 }
 
-export default function EditShareholderModal({ 
-  isOpen, 
-  onClose, 
-  onSuccess, 
-  shareholder 
+export default function EditShareholderModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  shareholder
 }: EditShareholderModalProps) {
   const [formData, setFormData] = useState<FormData>({
     fullname: '',
@@ -63,38 +63,38 @@ export default function EditShareholderModal({
   // Hàm chuyển đổi định dạng ngày từ dd/MM/yyyy sang yyyy-MM-dd
   const formatDateForInput = (dateString: string): string => {
     if (!dateString) return '';
-    
+
     // Nếu đã là định dạng yyyy-MM-dd thì giữ nguyên
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
       return dateString;
     }
-    
+
     // Chuyển từ dd/MM/yyyy sang yyyy-MM-dd
     const parts = dateString.split('/');
     if (parts.length === 3) {
       const [day, month, year] = parts;
       return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     }
-    
+
     return dateString;
   };
 
   // Hàm chuyển đổi ngược lại từ yyyy-MM-dd sang dd/MM/yyyy để gửi API
   const formatDateForAPI = (dateString: string): string => {
     if (!dateString) return '';
-    
+
     // Nếu đã là định dạng dd/MM/yyyy thì giữ nguyên
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
       return dateString;
     }
-    
+
     // Chuyển từ yyyy-MM-dd sang dd/MM/yyyy
     const parts = dateString.split('-');
     if (parts.length === 3) {
       const [year, month, day] = parts;
       return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
     }
-    
+
     return dateString;
   };
 
@@ -154,19 +154,19 @@ export default function EditShareholderModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     if (!shareholder?.shareholderCode) {
-      alert('Không tìm thấy ID cổ đông');
+      alert('Không tìm thấy ID người dùng');
       return;
     }
 
     setLoading(true);
     try {
-      
+
       // Chuẩn bị dữ liệu để gửi API, chuyển đổi ngày về định dạng dd/MM/yyyy
       const apiData = {
         fullname: formData.fullname,
@@ -184,13 +184,13 @@ export default function EditShareholderModal({
       if (response.status === "success") {
         onSuccess();
         onClose();
-        alert('Cập nhật thông tin cổ đông thành công!');
+        alert('Cập nhật thông tin người dùng thành công!');
       } else {
-        alert(response.message || 'Có lỗi xảy ra khi cập nhật cổ đông');
+        alert(response.message || 'Có lỗi xảy ra khi cập nhật người dùng');
       }
     } catch (error: any) {
       console.error('Error updating shareholder:', error);
-      alert(error.response?.data?.message || 'Có lỗi xảy ra khi cập nhật cổ đông');
+      alert(error.response?.data?.message || 'Có lỗi xảy ra khi cập nhật người dùng');
     } finally {
       setLoading(false);
     }
@@ -201,7 +201,7 @@ export default function EditShareholderModal({
       ...prev,
       [field]: value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({
@@ -236,8 +236,8 @@ export default function EditShareholderModal({
     <div className={modalStyles.modalOverlay}>
       <div className={modalStyles.modalContent}>
         <div className={modalStyles.modalHeader}>
-          <h3 className={modalStyles.modalTitle}>Chỉnh sửa Thông tin Cổ đông</h3>
-          <button 
+          <h3 className={modalStyles.modalTitle}>Chỉnh sửa Thông tin Người dùng</h3>
+          <button
             className={modalStyles.closeButton}
             onClick={handleClose}
             disabled={loading}
@@ -258,7 +258,7 @@ export default function EditShareholderModal({
                   type="text"
                   value={formData.fullname}
                   onChange={(e) => handleInputChange('fullname', e.target.value)}
-                  placeholder="Nhập họ tên cổ đông"
+                  placeholder="Nhập họ tên người dùng"
                   disabled={loading}
                   className={`${modalStyles.formInput} ${errors.fullname ? modalStyles.error : ''}`}
                 />
@@ -404,17 +404,17 @@ export default function EditShareholderModal({
           </div>
 
           <div className={modalStyles.formActions}>
-            <button 
+            <button
               type="button"
-              className={modalStyles.cancelButton} 
+              className={modalStyles.cancelButton}
               onClick={handleClose}
               disabled={loading}
             >
               Hủy
             </button>
-            <button 
+            <button
               type="submit"
-              className={modalStyles.saveButton} 
+              className={modalStyles.saveButton}
               disabled={loading}
             >
               {loading ? 'Đang xử lý...' : 'Cập nhật'}

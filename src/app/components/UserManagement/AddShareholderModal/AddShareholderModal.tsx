@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { 
+import {
   UserOutlined,
   MailOutlined,
   IdcardOutlined
@@ -23,8 +23,8 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
     shares: 0,
     cccd: '',
     address: '',
-    status:'',
-    phone:'',
+    status: '',
+    phone: '',
 
   });
   const [loading, setLoading] = useState(false);
@@ -59,7 +59,7 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -71,7 +71,7 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
         email: formData.email,
         shares: formData.shares,
         cccd: formData.cccd,
-        address:formData.address,
+        address: formData.address,
         phone: formData.phone
       });
       if (response.status === "success") {
@@ -82,19 +82,19 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
           shares: 0,
           cccd: '',
           address: '',
-          status:'',
-          phone:'',
+          status: '',
+          phone: '',
 
         });
         setErrors({});
         onSuccess();
         onClose();
       } else {
-        alert(response.message || 'Có lỗi xảy ra khi thêm cổ đông');
+        alert(response.message || 'Có lỗi xảy ra khi thêm người dùng');
       }
     } catch (error: any) {
       console.error('Error adding shareholder:', error);
-      alert(error.response?.data?.message || 'Có lỗi xảy ra khi thêm cổ đông');
+      alert(error.response?.data?.message || 'Có lỗi xảy ra khi thêm người dùng');
     } finally {
       setLoading(false);
     }
@@ -102,7 +102,7 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
 
   const handleInputChange = (field: keyof ShareholderForm, value: string | number) => {
     let processedValue: string | number = value;
-    
+
     // Xử lý đặc biệt cho trường shares để tránh NaN
     if (field === 'shares') {
       if (value === '' || isNaN(Number(value))) {
@@ -111,12 +111,12 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
         processedValue = Number(value);
       }
     }
-    
+
     setFormData(prev => ({
       ...prev,
       [field]: processedValue
     }));
-    
+
     // Clear error when user starts typing
     if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({
@@ -133,8 +133,8 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
       shares: 0,
       cccd: '',
       address: '',
-      status:'',
-      phone:'',
+      status: '',
+      phone: '',
 
     });
     setErrors({});
@@ -147,8 +147,8 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
     <div className={modalStyles.modalOverlay}>
       <div className={modalStyles.modalContent}>
         <div className={modalStyles.modalHeader}>
-          <h3 className={modalStyles.modalTitle}>Thêm Cổ đông mới</h3>
-          <button 
+          <h3 className={modalStyles.modalTitle}>Thêm Người dùng mới</h3>
+          <button
             className={modalStyles.closeButton}
             onClick={handleClose}
             disabled={loading}
@@ -168,7 +168,7 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
                 type="text"
                 value={formData.fullname}
                 onChange={(e) => handleInputChange('fullname', e.target.value)}
-                placeholder="Nhập họ tên cổ đông"
+                placeholder="Nhập họ tên người dùng"
                 disabled={loading}
                 className={`${modalStyles.formInput} ${errors.fullname ? modalStyles.error : ''}`}
               />
@@ -262,17 +262,17 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
           </div>
 
           <div className={modalStyles.formActions}>
-            <button 
+            <button
               type="button"
-              className={modalStyles.cancelButton} 
+              className={modalStyles.cancelButton}
               onClick={handleClose}
               disabled={loading}
             >
               Hủy
             </button>
-            <button 
+            <button
               type="submit"
-              className={modalStyles.saveButton} 
+              className={modalStyles.saveButton}
               disabled={loading}
             >
               {loading ? 'Đang xử lý...' : 'Thêm'}

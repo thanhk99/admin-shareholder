@@ -5,235 +5,223 @@ import { useParams } from 'next/navigation';
 import styles from './ResolutionManagement.module.css';
 import ResolutionCard from './ResolutionCard/ResolutionCard';
 import ResolutionViewModal from './ResolutionViewModal/ResolutionViewModal';
-import { Resolution, ResolutionFormData, ResolutionVote } from '@/app/types/resolution';
+import { VotingItem, VotingItemRequest, VotingResult } from '@/app/types/resolution';
 import ResolutionEditModal from './ResolutionEditModal/ResolutionEditModal';
 import ResolutionAddModal from './ResolutionAddModal/ResolutionAddModal';
+import ResolutionVoteModal from './ResolutionVoteModal/ResolutionVoteModal';
 import { ResolutionService } from '@/lib/api/resolution';
-import { ApiResponse } from '@/app/types/voting';
-
-
+import { ElectionService } from '@/lib/api/election';
+import { MeetingService } from '@/lib/api/meetings';
+import { Meeting } from '@/app/types/meeting';
+import { Election } from '@/app/types/election';
 
 export default function ResolutionManagement() {
   const params = useParams();
-  const meetingCode = params.meeting as string;
-  
-  const [resolutions, setResolutions] = useState<Resolution[]>([]);
-  const [meetingInfo, setMeetingInfo] = useState<any>(null);
+  const meetingId = params.meeting as string;
+
+  const [votingItems, setVotingItems] = useState<VotingItem[]>([]);
+  const [resultsMap, setResultsMap] = useState<Record<string, VotingResult>>({});
+  const [meetingInfo, setMeetingInfo] = useState<Meeting | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [selectedResolution, setSelectedResolution] = useState<Resolution | null>(null);
-  const [saveLoading, setSaveLoading] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [voteModalOpen, setVoteModalOpen] = useState(false);
+
+  const [selectedItem, setSelectedItem] = useState<VotingItem | null>(null);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch data từ API
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const response: ApiResponse = await ResolutionService.getResolutionByMeeting(meetingCode);
-      
-      if (response.status === 'success') {
-        // Lưu thông tin cuộc họp
-        setMeetingInfo(response.data.meeting);
-        
-        const transformedResolutions: Resolution[] = response.data.resolutionVotes.map((item: ResolutionVote, index: number) => ({
-          id: (index + 1).toString(),
-          meetingCode: response.data.meeting.meetingCode,
-          resolutionCode: item.resolutionCode,
-          title: item.title,
-          description: item.description,
-          totalAgree: item.agreeVotes,
-          totalNotAgree: item.notAgreeVotes,
-          totalNotIdea: item.noIdeaVotes,
-          createdAt: response.data.meeting.createdAt,
-          createBy: response.data.meeting.createBy || 'system',
-          isActive: item.isActive
+
+      // Fetch Meeting Info
+      let meetingData: Meeting | null = null;
+      try {
+        const meetingRes = await MeetingService.getMeetingById(meetingId);
+        meetingData = (meetingRes as any).data || meetingRes;
+        setMeetingInfo(meetingData);
+      } catch (e) {
+        console.error("Failed to fetch meeting info", e);
+      }
+
+      // Get Resolutions from Meeting Info
+      const resList = meetingData?.resolutions || [];
+
+      // Normalize resolution objects
+      const normalizedResolutions = resList.map((r: any) => ({
+        ...r,
+        votingType: r.votingType || 'RESOLUTION'
+      }));
+
+      setVotingItems(normalizedResolutions);
+
+      if (Array.isArray(normalizedResolutions)) {
+        // Fetch Results for each item
+        const results: Record<string, VotingResult> = {};
+        await Promise.all(normalizedResolutions.map(async (item: VotingItem) => {
+          try {
+            const res = await ResolutionService.getResults(item.id);
+            if (res && (res as any).data) {
+              results[item.id] = (res as any).data;
+            } else if (res) {
+              results[item.id] = res as any;
+            }
+          } catch (e) {
+            console.error(`Failed to fetch results for item ${item.id}`, e);
+          }
         }));
-        
-        setResolutions(transformedResolutions);
+        setResultsMap(results);
+
       } else {
-        setError('Không thể tải dữ liệu từ server');
-        setResolutions([]);
+        setVotingItems([]);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('Có lỗi xảy ra khi tải dữ liệu');
-      setResolutions([]);
+      setVotingItems([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-   
-    fetchData();
-  }, [meetingCode]);
+    if (meetingId) {
+      fetchData();
+    }
+  }, [meetingId]);
 
-  const handleAddResolution = async (resolutionData: ResolutionFormData) => {
+  const handleAddVotingItem = async (data: VotingItemRequest) => {
     setSaveLoading(true);
-    resolutionData.meetingCode = meetingCode;
     try {
-      // Gọi API để thêm nghị quyết mới
-      const response = await ResolutionService.createResolution({
-        ...resolutionData,
-      });
-      
-      if (response.status === 'success') {
-        // Thêm vào state
+      const response = await ResolutionService.createResolution(meetingId, data);
+      if (response) {
         fetchData();
         setAddModalOpen(false);
-      } else {
-        throw new Error(response.message || 'Không thể thêm nghị quyết');
       }
     } catch (error) {
-      console.error('Error adding resolution:', error);
-      throw error;
+      console.error('Error adding item:', error);
+      alert("Không thể thêm nội dung mới.");
     } finally {
       setSaveLoading(false);
     }
   };
 
-  const filteredResolutions = resolutions.filter(resolution =>
-    resolution.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    resolution.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    resolution.resolutionCode?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleViewDetail = (resolution: Resolution) => {
-    setSelectedResolution(resolution);
-    setViewModalOpen(true);
-  };
-
-  const handleEdit = (resolution: Resolution) => {
-    setSelectedResolution(resolution);
-    setEditModalOpen(true);
-  };
-
-  const handleSaveEdit = async (formData: ResolutionFormData) => {
+  const handleSaveEdit = async (data: VotingItemRequest) => {
+    if (!selectedItem) return;
     setSaveLoading(true);
     try {
-      // Gọi API để cập nhật nghị quyết
-      formData.meetingCode = meetingCode;
-      formData.resolutionCode = selectedResolution?.resolutionCode || '';
-
-      const response = await ResolutionService.updateResolution(formData);
-      
-      if (response.status === 'success') {
-        setResolutions(prev => prev.map(res => 
-          res.resolutionCode === selectedResolution?.resolutionCode 
-            ? { ...res, ...formData }
-            : res
-        ));
-        
+      const response = await ResolutionService.updateResolution(selectedItem.id, data);
+      if (response) {
+        fetchData();
         setEditModalOpen(false);
-        setSelectedResolution(null);
-      } else {
-        throw new Error(response.message || 'Không thể cập nhật nghị quyết');
+        setSelectedItem(null);
       }
     } catch (error) {
-      console.error('Error saving resolution:', error);
-      throw error;
+      console.error('Error updating item:', error);
+      alert("Không thể cập nhật nội dung.");
     } finally {
       setSaveLoading(false);
     }
   };
 
-  // Sửa hàm handleToggleActive để nhận resolutionCode và currentStatus
-  const handleToggleActive = async (resolutionCode: string, currentStatus: boolean) => {
-    if (confirm(`Bạn có chắc muốn ${currentStatus ? 'khoá' : 'mở khoá'} nghị quyết này?`)) {
-      
+  const handleToggleActive = async (itemId: string, currentStatus: boolean) => {
+    if (confirm(`Bạn có chắc muốn ${currentStatus ? 'khoá' : 'mở khoá'} mục này?`)) {
       try {
-        const response = await ResolutionService.updateResolutionStatus(resolutionCode, !currentStatus);
-        
-        if (response.status === 'success') {
-          // Cập nhật state local
-          setResolutions(prev => prev.map(res => 
-            res.resolutionCode === resolutionCode ? { ...res, isActive: !currentStatus } : res
-          ));
-        } else {
-          alert('Không thể thay đổi trạng thái nghị quyết');
-        }
+        await ResolutionService.updateStatus(itemId, !currentStatus);
+        // Optimistic update or fetch
+        fetchData();
       } catch (error) {
-        console.error('Error toggling resolution active:', error);
+        console.error('Error toggling status:', error);
         alert('Có lỗi xảy ra khi thay đổi trạng thái');
       }
     }
   };
 
+  const filteredItems = votingItems.filter(item =>
+    item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getStats = (result?: VotingResult) => {
+    if (!result || !result.results) return { agree: 0, disagree: 0, total: 0 };
+    let agree = 0;
+    let disagree = 0;
+    let noIdea = 0;
+
+    result.results.forEach(r => {
+      const id = (r.votingOptionId || '').toLowerCase();
+      const name = (r.votingOptionName || r.candidateName || '').toLowerCase();
+
+      if (id === 'yes') {
+        agree += r.voteCount;
+      } else if (id === 'no') {
+        disagree += r.voteCount;
+      } else if (id === 'not_agree') {
+        noIdea += r.voteCount;
+      } else {
+        if (name.includes('không đồng ý') || name.includes('không tán thành') || name.includes('disagree')) {
+          disagree += r.voteCount;
+        } else if (name.includes('không ý kiến') || name.includes('no opinion') || name.includes('abstain')) {
+          noIdea += r.voteCount;
+        } else if (name.includes('đồng ý') || name.includes('tán thành') || name.includes('agree')) {
+          agree += r.voteCount;
+        }
+      }
+    });
+    return { agree, disagree, noIdea, total: result.totalVoters };
+  };
+
   const getApprovedCount = () => {
-    return resolutions.filter(res => res.totalAgree > res.totalNotAgree).length;
+    return votingItems.filter(item => {
+      const stats = getStats(resultsMap[item.id]);
+      return stats.agree > stats.disagree;
+    }).length;
   };
 
   const getTotalVotes = () => {
-    return resolutions.reduce((total, res) => total + res.totalAgree + res.totalNotAgree + res.totalNotIdea, 0);
+    return Object.values(resultsMap).reduce((acc, curr) => acc + (curr.totalVoters || 0), 0);
   };
 
-  if (loading) {
-    return <div className={styles.loading}>Đang tải dữ liệu...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className={styles.errorContainer}>
-        <div className={styles.errorIcon}>⚠️</div>
-        <h3 className={styles.errorTitle}>Lỗi</h3>
-        <p className={styles.errorMessage}>{error}</p>
-        <button 
-          className={styles.retryButton}
-          onClick={() => window.location.reload()}
-        >
-          Thử lại
-        </button>
-      </div>
-    );
-  }
+  if (loading) return <div className={styles.loading}>Đang tải dữ liệu...</div>;
+  if (error) return <div className={styles.errorContainer}>{error}</div>;
 
   return (
     <div className={styles.management}>
-      {/* Header với thông tin cuộc họp */}
       <div className={styles.header}>
         <div className={styles.headerInfo}>
           <div className={styles.headerIcon}>📋</div>
           <div>
-            <h1 className={styles.headerTitle}>Quản lý Nghị quyết</h1>
+            <h1 className={styles.headerTitle}>Quản lý Nội dung Biểu quyết</h1>
             <p className={styles.headerSubtitle}>
-              {meetingInfo?.title} • {resolutions.length} nghị quyết • {getApprovedCount()} đã thông qua
+              {meetingInfo?.title} • {votingItems.length} mục • {getApprovedCount()} đã thông qua
             </p>
             {meetingInfo && (
               <div className={styles.meetingDetails}>
-                <span className={styles.meetingCode}>Mã: {meetingInfo.meetingCode}</span>
+                <span className={styles.meetingCode}>ID: {meetingInfo.id}</span>
                 <span className={styles.meetingDate}>
-                  {new Date(meetingInfo.meetingDate).toLocaleDateString('vi-VN')}
+                  {meetingInfo.meetingDate ? new Date(meetingInfo.meetingDate).toLocaleDateString('vi-VN') : new Date(meetingInfo.startTime).toLocaleDateString('vi-VN')}
                 </span>
-                {meetingInfo.location && (
-                  <span className={styles.meetingLocation}>📍 {meetingInfo.location}</span>
-                )}
-                <span className={`${styles.meetingStatus} ${styles[meetingInfo.status.toLowerCase()]}`}>
-                  {meetingInfo.status === 'COMPLETED' ? 'ĐÃ KẾT THÚC' : 
-                   meetingInfo.status === 'PENDING' ? 'ĐANG DIỄN RA' : 'SẮP DIỄN RA'}
+                <span className={`${styles.meetingStatus} ${styles[meetingInfo.status?.toLowerCase()]}`}>
+                  {meetingInfo.status}
                 </span>
               </div>
             )}
           </div>
         </div>
-        <button 
-          className={styles.addButton}
-          onClick={() => setAddModalOpen(true)}
-        >
-          <span>+</span>
-          Thêm Nghị quyết
+        <button className={styles.addButton} onClick={() => setAddModalOpen(true)}>
+          <span>+</span> Thêm Nội dung
         </button>
       </div>
 
-      {/* Statistics */}
       <div className={styles.stats}>
         <div className={styles.statItem}>
-          <span className={styles.statNumber}>{resolutions.length}</span>
-          <span className={styles.statLabel}>Tổng nghị quyết</span>
+          <span className={styles.statNumber}>{votingItems.length}</span>
+          <span className={styles.statLabel}>Tổng mục</span>
         </div>
         <div className={styles.statItem}>
           <span className={styles.statNumber}>{getApprovedCount()}</span>
@@ -241,83 +229,79 @@ export default function ResolutionManagement() {
         </div>
         <div className={styles.statItem}>
           <span className={styles.statNumber}>{getTotalVotes().toLocaleString()}</span>
-          <span className={styles.statLabel}>Tổng phiếu bầu</span>
-        </div>
-        <div className={styles.statItem}>
-          <span className={styles.statNumber}>
-            {resolutions.length > 0 ? Math.round((getApprovedCount() / resolutions.length) * 100) : 0}%
-          </span>
-          <span className={styles.statLabel}>Tỷ lệ thông qua</span>
+          <span className={styles.statLabel}>Tổng lượt bầu</span>
         </div>
       </div>
 
-      {/* Search Section */}
       <div className={styles.searchSection}>
         <div className={styles.searchBox}>
           <div className={styles.searchIcon}>🔍</div>
           <input
             type="text"
-            placeholder="Tìm kiếm nghị quyết..."
+            placeholder="Tìm kiếm..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className={styles.searchInput}
           />
         </div>
         <div className={styles.stats}>
-          Hiển thị {filteredResolutions.length}/{resolutions.length} nghị quyết
+          Hiển thị {filteredItems.length}/{votingItems.length} mục
         </div>
       </div>
 
-      {/* Resolutions Grid */}
       <div className={styles.resolutionGrid}>
-        {filteredResolutions.map((resolution) => (
+        {filteredItems.map((item) => (
           <ResolutionCard
-            key={resolution.id}
-            resolution={resolution}
-            onViewDetail={handleViewDetail}
-            onEdit={handleEdit}
+            key={item.id}
+            votingItem={item}
+            result={resultsMap[item.id]}
+            meetingStatus={meetingInfo?.status}
+            onViewDetail={(i) => { setSelectedItem(i); setViewModalOpen(true); }}
+            onEdit={(i) => { setSelectedItem(i); setEditModalOpen(true); }}
             onToggleActive={handleToggleActive}
+            onVote={(i: VotingItem) => { setSelectedItem(i); setVoteModalOpen(true); }}
           />
         ))}
       </div>
 
-      {/* Empty State */}
-      {filteredResolutions.length === 0 && !loading && (
+      {filteredItems.length === 0 && !loading && (
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>📄</div>
-          <h3 className={styles.emptyTitle}>Không tìm thấy nghị quyết</h3>
-          <p className={styles.emptyDescription}>
-            {searchTerm ? 'Thử tìm kiếm với từ khoá khác' : 'Chưa có nghị quyết nào được tạo'}
-          </p>
-          <button 
-            className={styles.addButton}
-            onClick={() => setAddModalOpen(true)}
-          >
-            + Thêm Nghị quyết đầu tiên
+          <h3 className={styles.emptyTitle}>Chưa có nội dung nào</h3>
+          <button className={styles.addButton} onClick={() => setAddModalOpen(true)}>
+            + Thêm mục đầu tiên
           </button>
         </div>
       )}
 
-      {/* Modals */}
       <ResolutionAddModal
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}
-        onSave={handleAddResolution}
+        onSave={handleAddVotingItem}
+        loading={saveLoading}
+      />
+
+      <ResolutionEditModal
+        isOpen={editModalOpen}
+        votingItem={selectedItem} // Type will match updated modal
+        onClose={() => setEditModalOpen(false)}
+        onSave={handleSaveEdit}
         loading={saveLoading}
       />
 
       <ResolutionViewModal
         isOpen={viewModalOpen}
-        resolution={selectedResolution}
+        votingItem={selectedItem}
+        result={selectedItem ? resultsMap[selectedItem.id] : undefined}
+        meetingStatus={meetingInfo?.status}
         onClose={() => setViewModalOpen(false)}
       />
 
-      <ResolutionEditModal
-        isOpen={editModalOpen}
-        resolution={selectedResolution}
-        onClose={() => setEditModalOpen(false)}
-        onSave={handleSaveEdit}
-        loading={saveLoading}
+      <ResolutionVoteModal
+        isOpen={voteModalOpen}
+        votingItem={selectedItem}
+        onClose={() => setVoteModalOpen(false)}
+        onSuccess={() => { fetchData(); alert('Thao tác thành công!'); }}
       />
     </div>
   );

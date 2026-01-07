@@ -1,24 +1,28 @@
+export type MeetingStatus = 'SCHEDULED' | 'ONGOING' | 'COMPLETED' | 'CANCELLED';
+
 export interface Meeting {
-  meetingCode: string;
+  id: string;
   title: string;
   description: string;
-  meetingDate: string;
-  dayStart: string;
+  meetingDate?: string;
+  meetingCode?: string;
+  startTime: string;
+  endTime: string;
   location: string;
-  dayEnd: string;
-  status: 'UPCOMING' | 'PENDING' | 'COMPLETED';
-  participants: number;
-  agenda: string[];
-  candidates: string[];
+  status: MeetingStatus;
+  participants?: number;
+  agenda?: string[];
+  candidates?: string[];
+  resolutions?: any[]; // Will be typed properly with Resolution interface
+  elections?: any[]; // Will be typed properly with Election interface
 }
+
 export interface MeetingRequest {
-  meetingCode: string;
   title: string;
   description: string;
-  meetingDate: string;
-  dayStart: string;
+  meetingDate: string; // ISO date (YYYY-MM-DD)
+  startTime: string; // ISO datetime
+  endTime: string; // ISO datetime
   location: string;
-  dayEnd: string;
-  status: 'UPCOMING' | 'PENDING' | 'COMPLETED';
-  isVotingOpen?: boolean;
+  status: MeetingStatus;
 }

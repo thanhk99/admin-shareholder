@@ -1,59 +1,101 @@
-import { API_CONFIG } from '../utils/constants';
-import axiosInstance from '../utils/axios';
-import { ResolutionFormData } from '@/app/types/resolution';
+import { API_CONFIG } from '../api-config';
+import apiClient from "../api-client";
+import { VotingItemRequest } from '@/app/types/resolution';
 
 export class ResolutionService {
 
-  static api_get_resolution_by_meeting : string = API_CONFIG.ENDPOINTS.RESOLUTION.GETBYMEETING;
-  static api_get_all_resolutions : string = API_CONFIG.ENDPOINTS.RESOLUTION.GETALLRESOLUTIONS;
-  static api_create_resolution : string = API_CONFIG.ENDPOINTS.RESOLUTION.CREATERESOLUTION;
-  static api_update_resolution : string = API_CONFIG.ENDPOINTS.RESOLUTION.UPDATERESOLUTION;
-  static api_update_resolution_status : string = API_CONFIG.ENDPOINTS.RESOLUTION.UPDATERESOLUTIONSTATUS;
-
-  static getAllResolutions = async ()=> {
+  static getResolutionsByMeetingId = async (meetingId: string) => {
     try {
-      const response = await axiosInstance.get(this.api_get_all_resolutions);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-
-  }
-
-  static getResolutionByMeeting = async (meetingCode: string) => {
-    try {
-      const response = await axiosInstance.get(`${this.api_get_resolution_by_meeting}/${meetingCode}`);
-      return response.data;
+      return apiClient.get(`/api/meetings/${meetingId}/resolutions`);
     } catch (error) {
       throw error;
     }
   }
 
-  static createResolution = async (resolutionData: ResolutionFormData ) => {
+  static getResolutionById = async (resolutionId: string) => {
     try {
-      const response = await axiosInstance.post(this.api_create_resolution, resolutionData);
-      return response.data;
+      return apiClient.get(`/api/resolutions/${resolutionId}`);
     } catch (error) {
       throw error;
     }
   }
 
-  static updateResolution = async (resolutionData: ResolutionFormData) => {
+  static getOptionById = async (optionId: string) => {
     try {
-      const response = await axiosInstance.post(this.api_update_resolution, resolutionData);
-      return response.data;
+      return apiClient.get(`/api/options/${optionId}`);
     } catch (error) {
       throw error;
     }
-  } 
+  }
 
-  static updateResolutionStatus = async (id: string, status: boolean) => {
+  static updateOption = async (optionId: string, data: any) => {
     try {
-      const response = await axiosInstance.post(this.api_update_resolution_status, {
-        resolutionCode: id,
+      return apiClient.put(`/api/options/${optionId}`, data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static deleteOption = async (optionId: string) => {
+    try {
+      return apiClient.delete(`/api/options/${optionId}`);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static createResolution = async (meetingId: string, data: Partial<VotingItemRequest>) => {
+    try {
+      // Chỉ gửi các trường theo spec mới 4.1 cho Resolution
+      const payload = {
+        title: data.title,
+        description: data.description,
+        displayOrder: data.displayOrder
+      };
+      return apiClient.post(`/api/meetings/${meetingId}/resolutions`, payload);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static getResults = async (resolutionId: string) => {
+    try {
+      return apiClient.get(`/api/resolutions/${resolutionId}/results`);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static vote = async (resolutionId: string, voteData: any) => {
+    try {
+      // payload: { optionVotes: [{ votingOptionId, voteWeight }] }
+      return apiClient.post(`/api/resolutions/${resolutionId}/vote`, voteData);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static saveDraft = async (resolutionId: string, voteData: any) => {
+    try {
+      return apiClient.post(`/api/resolutions/${resolutionId}/draft`, voteData);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static updateResolution = async (resolutionId: string, data: VotingItemRequest) => {
+    try {
+      return apiClient.put(`/api/resolutions/${resolutionId}`, data);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static updateStatus = async (resolutionId: string, status: boolean) => {
+    try {
+      return apiClient.post(`/api/resolutions/${resolutionId}/toggle`, {
         isActive: status
       });
-      return response.data;
     } catch (error) {
       throw error;
     }

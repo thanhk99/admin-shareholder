@@ -15,7 +15,7 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const pathname = usePathname();
-  const {admin} = useAuth()
+  const { admin } = useAuth()
 
   const handleToggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -25,36 +25,36 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const getCurrentPageTitle = () => {
     const routes: { [key: string]: string } = {
       '/': 'Dashboard',
-      '/shareholders': 'Quản lý Cổ đông',
+      '/users': 'Quản lý Người dùng',
       '/meetings': 'Quản lý Cuộc họp',
-      '/election': 'Quản lý Bầu cử',
-      '/voting': 'Quản lý Biểu quyết',
       '/reports': 'Báo cáo',
     };
-    
+
     // Match dynamic routes
-    if (pathname.startsWith('/shareholders')) return 'Quản lý Cổ đông';
+    if (pathname.startsWith('/users')) return 'Quản lý Người dùng';
     if (pathname.startsWith('/meetings')) return 'Quản lý Cuộc họp';
-    if (pathname.startsWith('/voting')) return 'Quản lý Bầu cử';
-    
+    if (pathname.startsWith('/resolution')) return 'Quản lý Biểu quyết';
+    if (pathname.startsWith('/candidate')) return 'Quản lý Ứng viên';
+    if (pathname.startsWith('/reports')) return 'Báo cáo';
+
     return routes[pathname] || 'Dashboard';
   };
 
   return (
     <div className={styles.adminLayout}>
-      <Sidebar 
+      <Sidebar
         isOpen={isSidebarOpen}
         onToggle={handleToggleSidebar}
       />
-      
+
       <div className={`${styles.mainContent} ${!isSidebarOpen ? styles.sidebarClosed : ''}`}>
-        <Header 
+        <Header
           user={admin}
           onToggleSidebar={handleToggleSidebar}
           isSidebarOpen={isSidebarOpen}
           currentPage={getCurrentPageTitle()}
         />
-        
+
         <div className={styles.content}>
           {children}
         </div>
