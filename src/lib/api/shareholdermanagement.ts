@@ -32,6 +32,10 @@ export default class ShareholderManage {
         }
     }
 
+    static async getByInvestorCode(code: string) {
+        return this.getShareholderByCode(code);
+    }
+
     static async getLogs(shareholderCode: string, page: number) {
         try {
             return apiClient.get(API_CONFIG.ENDPOINTS.SHAREHOLDER.GETLOGS + "/" + shareholderCode, { params: { page } });

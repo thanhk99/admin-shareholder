@@ -1,0 +1,57 @@
+.proxyGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.inputCheck {
+    display: flex;
+    gap: 8px;
+}
+
+.checkBtn {
+    background: #f0f0f0;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    padding: 0 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.checkBtn:hover:not(:disabled) {
+    background: #e6f7ff;
+    border-color: #40a9ff;
+    color: #1890ff;
+}
+
+.checkBtn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.infoBox {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #f6ffed;
+    border: 1px solid #b7eb8f;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #389e0d;
+}
+
+.successIcon {
+    font-size: 14px;
+}
+
+@media (max-width: 768px) {
+    .proxyGrid {
+        grid-template-columns: 1fr;
+    }
+}

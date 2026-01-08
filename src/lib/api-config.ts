@@ -15,7 +15,6 @@ export const API_CONFIG = {
         },
         ADMIN: {
             GETPBASEINFO: '/api/users/profile',
-            GETBYCODE: '/api/shareholders/getByCode',
             UPDATE_PROFILE: '/api/shareholders/editShareholder',
             UPDATE_SHAREHOLDER_NAME: '/api/shareholders/changeName',
             UPDATE_ROLES: '/api/users'

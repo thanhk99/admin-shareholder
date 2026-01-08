@@ -209,7 +209,7 @@ export default function UserManagement() {
                 </td>
                 <td>{shareholder.fullName}</td>
                 <td>{shareholder.email}</td>
-                <td className={styles.shares}>{shareholder.sharesOwned}</td>
+                <td className={styles.shares}>{((shareholder.sharesOwned || 0) + (shareholder.receivedProxyShares || 0)).toLocaleString()}</td>
                 <td>{shareholder.cccd}</td>
                 <td>
                   <span className={`${styles.status} ${styles[shareholder.enabled.toString()]}`}>

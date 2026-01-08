@@ -63,4 +63,12 @@ export class MeetingService {
             throw error;
         }
     }
+
+    static getOngoingMeeting = async () => {
+        try {
+            return apiClient.get(`${this.api_base}/ongoing`);
+        } catch (error) {
+            throw error;
+        }
+    }
 }

@@ -13,6 +13,9 @@ import {
   NumberOutlined
 } from '@ant-design/icons';
 import ShareholderManage from '@/lib/api/shareholdermanagement';
+import { MeetingService } from '@/lib/api/meetings';
+import { Meeting } from '@/app/types/meeting';
+import { useEffect } from 'react';
 import modalStyles from '../Modal/Modal.module.css';
 
 interface AddShareholderModalProps {
@@ -31,8 +34,8 @@ interface FormData {
   phoneNumber: string;
   address: string;
   dateOfIssue?: string;
-  nation?: string;
   investorCode: string;
+  meetingId: string;
 }
 
 interface FormErrors {
@@ -46,7 +49,7 @@ interface FormErrors {
   address?: string;
   investorCode?: string;
   dateOfIssue?: string;
-  nation?: string;
+  meetingId?: string;
 }
 
 export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddShareholderModalProps) {
@@ -60,11 +63,33 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
     phoneNumber: '',
     address: '',
     dateOfIssue: '',
-    nation: '',
-    investorCode: ''
+    investorCode: '',
+    meetingId: ''
   });
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchMeetings();
+    }
+  }, [isOpen]);
+
+  const fetchMeetings = async () => {
+    try {
+      const response = await MeetingService.getAllMeetings();
+      // Handle both wrapped {status, data} and direct array responses
+      const res = response as any;
+      if (Array.isArray(res)) {
+        setMeetings(res);
+      } else if (res.status === "success" || res.status === 200) {
+        setMeetings(res.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching meetings:', error);
+    }
+  };
 
   const formatDateForAPI = (dateString: string): string => {
     if (!dateString) return '';
@@ -102,6 +127,10 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
       newErrors.investorCode = 'Mã nhà đầu tư là bắt buộc';
     }
 
+    if (!formData.meetingId) {
+      newErrors.meetingId = 'Vui lòng chọn đại hội';
+    }
+
     if (formData.sharesOwned < 0) {
       newErrors.sharesOwned = 'Số cổ phần không được âm';
     }
@@ -121,11 +150,10 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
     try {
       const apiData = {
         ...formData,
-        enabled: true,
         dateOfIssue: formatDateForAPI(formData.dateOfIssue || '')
       };
 
-      const response = await ShareholderManage.addShareholder(apiData);
+      const response = await ShareholderManage.addShareholder(apiData as any);
       if (response.status === 200 || (response as any).status === "success") {
         handleClose();
         onSuccess();
@@ -171,8 +199,8 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
       phoneNumber: '',
       address: '',
       dateOfIssue: '',
-      nation: '',
-      investorCode: ''
+      investorCode: '',
+      meetingId: ''
     });
     setErrors({});
     onClose();
@@ -361,23 +389,29 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
                 />
               </div>
             </div>
+          </div>
 
-            <div className={modalStyles.formGroup}>
-              <label className={modalStyles.formLabel}>
-                Quốc tịch
-              </label>
-              <div className={modalStyles.inputWithIcon}>
-                <GlobalOutlined className={modalStyles.inputIcon} />
-                <input
-                  type="text"
-                  value={formData.nation}
-                  onChange={(e) => handleInputChange('nation', e.target.value)}
-                  placeholder="Nhập quốc tịch"
-                  disabled={loading}
-                  className={modalStyles.formInput}
-                />
-              </div>
+          <div className={modalStyles.formGroup}>
+            <label className={`${modalStyles.formLabel} ${modalStyles.required}`}>
+              Đại hội cổ đông
+            </label>
+            <div className={modalStyles.inputWithIcon}>
+              <GlobalOutlined className={modalStyles.inputIcon} />
+              <select
+                value={formData.meetingId}
+                onChange={(e) => handleInputChange('meetingId', e.target.value)}
+                disabled={loading}
+                className={`${modalStyles.formInput} ${errors.meetingId ? modalStyles.error : ''}`}
+              >
+                <option value="">Chọn đại hội</option>
+                {meetings.map((meeting) => (
+                  <option key={meeting.id} value={meeting.id}>
+                    {meeting.title}
+                  </option>
+                ))}
+              </select>
             </div>
+            {errors.meetingId && <span className={modalStyles.errorText}>{errors.meetingId}</span>}
           </div>
 
           <div className={modalStyles.formGroup}>

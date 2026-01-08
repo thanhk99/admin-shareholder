@@ -6,11 +6,11 @@ export interface addShareholderRequest {
   sharesOwned: number;
   cccd: string;
   phoneNumber: string;
-  enabled: boolean;
   address: string;
   dateOfIssue?: string;
   nation?: string;
   investorCode: string;
+  meetingId: string;
 }
 
 export interface ShareholderForm {
@@ -25,6 +25,7 @@ export interface ShareholderForm {
   dateOfIssue?: string;
   nation?: string;
   investorCode: string;
+  meetingId: string;
 }
 
 export interface FormErrors {
@@ -64,6 +65,7 @@ export interface Shareholder {
   cccd: string;
   dateOfIssue: string;
   address: string;
+  meetingId?: string;
   nation?: string;
   roles: string[];
   enabled: boolean;

@@ -1,12 +1,14 @@
-import { redirect } from "next/navigation";
 import AdminLayout from "../components/AdminLayout/AdminLayout";
-import styles from "@/app/proxy/page.module.css"
+import ProxyManagement from "../components/ProxyManagement/ProxyManagement";
+import Head from "next/head";
 
 export default function ProxyPage() {
-
     return (
         <AdminLayout>
-            <div className={styles.a}></div>
+            <Head>
+                <title>Quản lý Uỷ quyền | VIX DHCD</title>
+            </Head>
+            <ProxyManagement />
         </AdminLayout>
     )
 }
