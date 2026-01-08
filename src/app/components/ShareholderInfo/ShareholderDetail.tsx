@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { 
-  ArrowLeftOutlined, 
-  EditOutlined, 
+import {
+  ArrowLeftOutlined,
+  EditOutlined,
   PrinterOutlined,
   UserOutlined,
   MailOutlined,
@@ -16,10 +16,10 @@ import {
   GlobalOutlined
 } from '@ant-design/icons';
 import styles from './ShareholderDetail.module.css';
-import EditShareholderModal from '../ShareholderManagement/EditShareholderModal/EditShareholderModal';
 import { Shareholder } from '@/app/types/shareholder';
 import ShareholderManage from '@/lib/api/shareholdermanagement';
-import ShareholderLogs from '../ShareholderManagement/ShareholderLogs/ShareholderLogs';
+import ShareholderLogs from '../UserManagement/ShareholderLogs/ShareholderLogs';
+import EditShareholderModal from '../UserManagement/EditShareholderModal/EditShareholderModal';
 
 export default function ShareholderDetail() {
   const params = useParams();
@@ -35,9 +35,9 @@ export default function ShareholderDetail() {
     try {
       setLoading(true);
       const response = await ShareholderManage.getShareholderByCode(shareholderId);
-      if(response.status === "success"){
-        setShareholder(response.data);
-      }else{
+      if (response) {
+        setShareholder(response as any);
+      } else {
         setShareholder(null);
       }
     } catch (err) {
@@ -67,7 +67,7 @@ export default function ShareholderDetail() {
   };
 
   const handleEditSuccess = () => {
-    fetchShareholderDetail(); 
+    fetchShareholderDetail();
     setShowEditModal(false);
   };
 
@@ -128,9 +128,9 @@ export default function ShareholderDetail() {
         </div>
         <div className={styles.profileInfo}>
           <h1 className={styles.name}>{shareholder.fullName}</h1>
-          <p className={styles.id}>Mã cổ đông: {shareholder.shareholderCode}</p>
-          <span className={`${styles.status} ${styles[shareholder.status.toString()]}`}>
-            {shareholder.status.toString() === 'true' ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+          <p className={styles.id}>Mã cổ đông: {shareholder.investorCode}</p>
+          <span className={`${styles.status} ${styles[shareholder.enabled.toString()]}`}>
+            {shareholder.enabled ? 'Đang hoạt động' : 'Ngừng hoạt động'}
           </span>
         </div>
       </div>
@@ -158,7 +158,7 @@ export default function ShareholderDetail() {
               <label>Số điện thoại</label>
               <span>
                 <PhoneOutlined />
-                {shareholder.phone}
+                {shareholder.phoneNumber}
               </span>
             </div>
             <div className={styles.infoItem}>
@@ -169,10 +169,10 @@ export default function ShareholderDetail() {
               </span>
             </div>
             <div className={styles.infoItem}>
-              <label>Ngày sinh</label>
+              <label>Ngày cấp</label>
               <span>
                 <CalendarOutlined />
-                {shareholder.birthDay}
+                {shareholder.dateOfIssue}
               </span>
             </div>
             <div className={styles.infoItem}>
@@ -201,21 +201,21 @@ export default function ShareholderDetail() {
           <div className={styles.sharesSection}>
             <div className={styles.shareCard}>
               <div className={styles.shareNumber}>
-                {shareholder.ownShares+shareholder.representedShares}
+                {shareholder.sharesOwned + shareholder.receivedProxyShares}
               </div>
               <div className={styles.shareLabel}>Tổng số cổ phần</div>
             </div>
             <div className={styles.shareStats}>
               <div className={styles.statItem}>
-                <span className={styles.statValue}>{shareholder.ownShares}</span>
+                <span className={styles.statValue}>{shareholder.sharesOwned}</span>
                 <span className={styles.statLabel}>Cổ phần sở hữu</span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statValue}>{shareholder.authorizedShares || 0}</span>
+                <span className={styles.statValue}>{shareholder.delegatedShares || 0}</span>
                 <span className={styles.statLabel}>Cổ phần ủy quyền</span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statValue}>{shareholder.representedShares}</span>
+                <span className={styles.statValue}>{shareholder.receivedProxyShares}</span>
                 <span className={styles.statLabel}>Cổ phần đại diện</span>
               </div>
             </div>
@@ -228,23 +228,23 @@ export default function ShareholderDetail() {
           <div className={styles.infoGrid}>
             <div className={styles.infoItem}>
               <label>Ngày tạo</label>
-              <span>{formatDate(shareholder.createAt)}</span>
+              <span>{formatDate(shareholder.createdAt)}</span>
             </div>
             <div className={styles.infoItem}>
               <label>Ngày cập nhật</label>
-              <span>{formatDate(shareholder.updateAt)}</span>
+              <span>{formatDate(shareholder.updatedAt)}</span>
             </div>
             <div className={styles.infoItem}>
               <label>Trạng thái</label>
-              <span className={`${styles.status} ${styles[shareholder.status.toString()]}`}>
-                {shareholder.status.toString() === 'true' ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+              <span className={`${styles.status} ${styles[shareholder.enabled.toString()]}`}>
+                {shareholder.enabled ? 'Đang hoạt động' : 'Ngừng hoạt động'}
               </span>
             </div>
           </div>
         </div>
       </div>
-      <ShareholderLogs 
-        shareholderCode={shareholderId} 
+      <ShareholderLogs
+        shareholderCode={shareholderId}
         showFilter={false}
       />
       {/* Edit Modal */}

@@ -7,7 +7,7 @@ export const envSchema = z.object({
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     NEXT_PUBLIC_API_URL: z.preprocess(
         (val) => (val === '' ? undefined : val),
-        z.string().url().default('http://localhost:8085')
+        z.string().url().default('http://dhcd.vix.local:8085')
     ),
 });
 

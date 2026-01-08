@@ -47,6 +47,12 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
       icon: <BarChartOutlined />,
       href: '/reports',
     },
+    {
+      id: 'proxy',
+      label: 'Uỷ quyền',
+      icon: <CheckCircleOutlined />,
+      href: '/proxy',
+    }
   ];
 
   const isActive = (href: string) => {

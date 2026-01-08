@@ -50,7 +50,13 @@ apiClient.interceptors.response.use(
 
         if (!originalRequest) return Promise.reject(error);
 
-        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+        const isAuthRequest = originalRequest.url?.includes(API_CONFIG.ENDPOINTS.AUTH.LOGIN) ||
+            originalRequest.url?.includes(API_CONFIG.ENDPOINTS.AUTH.REFRESH) ||
+            originalRequest.url?.includes(API_CONFIG.ENDPOINTS.AUTH.REGISTER);
+
+        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry && !isAuthRequest) {
+            originalRequest._retry = true;
+
             if (isRefreshing) {
                 return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject });
@@ -64,7 +70,6 @@ apiClient.interceptors.response.use(
                     });
             }
 
-            originalRequest._retry = true;
             isRefreshing = true;
 
             try {
@@ -86,7 +91,7 @@ apiClient.interceptors.response.use(
                 processQueue(refreshError, null);
                 tokenManager.clearAccessToken();
                 // Optional: Redirect to login or handle logout action
-                if (typeof window !== 'undefined') {
+                if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
                     window.location.href = '/login';
                 }
                 return Promise.reject(refreshError);

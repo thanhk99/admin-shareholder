@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { 
-  DownloadOutlined, 
+import {
+  DownloadOutlined,
   FilterOutlined,
   TeamOutlined,
   CheckCircleOutlined
@@ -33,11 +33,11 @@ export default function Reports() {
   const [meetingResults, setMeetingResults] = useState<MeetingResults | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
-  
+
   const fetchMeetings = async () => {
     try {
       const response = await MeetingService.getAllMeetings();
-      if(response.status === 'success'){
+      if (response.status === 200) {
         setMeetings(response.data);
       }
     } catch (error) {
@@ -54,15 +54,15 @@ export default function Reports() {
     setLoading(true);
     try {
       const response = await ReportService.getReportMeeting(meetingCode);
-      
+
       // SỬA QUAN TRỌNG: Xử lý response đúng cách
-      if (response.status === 'success'){
+      if (response.status === 200) {
         // Nếu response có cấu trúc {status: 'success', data: {...}}
         if (response.data) {
           setMeetingResults(response.data);
         } else {
           // Nếu response là dữ liệu trực tiếp
-          setMeetingResults(response);
+          // setMeetingResults(response);
         }
       } else {
         setMeetingResults(null);
@@ -98,13 +98,13 @@ export default function Reports() {
 
   const getStats = () => {
     if (!selectedMeeting || !meetingResults) {
-      const totalCandidates = meetings.reduce((sum, meeting) => 
+      const totalCandidates = meetings.reduce((sum, meeting) =>
         sum + (meeting.candidates?.length || 0), 0
       );
-      const totalVotings = meetings.reduce((sum, meeting) => 
+      const totalVotings = meetings.reduce((sum, meeting) =>
         sum + (meeting.agenda?.length || 0), 0
       );
-      
+
       return {
         totalCandidates,
         totalVotings,
@@ -114,21 +114,21 @@ export default function Reports() {
     } else {
       const totalCandidates = meetingResults.candidates?.length || 0;
       const totalVotings = meetingResults.resolutions?.length || 0;
-      
-      const candidateVotes = meetingResults.candidates?.reduce((sum, candidate) => 
+
+      const candidateVotes = meetingResults.candidates?.reduce((sum, candidate) =>
         sum + candidate.amountVotes, 0
       ) || 0;
-      
-      const resolutionVotes = meetingResults.resolutions?.reduce((sum, resolution) => 
+
+      const resolutionVotes = meetingResults.resolutions?.reduce((sum, resolution) =>
         sum + resolution.totalAgree + resolution.totalNotAgree + resolution.totalNotIdea, 0
       ) || 0;
-      
+
       const totalVotes = candidateVotes + resolutionVotes;
-      
+
       const approvedVotings = meetingResults.resolutions?.filter(
         resolution => resolution.totalAgree > resolution.totalNotAgree
       ).length || 0;
-      
+
       return {
         totalCandidates,
         totalVotings,
@@ -187,14 +187,14 @@ export default function Reports() {
     return (
       <div className={styles.resultsContainer}>
         {hasCandidates && (
-          <ElectionResults 
+          <ElectionResults
             candidates={meetingResults.candidates}
             loading={loading}
           />
         )}
-        
+
         {hasResolutions && (
-          <VotingResults 
+          <VotingResults
             resolutions={meetingResults.resolutions}
             loading={loading}
           />
@@ -260,7 +260,7 @@ export default function Reports() {
           <div className={styles.filterGroup}>
             <label>Cuộc họp</label>
             <div className={styles.meetingFilter}>
-              <select 
+              <select
                 value={selectedMeeting}
                 onChange={(e) => setSelectedMeeting(e.target.value)}
                 className={styles.meetingSelect}
@@ -269,7 +269,7 @@ export default function Reports() {
                 <option value="">chưa chọn</option>
                 {meetings.map(meeting => (
                   <option key={meeting.meetingCode} value={meeting.meetingCode}>
-                    {meeting.title} ({formatDate(meeting.meetingDate)})
+                    {/* {meeting.title} ({formatDate(meeting.meetingDate)}) */}
                   </option>
                 ))}
               </select>

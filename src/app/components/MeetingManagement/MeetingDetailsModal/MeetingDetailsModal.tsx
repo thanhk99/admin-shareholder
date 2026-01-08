@@ -111,14 +111,14 @@ export default function MeetingDetailModal({
             <div className={styles.detailSection}>
               <h4><TeamOutlined /> Người tham gia</h4>
               <div className={styles.participants}>
-                {meeting.participants > 0 ? (
+                {/* {meeting.participants > 0 ? (
                   <div className={styles.participant}>
                     <UserOutlined />
                     <span>{meeting.participants} người tham gia</span>
                   </div>
                 ) : (
                   <p className={styles.noData}>Chưa có người tham gia</p>
-                )}
+                )} */}
               </div>
             </div>
           </div>

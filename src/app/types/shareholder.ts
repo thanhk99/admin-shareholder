@@ -1,58 +1,72 @@
-export interface addShareholderRequest{
-    fullname: string,
-    email: string,
-    shares: number,
-    cccd: string
-    address: string,
-    phone:string
+export interface addShareholderRequest {
+  username: string;
+  password?: string;
+  fullName: string;
+  email: string;
+  sharesOwned: number;
+  cccd: string;
+  phoneNumber: string;
+  enabled: boolean;
+  address: string;
+  dateOfIssue?: string;
+  nation?: string;
+  investorCode: string;
 }
 
 export interface ShareholderForm {
-  fullname: string;
+  username: string;
+  password?: string;
+  fullName: string;
   email: string;
-  shares: number;
+  sharesOwned: number;
   cccd: string;
-  address: string,
-  phone:string;
-  status: string
+  phoneNumber: string;
+  address: string;
+  dateOfIssue?: string;
+  nation?: string;
+  investorCode: string;
 }
 
 export interface FormErrors {
-  fullname?: string;
+  username?: string;
+  password?: string;
+  fullName?: string;
   email?: string;
-  shares?: string; 
+  sharesOwned?: string;
   cccd?: string;
+  phoneNumber?: string;
   address?: string;
-  phone?: string ;
 }
 
-export interface updateShareholderRequest{
-  fullname?: string;
-  email?: string;
-  shares?: number; 
-  cccd?: string;
-  address?: string;
-  status? : boolean;
-  phone?: string ;
-  birthDay?:string;
-  nation?:string;
-}
-export interface Shareholder {
-  shareholderCode: string;
+export interface updateShareholderRequest {
   fullName?: string;
+  email?: string;
+  sharesOwned?: number;
+  cccd?: string;
+  phoneNumber?: string;
+  enabled?: boolean;
+  address?: string;
+  dateOfIssue?: string;
+  nation?: string;
+  investorCode?: string;
+}
+
+export interface Shareholder {
+  id: string;
+  username: string;
   email: string;
-  phone: string;
-  address: string;
-  ownShares: number;
-  authorizedShares: number;
-  representedShares: number;
-  status: boolean;
-  createAt: string;
-  createBy: string;
-  updateAt: string;
-  updatedBy: string;
-  nation: string;
-  birthDay: string;
+  fullName: string;
+  sharesOwned: number;
+  receivedProxyShares: number;
+  delegatedShares: number;
+  phoneNumber: string;
+  investorCode: string;
   cccd: string;
-  lockShare: number;
+  dateOfIssue: string;
+  address: string;
+  nation?: string;
+  roles: string[];
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
 }

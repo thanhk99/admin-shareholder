@@ -2,14 +2,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { 
-  Table, 
-  Card, 
-  Tag, 
+import {
+  Table,
+  Card,
+  Tag,
   Space,
   Empty
 } from 'antd';
-import { 
+import {
   HistoryOutlined,
   FileTextOutlined,
   TeamOutlined
@@ -37,13 +37,15 @@ export default function ShareholderLogs({ shareholderCode, showFilter = true }: 
 
   const fetchLogs = async (page: number = 1) => {
     if (!shareholderCode) return;
-    
+
     setLoading(true);
     try {
       const response = await ShareholderManage.getLogs(shareholderCode, page);
-      
-      if (response.status === "success") {
-        setLogs(response.data);
+
+      if (Array.isArray(response)) {
+        setLogs(response);
+      } else if ((response as any).status === "success" || (response as any).status === 200) {
+        setLogs((response as any).data || []);
       }
     } catch (error) {
       console.error('Error fetching logs:', error);
@@ -114,7 +116,7 @@ export default function ShareholderLogs({ shareholderCode, showFilter = true }: 
           {dayjs(timestamp).format('DD/MM/YYYY HH:mm')}
         </div>
       ),
-      sorter: (a: LogEntry, b: LogEntry) => 
+      sorter: (a: LogEntry, b: LogEntry) =>
         dayjs(a.timestamp).unix() - dayjs(b.timestamp).unix()
     },
     {
@@ -142,7 +144,7 @@ export default function ShareholderLogs({ shareholderCode, showFilter = true }: 
       key: 'content',
       render: (_: any, record: LogEntry) => {
         const type = getLogType(record);
-        
+
         return (
           <div className={styles.content}>
             {type === 'CANDIDATE' ? (
@@ -192,7 +194,7 @@ export default function ShareholderLogs({ shareholderCode, showFilter = true }: 
 
   return (
     <div className={styles.logsContainer}>
-      <Card 
+      <Card
         title={
           <Space>
             <HistoryOutlined />
@@ -210,7 +212,7 @@ export default function ShareholderLogs({ shareholderCode, showFilter = true }: 
             pageSize: 10,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total, range) => 
+            showTotal: (total, range) =>
               `${range[0]}-${range[1]} của ${total} bản ghi`
           }}
           scroll={{ x: 800 }}

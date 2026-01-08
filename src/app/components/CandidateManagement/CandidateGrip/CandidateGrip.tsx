@@ -5,13 +5,13 @@ import styles from './CandidateGrip.module.css';
 interface CandidateGridProps {
     candidates: Candidate[];
     onEdit: (candidate: Candidate) => void;
-    onToggleStatus: (id: string) => void;
+    onDelete: (id: string) => void;
 }
 
-export default function CandidateGrid({ 
-    candidates, 
-    onEdit, 
-    onToggleStatus 
+export default function CandidateGrid({
+    candidates,
+    onEdit,
+    onDelete
 }: CandidateGridProps) {
     return (
         <div className={styles.candidatesGrid}>
@@ -20,7 +20,7 @@ export default function CandidateGrid({
                     key={candidate.id}
                     candidate={candidate}
                     onEdit={onEdit}
-                    onToggleStatus={onToggleStatus}
+                    onDelete={onDelete}
                 />
             ))}
         </div>

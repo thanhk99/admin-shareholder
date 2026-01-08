@@ -20,23 +20,24 @@ interface EditShareholderModalProps {
 }
 
 interface FormData {
-  fullname: string;
+  fullName: string;
   email: string;
-  shares: number;
+  sharesOwned: number;
   cccd: string;
-  phone: string;
-  status: boolean;
+  phoneNumber: string;
+  enabled: boolean;
   address: string;
-  birthDay?: string;
+  dateOfIssue?: string;
   nation?: string;
+  investorCode: string;
 }
 
 interface FormErrors {
-  fullname?: string;
+  fullName?: string;
   email?: string;
-  shares?: string;
+  sharesOwned?: string;
   cccd?: string;
-  phone?: string;
+  phoneNumber?: string;
   address?: string;
 }
 
@@ -47,15 +48,16 @@ export default function EditShareholderModal({
   shareholder
 }: EditShareholderModalProps) {
   const [formData, setFormData] = useState<FormData>({
-    fullname: '',
+    fullName: '',
     email: '',
-    shares: 0,
+    sharesOwned: 0,
     cccd: '',
-    phone: '',
-    status: true,
+    phoneNumber: '',
+    enabled: true,
     address: '',
-    birthDay: '',
-    nation: ''
+    dateOfIssue: '',
+    nation: '',
+    investorCode: ''
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -102,15 +104,16 @@ export default function EditShareholderModal({
   useEffect(() => {
     if (shareholder) {
       setFormData({
-        fullname: shareholder.fullName || '',
+        fullName: shareholder.fullName || '',
         email: shareholder.email || '',
-        shares: shareholder.ownShares || 0,
+        sharesOwned: shareholder.sharesOwned || 0,
         cccd: shareholder.cccd || '',
-        phone: shareholder.phone || '',
-        status: shareholder.status ?? true,
+        phoneNumber: shareholder.phoneNumber || '',
+        enabled: shareholder.enabled ?? true,
         address: shareholder.address || '',
-        birthDay: formatDateForInput(shareholder.birthDay || ''),
-        nation: shareholder.nation || ''
+        dateOfIssue: formatDateForInput(shareholder.dateOfIssue || ''),
+        nation: (shareholder as any).nation || '',
+        investorCode: shareholder.investorCode || ''
       });
     }
   }, [shareholder]);
@@ -118,8 +121,8 @@ export default function EditShareholderModal({
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!formData.fullname.trim()) {
-      newErrors.fullname = 'Họ tên là bắt buộc';
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = 'Họ tên là bắt buộc';
     }
 
     if (!formData.email.trim()) {
@@ -134,14 +137,14 @@ export default function EditShareholderModal({
       newErrors.cccd = 'Số CCCD phải từ 9-12 chữ số';
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Số điện thoại là bắt buộc';
-    } else if (!/^(0|\+84)(\d{9,10})$/.test(formData.phone)) {
-      newErrors.phone = 'Số điện thoại không hợp lệ';
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Số điện thoại là bắt buộc';
+    } else if (!/^(0|\+84)(\d{9,10})$/.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = 'Số điện thoại không hợp lệ';
     }
 
-    if (formData.shares < 0) {
-      newErrors.shares = 'Số cổ phần không được âm';
+    if (formData.sharesOwned < 0) {
+      newErrors.sharesOwned = 'Số cổ phần không được âm';
     }
 
     if (!formData.address.trim()) {
@@ -159,7 +162,7 @@ export default function EditShareholderModal({
       return;
     }
 
-    if (!shareholder?.shareholderCode) {
+    if (!shareholder?.investorCode) {
       alert('Không tìm thấy ID người dùng');
       return;
     }
@@ -169,24 +172,25 @@ export default function EditShareholderModal({
 
       // Chuẩn bị dữ liệu để gửi API, chuyển đổi ngày về định dạng dd/MM/yyyy
       const apiData = {
-        fullname: formData.fullname,
+        fullName: formData.fullName,
         email: formData.email,
-        shares: formData.shares,
+        sharesOwned: formData.sharesOwned,
         cccd: formData.cccd,
-        phone: formData.phone,
-        status: formData.status,
+        phoneNumber: formData.phoneNumber,
+        enabled: formData.enabled,
         address: formData.address,
-        birthDay: formatDateForAPI(formData.birthDay || ''),
-        nation: formData.nation
+        dateOfIssue: formatDateForAPI(formData.dateOfIssue || ''),
+        nation: formData.nation,
+        investorCode: formData.investorCode
       };
 
       const response = await ShareholderManage.updateShareholder(apiData);
-      if (response.status === "success") {
+      if ((response as any).status === "success") {
         onSuccess();
         onClose();
         alert('Cập nhật thông tin người dùng thành công!');
       } else {
-        alert(response.message || 'Có lỗi xảy ra khi cập nhật người dùng');
+        alert((response as any).message || 'Có lỗi xảy ra khi cập nhật người dùng');
       }
     } catch (error: any) {
       console.error('Error updating shareholder:', error);
@@ -215,15 +219,16 @@ export default function EditShareholderModal({
     // Reset form về giá trị ban đầu từ shareholder
     if (shareholder) {
       setFormData({
-        fullname: shareholder.fullName || '',
+        fullName: shareholder.fullName || '',
         email: shareholder.email,
-        shares: shareholder.ownShares,
+        sharesOwned: shareholder.sharesOwned,
         cccd: shareholder.cccd,
-        phone: shareholder.phone,
-        status: shareholder.status ?? true,
+        phoneNumber: shareholder.phoneNumber,
+        enabled: shareholder.enabled ?? true,
         address: shareholder.address,
-        birthDay: formatDateForInput(shareholder.birthDay || ''),
-        nation: shareholder.nation || ''
+        dateOfIssue: formatDateForInput(shareholder.dateOfIssue || ''),
+        nation: (shareholder as any).nation || '',
+        investorCode: shareholder.investorCode || ''
       });
     }
     setErrors({});
@@ -256,14 +261,14 @@ export default function EditShareholderModal({
                 <UserOutlined className={modalStyles.inputIcon} />
                 <input
                   type="text"
-                  value={formData.fullname}
-                  onChange={(e) => handleInputChange('fullname', e.target.value)}
+                  value={formData.fullName}
+                  onChange={(e) => handleInputChange('fullName', e.target.value)}
                   placeholder="Nhập họ tên người dùng"
                   disabled={loading}
-                  className={`${modalStyles.formInput} ${errors.fullname ? modalStyles.error : ''}`}
+                  className={`${modalStyles.formInput} ${errors.fullName ? modalStyles.error : ''}`}
                 />
               </div>
-              {errors.fullname && <span className={modalStyles.errorText}>{errors.fullname}</span>}
+              {errors.fullName && <span className={modalStyles.errorText}>{errors.fullName}</span>}
             </div>
 
             <div className={modalStyles.formGroup}>
@@ -312,26 +317,26 @@ export default function EditShareholderModal({
                 <PhoneOutlined className={modalStyles.inputIcon} />
                 <input
                   type="text"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  value={formData.phoneNumber}
+                  onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                   placeholder="Nhập số điện thoại"
                   disabled={loading}
-                  className={`${modalStyles.formInput} ${errors.phone ? modalStyles.error : ''}`}
+                  className={`${modalStyles.formInput} ${errors.phoneNumber ? modalStyles.error : ''}`}
                 />
               </div>
-              {errors.phone && <span className={modalStyles.errorText}>{errors.phone}</span>}
+              {errors.phoneNumber && <span className={modalStyles.errorText}>{errors.phoneNumber}</span>}
             </div>
           </div>
 
           <div className={modalStyles.formRow}>
             <div className={modalStyles.formGroup}>
               <label className={modalStyles.formLabel}>
-                Ngày sinh
+                Ngày cấp
               </label>
               <input
                 type="date"
-                value={formData.birthDay}
-                onChange={(e) => handleInputChange('birthDay', e.target.value)}
+                value={formData.dateOfIssue}
+                onChange={(e) => handleInputChange('dateOfIssue', e.target.value)}
                 disabled={loading}
                 className={modalStyles.formInput}
               />
@@ -377,14 +382,14 @@ export default function EditShareholderModal({
               </label>
               <input
                 type="number"
-                value={formData.shares}
-                onChange={(e) => handleInputChange('shares', parseInt(e.target.value) || 0)}
+                value={formData.sharesOwned}
+                onChange={(e) => handleInputChange('sharesOwned', parseInt(e.target.value) || 0)}
                 placeholder="Nhập số cổ phần"
                 disabled={loading}
                 min="0"
-                className={`${modalStyles.formInput} ${errors.shares ? modalStyles.error : ''}`}
+                className={`${modalStyles.formInput} ${errors.sharesOwned ? modalStyles.error : ''}`}
               />
-              {errors.shares && <span className={modalStyles.errorText}>{errors.shares}</span>}
+              {errors.sharesOwned && <span className={modalStyles.errorText}>{errors.sharesOwned}</span>}
             </div>
 
             <div className={modalStyles.formGroup}>
@@ -392,8 +397,8 @@ export default function EditShareholderModal({
                 Trạng thái
               </label>
               <select
-                value={formData.status.toString()}
-                onChange={(e) => handleInputChange('status', e.target.value === 'true')}
+                value={formData.enabled.toString()}
+                onChange={(e) => handleInputChange('enabled', e.target.value === 'true')}
                 disabled={loading}
                 className={modalStyles.formSelect}
               >

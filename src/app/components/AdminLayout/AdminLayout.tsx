@@ -26,6 +26,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     const routes: { [key: string]: string } = {
       '/': 'Dashboard',
       '/users': 'Quản lý Người dùng',
+      '/proxy': 'Quản lý uỷ  quyền',
       '/meetings': 'Quản lý Cuộc họp',
       '/reports': 'Báo cáo',
     };
@@ -36,6 +37,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     if (pathname.startsWith('/resolution')) return 'Quản lý Biểu quyết';
     if (pathname.startsWith('/candidate')) return 'Quản lý Ứng viên';
     if (pathname.startsWith('/reports')) return 'Báo cáo';
+    if (pathname.startsWith('/proxy')) return 'Quản lý uỷ quyền';
 
     return routes[pathname] || 'Dashboard';
   };

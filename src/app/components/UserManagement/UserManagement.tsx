@@ -35,11 +35,11 @@ export default function UserManagement() {
 
   // Xem chi tiết người dùng
   const handleViewDetail = (shareholder: Shareholder) => {
-    router.push(`/profile/${shareholder.shareholderCode}`);
+    router.push(`/profile/${shareholder.id}`);
   };
 
   // "Xoá" người dùng (chuyển sang inactive)
-  const handleDeleteShareholder = async (cccd: string) => {
+  const handleDeleteShareholder = async (investorCode: string) => {
     if (!confirm('Bạn có chắc chắn muốn vô hiệu hoá người dùng này?')) {
       return;
     }
@@ -47,11 +47,11 @@ export default function UserManagement() {
     setLoading(true);
     try {
       const response = await ShareholderManage.updateShareholder({
-        cccd: cccd,
-        status: false
+        investorCode: investorCode,
+        enabled: false
       });
 
-      if (response.status === "success") {
+      if (response.status === 200) {
         await fetchShareholder();
         alert('Đã vô hiệu hoá người dùng thành công');
       }
@@ -64,15 +64,15 @@ export default function UserManagement() {
   };
 
   // Kích hoạt lại người dùng
-  const handleActivateShareholder = async (cccd: string) => {
+  const handleActivateShareholder = async (investorCode: string) => {
     setLoading(true);
     try {
       const response = await ShareholderManage.updateShareholder({
-        cccd: cccd,
-        status: true
+        investorCode: investorCode,
+        enabled: true
       });
 
-      if (response.status === "success") {
+      if (response.status === 200) {
         await fetchShareholder();
         alert('Đã kích hoạt người dùng thành công');
       }
@@ -109,8 +109,13 @@ export default function UserManagement() {
   const fetchShareholder = async () => {
     try {
       const response = await ShareholderManage.getList();
-      if (response.status === "success") {
-        setShareholders(response.data);
+
+      // Handle both wrapped {status, data} and direct array responses
+      const res = response as any;
+      if (Array.isArray(res)) {
+        setShareholders(res);
+      } else if (res.status === "success" || res.status === 200) {
+        setShareholders(res.data || []);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -151,9 +156,9 @@ export default function UserManagement() {
         <div className={styles.stats}>
           <span>Tổng: {shareholders.length} người dùng</span>
           <span>•</span>
-          <span>Active: {shareholders.filter(sh => sh.status.toString() === 'true').length}</span>
+          <span>Active: {shareholders.filter(sh => sh.enabled).length}</span>
           <span>•</span>
-          <span>Inactive: {shareholders.filter(sh => sh.status.toString() === 'false').length}</span>
+          <span>Inactive: {shareholders.filter(sh => !sh.enabled).length}</span>
         </div>
       </div>
 
@@ -190,7 +195,7 @@ export default function UserManagement() {
           <tbody>
             {filteredShareholders.map((shareholder) => (
               <tr
-                key={shareholder.shareholderCode}
+                key={shareholder.investorCode}
                 className={styles.clickableRow}
                 onClick={() => handleViewDetail(shareholder)}
               >
@@ -199,16 +204,16 @@ export default function UserManagement() {
                     <div className={styles.avatar}>
                       <UserOutlined />
                     </div>
-                    {shareholder.shareholderCode}
+                    {shareholder.id}
                   </div>
                 </td>
                 <td>{shareholder.fullName}</td>
                 <td>{shareholder.email}</td>
-                <td className={styles.shares}>{shareholder.ownShares}</td>
+                <td className={styles.shares}>{shareholder.sharesOwned}</td>
                 <td>{shareholder.cccd}</td>
                 <td>
-                  <span className={`${styles.status} ${styles[shareholder.status.toString()]}`}>
-                    {shareholder.status.toString() === 'true' ? 'Hoạt động' : 'Không hoạt động'}
+                  <span className={`${styles.status} ${styles[shareholder.enabled.toString()]}`}>
+                    {shareholder.enabled ? 'Hoạt động' : 'Không hoạt động'}
                   </span>
                 </td>
                 <td>
@@ -222,11 +227,11 @@ export default function UserManagement() {
                     >
                       <EditOutlined />
                     </button>
-                    {shareholder.status.toString() === 'true' ? (
+                    {shareholder.enabled ? (
                       <button
                         className={styles.deleteButton}
                         title="Vô hiệu hoá"
-                        onClick={() => handleDeleteShareholder(shareholder.cccd)}
+                        onClick={() => handleDeleteShareholder(shareholder.investorCode)}
                         disabled={loading}
                       >
                         <DeleteOutlined />
