@@ -71,7 +71,7 @@ export default function ResolutionEditModal({
           name="title"
           label="Tiêu đề"
           rules={[
-            { required: true, message: 'Vui lòng nhập tiêu đề' },
+            { required: true, message: 'Tiêu đề không được để trống' },
             { max: 500, message: 'Tiêu đề không được vượt quá 500 ký tự' }
           ]}
         >
@@ -94,8 +94,18 @@ export default function ResolutionEditModal({
         <Form.Item
           name="displayOrder"
           label="Thứ tự hiển thị"
+          rules={[
+            {
+              validator: (_, value) => {
+                if (value < 0) {
+                  return Promise.reject('Thứ tự hiển thị không được âm');
+                }
+                return Promise.resolve();
+              }
+            }
+          ]}
         >
-          <InputNumber min={1} style={{ width: '100%' }} />
+          <InputNumber min={0} style={{ width: '100%' }} />
         </Form.Item>
 
         <div className={styles.readonlyInfo}>

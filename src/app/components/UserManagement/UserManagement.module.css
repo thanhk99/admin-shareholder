@@ -38,7 +38,42 @@
 }
 
 .addButton:hover {
-  background: #2980b9;
+  background-color: #3182ce;
+}
+
+.addRepButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background-color: #38a169;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.addRepButton:hover {
+  background-color: #2f855a;
+}
+
+.resetButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background-color: #ecc94b;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.resetButton:hover {
+  background-color: #d69e2e;
 }
 
 .toolbar {
@@ -250,7 +285,8 @@
   color: #1976d2;
 }
 
-.shares, .votingRights {
+.shares,
+.votingRights {
   font-weight: 600;
   color: #2c3e50;
 }
@@ -272,12 +308,23 @@
   color: #721c24;
 }
 
+.headerActions {
+  display: flex;
+  gap: 12px;
+}
+
+.headerButtons {
+  display: flex;
+  gap: 12px;
+}
+
 .actions {
   display: flex;
   gap: 8px;
 }
 
-.editButton, .deleteButton {
+.editButton,
+.deleteButton {
   padding: 6px;
   border: none;
   border-radius: 4px;
@@ -303,6 +350,7 @@
 .deleteButton:hover {
   background: #f1b0b7;
 }
+
 .clickableRow {
   cursor: pointer;
   transition: background-color 0.2s ease;
@@ -331,28 +379,30 @@
   gap: 8px;
   align-items: center;
 }
+
 .logsSection {
   margin-top: 32px;
 }
+
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
     gap: 16px;
   }
-  
+
   .toolbar {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .searchBox {
     max-width: none;
   }
-  
+
   .tableContainer {
     overflow-x: auto;
   }
-  
+
   .table {
     min-width: 800px;
   }

@@ -14,8 +14,10 @@ import {
   HomeOutlined,
   CalendarOutlined,
   GlobalOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
+  QrcodeOutlined
 } from '@ant-design/icons';
+import { Tabs, Table, Tag, message } from 'antd';
 import styles from './ShareholderDetail.module.css';
 import { Shareholder } from '@/app/types/shareholder';
 import ShareholderManage from '@/lib/api/shareholdermanagement';
@@ -25,6 +27,8 @@ import ProxyService from '@/lib/api/proxy';
 import { MeetingService } from '@/lib/api/meetings';
 import { ProxyItem } from '@/app/types/proxy';
 import { formatDate } from '@/utils/format';
+import MagicQrModal from '../UserManagement/MagicQrModal/MagicQrModal';
+import QrConfigModal from '../UserManagement/MagicQrModal/QrConfigModal';
 
 export default function ShareholderDetail() {
   const params = useParams();
@@ -36,6 +40,19 @@ export default function ShareholderDetail() {
   const [proxyPeople, setProxyPeople] = useState<ProxyItem[]>([]);
   const [delegates, setDelegates] = useState<ProxyItem[]>([]);
   const [loadingProxy, setLoadingProxy] = useState(false);
+
+  // New state for tabs and history
+  const [activeTab, setActiveTab] = useState('1');
+  const [voteHistory, setVoteHistory] = useState<any[]>([]);
+  const [loginHistory, setLoginHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Magic QR State
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [showQrConfigModal, setShowQrConfigModal] = useState(false);
+  const [qrContent, setQrContent] = useState('');
+  const [qrToken, setQrToken] = useState('');
+  const [isGeneratingQr, setIsGeneratingQr] = useState(false);
 
   const shareholderId = params.id as string;
 
@@ -96,6 +113,78 @@ export default function ShareholderDetail() {
     }
   };
 
+  const fetchHistory = async () => {
+    if (!shareholderId) return;
+    try {
+      setLoadingHistory(true);
+      const [votesRes, loginsRes] = await Promise.all([
+        ShareholderManage.getUserVoteHistory(shareholderId).catch(() => ({ data: [] })),
+        ShareholderManage.getUserLoginHistory(shareholderId).catch(() => ({ data: [] }))
+      ]);
+
+      // Handle both simple array or {data: []} response structures if necessary
+      const votesData = (votesRes as any).data || (Array.isArray(votesRes) ? votesRes : []);
+      const loginsData = (loginsRes as any).data || (Array.isArray(loginsRes) ? loginsRes : []);
+
+      setVoteHistory(votesData);
+      setLoginHistory(loginsData);
+    } catch (e) {
+      console.error("Failed to fetch user history", e);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }
+
+  const handleOpenQrConfig = async () => {
+    if (!shareholderId) return;
+    try {
+      setIsGeneratingQr(true);
+      // Try to get existing token first
+      const response: any = await ShareholderManage.getExistingQrToken(shareholderId);
+      const data = response?.data || response;
+
+      if (data && data.qrContent) {
+        setQrContent(data.qrContent);
+        setQrToken(data.token);
+        setShowQrModal(true);
+      } else {
+        // No existing token, open config to create new
+        setShowQrConfigModal(true);
+      }
+    } catch (e) {
+      // Error (e.g. 404), proceed to create new
+      setShowQrConfigModal(true);
+    } finally {
+      setIsGeneratingQr(false);
+    }
+  };
+
+  const handleGenerateQr = async (expiresAt?: string) => {
+    if (!shareholderId) return;
+    try {
+      setIsGeneratingQr(true);
+      setShowQrConfigModal(false);
+
+      const response: any = await ShareholderManage.generateQrLogin(shareholderId, expiresAt);
+
+      // Adjust based on actual API response structure (flat or nested data)
+      const data = response.data || response;
+
+      if (data && data.qrContent) {
+        setQrContent(data.qrContent);
+        setQrToken(data.token);
+        setShowQrModal(true);
+      } else {
+        message.error('Không thể tạo mã QR. Định dạng phản hồi không hợp lệ.');
+      }
+    } catch (error) {
+      console.error("Failed to generate QR", error);
+      message.error('Lỗi khi tạo mã QR đăng nhập.');
+    } finally {
+      setIsGeneratingQr(false);
+    }
+  };
+
   useEffect(() => {
     if (shareholder?.id && shareholder?.investorCode) {
       fetchProxyInfo(shareholder.id, shareholder.investorCode);
@@ -107,6 +196,12 @@ export default function ShareholderDetail() {
       fetchShareholderDetail();
     }
   }, [shareholderId]);
+
+  useEffect(() => {
+    if (activeTab === '2' || activeTab === '3') {
+      fetchHistory();
+    }
+  }, [activeTab, shareholderId]);
 
   const handleBack = () => {
     router.back();
@@ -151,6 +246,23 @@ export default function ShareholderDetail() {
     );
   }
 
+  // Columns for history tables
+  const voteColumns = [
+    { title: 'Nội dung', dataIndex: 'resolutionTitle', key: 'resolutionTitle' },
+    { title: 'Lựa chọn', dataIndex: 'votingOptionName', key: 'votingOptionName' },
+    { title: 'Số quyền', dataIndex: 'voteWeight', key: 'voteWeight', render: (val: number) => val ? val.toLocaleString() : '0' },
+    { title: 'Thời gian', dataIndex: 'votedAt', key: 'votedAt', render: (val: string) => formatDate(val) },
+    { title: 'IP', dataIndex: 'ipAddress', key: 'ipAddress' },
+  ];
+
+  const loginColumns = [
+    { title: 'Thời gian đăng nhập', dataIndex: 'loginTime', key: 'loginTime', render: (val: string) => formatDate(val) },
+    { title: 'Thời gian đăng xuất', dataIndex: 'logoutTime', key: 'logoutTime', render: (val: string) => val ? formatDate(val) : '-' },
+    { title: 'IP', dataIndex: 'ipAddress', key: 'ipAddress' },
+    { title: 'User Agent', dataIndex: 'userAgent', key: 'userAgent', ellipsis: true },
+    { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (val: string) => <Tag color={val === 'SUCCESS' ? 'green' : 'red'}>{val}</Tag> },
+  ];
+
   return (
     <div className={styles.container}>
       {/* Header */}
@@ -160,6 +272,15 @@ export default function ShareholderDetail() {
           Quay lại
         </button>
         <div className={styles.headerActions}>
+          <button
+            onClick={handleOpenQrConfig}
+            className={styles.printButton}
+            disabled={isGeneratingQr}
+            style={{ marginRight: 8 }}
+          >
+            <QrcodeOutlined />
+            {isGeneratingQr ? 'Đang kiểm tra...' : 'Mã QR Đăng nhập'}
+          </button>
           <button onClick={handlePrint} className={styles.printButton}>
             <PrinterOutlined />
             In thông tin
@@ -185,188 +306,237 @@ export default function ShareholderDetail() {
         </div>
       </div>
 
-      <div className={styles.content}>
-        {/* Thông tin cá nhân */}
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>
-            <UserOutlined />
-            Thông Tin Cá Nhân
-          </h2>
-          <div className={styles.infoGrid}>
-            <div className={styles.infoItem}>
-              <label>Họ và tên</label>
-              <span>{shareholder.fullName}</span>
-            </div>
-            <div className={styles.infoItem}>
-              <label>Email</label>
-              <span>
-                <MailOutlined />
-                {shareholder.email}
-              </span>
-            </div>
-            <div className={styles.infoItem}>
-              <label>Số điện thoại</label>
-              <span>
-                <PhoneOutlined />
-                {shareholder.phoneNumber}
-              </span>
-            </div>
-            <div className={styles.infoItem}>
-              <label>CCCD/CMND</label>
-              <span>
-                <IdcardOutlined />
-                {shareholder.cccd}
-              </span>
-            </div>
-            <div className={styles.infoItem}>
-              <label>Ngày cấp</label>
-              <span>
-                <CalendarOutlined />
-                {shareholder.dateOfIssue}
-              </span>
-            </div>
-            <div className={styles.infoItem}>
-              <label>Quốc tịch</label>
-              <span>
-                <GlobalOutlined />
-                {shareholder.nation || 'Chưa cập nhật'}
-              </span>
-            </div>
-          </div>
-          <div className={styles.infoItemFull}>
-            <label>Địa chỉ</label>
-            <span>
-              <HomeOutlined />
-              {shareholder.address}
-            </span>
-          </div>
-        </div>
-
-        {/* Thông tin cổ phần */}
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>
-            <PieChartOutlined />
-            Thông Tin Cổ Phần
-          </h2>
-          <div className={styles.sharesSection}>
-            <div className={styles.shareCard}>
-              <div className={styles.shareNumber}>
-                {(shareholder.sharesOwned || 0) + (shareholder.receivedProxyShares || 0)}
-              </div>
-              <div className={styles.shareLabel}>Tổng số cổ phần biểu quyết</div>
-            </div>
-            <div className={styles.shareStats}>
-              <div className={styles.statItem}>
-                <span className={styles.statValue}>{shareholder.sharesOwned || 0}</span>
-                <span className={styles.statLabel}>Cổ phần sở hữu</span>
-              </div>
-              <div className={styles.statItem}>
-                <span className={styles.statValue}>{shareholder.delegatedShares || 0}</span>
-                <span className={styles.statLabel}>Cổ phần đã ủy quyền</span>
-              </div>
-              <div className={styles.statItem}>
-                <span className={styles.statValue}>{shareholder.receivedProxyShares || 0}</span>
-                <span className={styles.statLabel}>Cổ phần nhận ủy quyền</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Thông tin uỷ quyền */}
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>
-            <CheckCircleOutlined />
-            Thông Tin Uỷ Quyền (Tại cuộc họp hiện tại)
-          </h2>
-
-          <div className={styles.proxyContent}>
-            <div className={styles.proxySection}>
-              <h3>Danh sách người nhận uỷ quyền</h3>
-              {proxyPeople.length > 0 ? (
-                <div className={styles.delegatesList}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Họ và tên</th>
-                        <th>Mã cổ đông</th>
-                        <th>Số cổ phần</th>
-                        <th>Ngày uỷ quyền</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {proxyPeople.map((proxy, index) => (
-                        <tr key={index}>
-                          <td>{proxy.proxyName}</td>
-                          <td>{proxy.proxyId}</td>
-                          <td>{proxy.sharesDelegated.toLocaleString()}</td>
-                          <td>{formatDate(proxy.createdAt)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        type="card"
+        items={[
+          {
+            key: '1',
+            label: 'Thông tin chung',
+            children: (
+              <div className={styles.content}>
+                {/* Thông tin cá nhân */}
+                <div className={styles.card}>
+                  <h2 className={styles.cardTitle}>
+                    <UserOutlined />
+                    Thông Tin Cá Nhân
+                  </h2>
+                  <div className={styles.infoGrid}>
+                    <div className={styles.infoItem}>
+                      <label>Họ và tên</label>
+                      <span>{shareholder.fullName}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>Email</label>
+                      <span>
+                        <MailOutlined />
+                        {shareholder.email}
+                      </span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>Số điện thoại</label>
+                      <span>
+                        <PhoneOutlined />
+                        {shareholder.phoneNumber}
+                      </span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>CCCD/CMND</label>
+                      <span>
+                        <IdcardOutlined />
+                        {shareholder.cccd}
+                      </span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>Ngày cấp</label>
+                      <span>
+                        <CalendarOutlined />
+                        {shareholder.dateOfIssue}
+                      </span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>Quốc tịch</label>
+                      <span>
+                        <GlobalOutlined />
+                        {shareholder.nation || 'Chưa cập nhật'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className={styles.infoItemFull}>
+                    <label>Địa chỉ</label>
+                    <span>
+                      <HomeOutlined />
+                      {shareholder.address}
+                    </span>
+                  </div>
                 </div>
-              ) : (
-                <p className={styles.emptyText}>Chưa uỷ quyền cho ai</p>
-              )}
-            </div>
 
-            <div className={styles.proxySection}>
-              <h3>Danh sách cổ đông uỷ quyền cho</h3>
-              {delegates.length > 0 ? (
-                <div className={styles.delegatesList}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Mã cổ đông</th>
-                        <th>Họ và tên</th>
-                        <th>Số cổ phần</th>
-                        <th>Ngày uỷ quyền</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {delegates.map((delegate, index) => (
-                        <tr key={index}>
-                          <td>{delegate.delegatorId}</td>
-                          <td>{delegate.delegatorName}</td>
-                          <td>{delegate.sharesDelegated.toLocaleString()}</td>
-                          <td>{formatDate(delegate.createdAt)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                {/* Thông tin cổ phần */}
+                <div className={styles.card}>
+                  <h2 className={styles.cardTitle}>
+                    <PieChartOutlined />
+                    Thông Tin Cổ Phần
+                  </h2>
+                  <div className={styles.sharesSection}>
+                    <div className={styles.shareCard}>
+                      <div className={styles.shareNumber}>
+                        {(shareholder.sharesOwned || 0) + (shareholder.receivedProxyShares || 0)}
+                      </div>
+                      <div className={styles.shareLabel}>Tổng số cổ phần biểu quyết</div>
+                    </div>
+                    <div className={styles.shareStats}>
+                      <div className={styles.statItem}>
+                        <span className={styles.statValue}>{shareholder.sharesOwned || 0}</span>
+                        <span className={styles.statLabel}>Cổ phần sở hữu</span>
+                      </div>
+                      <div className={styles.statItem}>
+                        <span className={styles.statValue}>{shareholder.delegatedShares || 0}</span>
+                        <span className={styles.statLabel}>Cổ phần đã ủy quyền</span>
+                      </div>
+                      <div className={styles.statItem}>
+                        <span className={styles.statValue}>{shareholder.receivedProxyShares || 0}</span>
+                        <span className={styles.statLabel}>Cổ phần nhận ủy quyền</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <p className={styles.emptyText}>Chưa nhận uỷ quyền từ ai</p>
-              )}
-            </div>
-          </div>
-        </div>
 
-        {/* Thông tin hệ thống */}
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Thông Tin Hệ Thống</h2>
-          <div className={styles.infoGrid}>
-            <div className={styles.infoItem}>
-              <label>Ngày tạo</label>
-              <span>{formatDate(shareholder.createdAt)}</span>
-            </div>
-            <div className={styles.infoItem}>
-              <label>Ngày cập nhật</label>
-              <span>{formatDate(shareholder.updatedAt)}</span>
-            </div>
-            <div className={styles.infoItem}>
-              <label>Trạng thái</label>
-              <span className={`${styles.status} ${styles[shareholder.enabled.toString()]}`}>
-                {shareholder.enabled ? 'Đang hoạt động' : 'Ngừng hoạt động'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <ShareholderLogs
-        shareholderCode={shareholderId}
-        showFilter={false}
+                {/* Thông tin uỷ quyền */}
+                <div className={styles.card}>
+                  <h2 className={styles.cardTitle}>
+                    <CheckCircleOutlined />
+                    Thông Tin Uỷ Quyền (Tại cuộc họp hiện tại)
+                  </h2>
+
+                  <div className={styles.proxyContent}>
+                    <div className={styles.proxySection}>
+                      <h3>Danh sách người nhận uỷ quyền</h3>
+                      {proxyPeople.length > 0 ? (
+                        <div className={styles.delegatesList}>
+                          <table className={styles.table}>
+                            <thead>
+                              <tr>
+                                <th>Họ và tên</th>
+                                <th>Mã cổ đông</th>
+                                <th>Số cổ phần</th>
+                                <th>Ngày uỷ quyền</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {proxyPeople.map((proxy, index) => (
+                                <tr key={index}>
+                                  <td>{proxy.proxyName}</td>
+                                  <td>{proxy.proxyId}</td>
+                                  <td>{proxy.sharesDelegated.toLocaleString()}</td>
+                                  <td>{formatDate(proxy.createdAt)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className={styles.emptyText}>Chưa uỷ quyền cho ai</p>
+                      )}
+                    </div>
+
+                    <div className={styles.proxySection}>
+                      <h3>Danh sách cổ đông uỷ quyền cho</h3>
+                      {delegates.length > 0 ? (
+                        <div className={styles.delegatesList}>
+                          <table className={styles.table}>
+                            <thead>
+                              <tr>
+                                <th>Mã cổ đông</th>
+                                <th>Họ và tên</th>
+                                <th>Số cổ phần</th>
+                                <th>Ngày uỷ quyền</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {delegates.map((delegate, index) => (
+                                <tr key={index}>
+                                  <td>{delegate.delegatorId}</td>
+                                  <td>{delegate.delegatorName}</td>
+                                  <td>{delegate.sharesDelegated.toLocaleString()}</td>
+                                  <td>{formatDate(delegate.createdAt)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className={styles.emptyText}>Chưa nhận uỷ quyền từ ai</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Thông tin hệ thống */}
+                <div className={styles.card}>
+                  <h2 className={styles.cardTitle}>Thông Tin Hệ Thống</h2>
+                  <div className={styles.infoGrid}>
+                    <div className={styles.infoItem}>
+                      <label>Ngày tạo</label>
+                      <span>{formatDate(shareholder.createdAt)}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>Ngày cập nhật</label>
+                      <span>{formatDate(shareholder.updatedAt)}</span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <label>Trạng thái</label>
+                      <span className={`${styles.status} ${styles[shareholder.enabled.toString()]}`}>
+                        {shareholder.enabled ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          },
+          {
+            key: '2',
+            label: 'Lịch sử biểu quyết',
+            children: (
+              <div className={styles.card}>
+                <Table
+                  dataSource={voteHistory}
+                  columns={voteColumns}
+                  loading={loadingHistory}
+                  rowKey={(record) => record.voteId || Math.random().toString()}
+                  pagination={{ pageSize: 10 }}
+                  style={{ marginTop: 16 }}
+                />
+              </div>
+            )
+          },
+          {
+            key: '3',
+            label: 'Lịch sử đăng nhập',
+            children: (
+              <div className={styles.card}>
+                <Table
+                  dataSource={loginHistory}
+                  columns={loginColumns}
+                  loading={loadingHistory}
+                  rowKey={(record) => record.id || Math.random().toString()}
+                  pagination={{ pageSize: 10 }}
+                  style={{ marginTop: 16 }}
+                />
+              </div>
+            )
+          },
+          {
+            key: '4',
+            label: 'Nhật ký hoạt động',
+            children: (
+              <ShareholderLogs shareholderCode={shareholderId} showFilter={false} />
+            )
+          }
+        ]}
       />
+
       {/* Edit Modal */}
       {shareholder && (
         <EditShareholderModal
@@ -376,6 +546,27 @@ export default function ShareholderDetail() {
           shareholder={shareholder}
         />
       )}
+
+      {/* QR Config Modal */}
+      <QrConfigModal
+        isOpen={showQrConfigModal}
+        onClose={() => setShowQrConfigModal(false)}
+        onGenerate={handleGenerateQr}
+        loading={isGeneratingQr}
+      />
+
+      {/* MagicQrModal */}
+      <MagicQrModal
+        isOpen={showQrModal}
+        onClose={() => setShowQrModal(false)}
+        qrContent={qrContent}
+        qrToken={qrToken}
+        userName={shareholder?.fullName || 'Người dùng'}
+        onRegenerate={() => {
+          setShowQrModal(false);
+          setShowQrConfigModal(true);
+        }}
+      />
     </div>
   );
 }

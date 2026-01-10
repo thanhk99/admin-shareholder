@@ -1,9 +1,10 @@
-import { Modal } from 'antd';
+import { Modal, Tag } from 'antd';
 import {
   CalendarOutlined,
   CheckOutlined,
   CloseOutlined,
-  QuestionOutlined
+  QuestionOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 import styles from './ResolutionViewModal.module.css';
 import { VotingItem, VotingResult } from '@/app/types/resolution';
@@ -33,23 +34,21 @@ export default function ResolutionViewModal({
 
     if (result && result.results) {
       result.results.forEach((r: any) => {
-        const id = (r.votingOptionId || '').toLowerCase();
-        const name = (r.votingOptionName || r.candidateName || '').toLowerCase();
+        // Find option type
+        const option = votingItem.votingOptions?.find(opt => opt.id === r.votingOptionId);
 
-        if (id === 'yes') {
+        if (option?.type === 'AGREE') {
           agree += r.voteCount;
-        } else if (id === 'no') {
+        } else if (option?.type === 'DISAGREE') {
           disagree += r.voteCount;
-        } else if (id === 'not_agree') {
+        } else if (option?.type === 'NO_IDEA') {
           noIdea += r.voteCount;
         } else {
-          if (name.includes('không đồng ý') || name.includes('không tán thành') || name.includes('disagree')) {
-            disagree += r.voteCount;
-          } else if (name.includes('không ý kiến') || name.includes('no opinion') || name.includes('abstain')) {
-            noIdea += r.voteCount;
-          } else if (name.includes('đồng ý') || name.includes('tán thành') || name.includes('agree')) {
-            agree += r.voteCount;
-          }
+          // Fallback
+          const id = (r.votingOptionId || '').toLowerCase();
+          if (id === 'yes') agree += r.voteCount;
+          else if (id === 'no') disagree += r.voteCount;
+          else if (id === 'not_agree') noIdea += r.voteCount;
         }
       });
     }
@@ -134,14 +133,43 @@ export default function ResolutionViewModal({
 
         {votingItem.votingOptions && votingItem.votingOptions.length > 0 && (
           <div className={styles.section}>
-            <h3 className={styles.sectionTitle}>Danh sách Lựa chọn/Ứng viên</h3>
+            <h3 className={styles.sectionTitle}>Các lựa chọn biểu quyết</h3>
             <div className={styles.optionsList}>
               {votingItem.votingOptions.map((option, index) => (
                 <div key={option.id} className={styles.optionItem}>
                   <div className={styles.optionIndex}>{index + 1}</div>
                   <div className={styles.optionInfo}>
-                    <div className={styles.optionName}>{option.name}</div>
-                    {option.position && <div className={styles.optionPosition}>{option.position}</div>}
+                    <div className={styles.optionName}>
+                      {option.name}
+                      {option.type === 'AGREE' && <span className={styles.tagAgree}>(Đồng ý)</span>}
+                      {option.type === 'DISAGREE' && <span className={styles.tagDisagree}>(Không đồng ý)</span>}
+                      {option.type === 'NO_IDEA' && <span className={styles.tagNoIdea}>(Không ý kiến)</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* User Votes Section */}
+        {votingItem.userVotes && votingItem.userVotes.length > 0 && (
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>Phiếu bầu của bạn</h3>
+            <div className={styles.optionsList}>
+              {votingItem.userVotes.map((vote, index) => (
+                <div key={index} className={styles.optionItem}>
+                  <div className={styles.optionInfo}>
+                    <div className={styles.optionName}>
+                      {vote.votingOptionName}
+                      <span className={styles.voteWeightTag}>
+                        {vote.voteWeight.toLocaleString()} quyền
+                      </span>
+                    </div>
+                    <div className={styles.voteTime}>
+                      <CalendarOutlined style={{ marginRight: 4 }} />
+                      {formatDate(vote.votedAt)}
+                    </div>
                   </div>
                 </div>
               ))}

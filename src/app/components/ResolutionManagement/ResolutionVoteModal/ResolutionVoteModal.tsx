@@ -46,29 +46,42 @@ export default function ResolutionVoteModal({
         try {
             let list = [];
 
-            // Nếu KHÔNG PHẢI là nghị quyết (tức là HĐQT hoặc BKS) thì lấy từ API Election (theo API 5.2)
-            if (votingItem.votingType && votingItem.votingType !== 'RESOLUTION') {
-                const response = await ElectionService.getElectionById(votingItem.id);
-                const electionData = response?.data || response;
-                list = electionData?.votingOptions || electionData?.candidates || [];
+            // Check if we already have votingOptions directly in the item
+            if (votingItem.votingOptions && votingItem.votingOptions.length > 0) {
+                list = votingItem.votingOptions;
             } else {
-                // Nếu là resolution bình thường (Nghị quyết) - Theo API 4.1 mới
-                const response = await ResolutionService.getResolutionById(votingItem.id);
-                const resolutionData = response?.data || response;
-                list = resolutionData?.votingOptions || resolutionData?.candidates || [];
+                // Fallback fetch if data is missing
+                // Nếu KHÔNG PHẢI là nghị quyết (tức là HĐQT hoặc BKS) thì lấy từ API Election
+                if (votingItem.votingType && votingItem.votingType !== 'RESOLUTION' && votingItem.votingType !== 'YES_NO') {
+                    const response = await ElectionService.getElectionById(votingItem.id);
+                    const electionData = response?.data || response;
+                    list = electionData?.votingOptions || electionData?.candidates || [];
+                } else {
+                    // Nếu là resolution bình thường
+                    const response = await ResolutionService.getResolutionById(votingItem.id);
+                    const resolutionData = response?.data || response;
+                    list = resolutionData?.votingOptions || [];
+                }
             }
 
-            setCandidates(list);
+            setCandidates(list as any); // Cast to any to adapt different option types
 
-            // Initialize votes to 0
-            const initialVotes: Record<string, number> = {};
-            list.forEach((c: Candidate) => {
-                initialVotes[c.id] = 0;
-            });
-            setVotes(initialVotes);
+            // Pre-fill existing user votes if any
+            const existingVotes: Record<string, number> = {};
+            if (votingItem.userVotes && votingItem.userVotes.length > 0) {
+                votingItem.userVotes.forEach(uv => {
+                    existingVotes[uv.votingOptionId] = uv.voteWeight;
+                });
+            } else {
+                list.forEach((c: any) => {
+                    existingVotes[c.id] = 0;
+                });
+            }
+
+            setVotes(existingVotes);
         } catch (e) {
             console.error('Failed to fetch candidates:', e);
-            setError('Không thể tải danh sách ứng viên');
+            setError('Không thể tải danh sách lựa chọn');
         } finally {
             setLoading(false);
         }

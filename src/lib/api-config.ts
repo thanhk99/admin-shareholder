@@ -11,13 +11,17 @@ export const API_CONFIG = {
             REGISTER: '/api/auth/register',
             LOGOUT: '/api/auth/logout',
             REFRESH: '/api/auth/refresh',
-            EXISTEMAIL: '/api/auth/existEmail'
+            EXISTEMAIL: '/api/auth/existEmail',
+            MAGIC_QR: '/api/auth/qr/generate',
+            MAGIC_QR_TOKEN: '/api/auth/qr/token' // New Endpoint
         },
         ADMIN: {
             GETPBASEINFO: '/api/users/profile',
             UPDATE_PROFILE: '/api/shareholders/editShareholder',
             UPDATE_SHAREHOLDER_NAME: '/api/shareholders/changeName',
-            UPDATE_ROLES: '/api/users'
+            UPDATE_ROLES: '/api/users',
+            GET_USER_VOTES: '/api/users', // + /{id}/votes
+            GET_USER_LOGIN_HISTORY: '/api/users', // + /{id}/login-history
         },
         MEETING: {
             BASE: '/api/meetings',
@@ -32,7 +36,8 @@ export const API_CONFIG = {
             PROXYPERSON: '/api/proxy/proxyPerson',
             PROXYDELEGATE: '/api/proxy/proxyDelegate',
             PROXYLIST: '/api/proxy/listProxy',
-            CANCLEPROXY: '/api/proxy/cancle'
+            CANCLEPROXY: '/api/proxy/cancle',
+            REPRESENTATIVE: '/api/representatives'
         },
         PASSWORD: {
             CHANGEPASSWORD: '/api/auth/changePassword'
@@ -41,7 +46,8 @@ export const API_CONFIG = {
             GETLIST: '/api/users',
             ADDSHAREHOLDER: '/api/users',
             UPDATESHAREHOLDER: '/api/users',
-            GETLOGS: '/api/users'
+            GETLOGS: '/api/users',
+            RESET_PASSWORD: '/api/users'
         },
         DASHBOARD: {
             GETHOME: '/api/dashboard/home',

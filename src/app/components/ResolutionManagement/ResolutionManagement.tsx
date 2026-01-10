@@ -147,30 +147,28 @@ export default function ResolutionManagement() {
     item.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getStats = (result?: VotingResult) => {
-    if (!result || !result.results) return { agree: 0, disagree: 0, total: 0 };
+  const getStats = (item: VotingItem, result?: VotingResult) => {
+    if (!result || !result.results) return { agree: 0, disagree: 0, noIdea: 0, total: 0 };
     let agree = 0;
     let disagree = 0;
     let noIdea = 0;
 
     result.results.forEach(r => {
-      const id = (r.votingOptionId || '').toLowerCase();
-      const name = (r.votingOptionName || r.candidateName || '').toLowerCase();
+      // Find the option in the resolution's votingOptions
+      const option = item.votingOptions?.find(opt => opt.id === r.votingOptionId);
 
-      if (id === 'yes') {
+      if (option?.type === 'AGREE') {
         agree += r.voteCount;
-      } else if (id === 'no') {
+      } else if (option?.type === 'DISAGREE') {
         disagree += r.voteCount;
-      } else if (id === 'not_agree') {
+      } else if (option?.type === 'NO_IDEA') {
         noIdea += r.voteCount;
       } else {
-        if (name.includes('không đồng ý') || name.includes('không tán thành') || name.includes('disagree')) {
-          disagree += r.voteCount;
-        } else if (name.includes('không ý kiến') || name.includes('no opinion') || name.includes('abstain')) {
-          noIdea += r.voteCount;
-        } else if (name.includes('đồng ý') || name.includes('tán thành') || name.includes('agree')) {
-          agree += r.voteCount;
-        }
+        // Fallback for old data or if type is missing (using ID matching)
+        const id = (r.votingOptionId || '').toLowerCase();
+        if (id === 'yes') agree += r.voteCount;
+        else if (id === 'no') disagree += r.voteCount;
+        else if (id === 'not_agree') noIdea += r.voteCount;
       }
     });
     return { agree, disagree, noIdea, total: result.totalVoters };
@@ -178,7 +176,7 @@ export default function ResolutionManagement() {
 
   const getApprovedCount = () => {
     return votingItems.filter(item => {
-      const stats = getStats(resultsMap[item.id]);
+      const stats = getStats(item, resultsMap[item.id]);
       return stats.agree > stats.disagree;
     }).length;
   };

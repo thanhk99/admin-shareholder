@@ -1,6 +1,6 @@
 import apiClient from "../api-client";
 import { API_CONFIG } from "../api-config";
-import { ProxyItem, ProxyRequest } from "@/app/types/proxy";
+import { NonShareholderProxyRequest, NonShareholderProxyResponse, ProxyItem, ProxyRequest } from "@/app/types/proxy";
 
 export default class ProxyService {
     // 6.1. Tạo ủy quyền
@@ -43,6 +43,15 @@ export default class ProxyService {
     static async revokeProxy(meetingId: string, delegationId: number) {
         try {
             return apiClient.post(`${API_CONFIG.ENDPOINTS.MEETING.BASE}/${meetingId}/proxy/${delegationId}/revoke`);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // 6.6. Thêm người được uỷ quyền (không phải cổ đông)
+    static async createNonShareholderProxy(data: NonShareholderProxyRequest): Promise<NonShareholderProxyResponse> {
+        try {
+            return apiClient.post(API_CONFIG.ENDPOINTS.PROXY.REPRESENTATIVE, data);
         } catch (error) {
             throw error;
         }

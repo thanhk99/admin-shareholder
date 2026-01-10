@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserOutlined, LockOutlined, BankOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, BankOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 import AuthService from '@/lib/api/auth';
 import TokenService from '@/lib/api/token';
 import { useNotify } from '../hooks/useNotificationHook';
@@ -14,6 +14,7 @@ import { loginAction } from '@/actions/auth';
 export default function Login() {
   const [account, setAccount] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -161,13 +162,13 @@ export default function Login() {
                 color: '#a0aec0'
               }} />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 style={{
                   width: '100%',
-                  padding: '12px 12px 12px 40px',
+                  padding: '12px 40px 12px 40px',
                   border: '1px solid #e2e8f0',
                   borderRadius: '6px',
                   fontSize: '1rem',
@@ -175,6 +176,22 @@ export default function Login() {
                 }}
                 placeholder="Nhập mật khẩu"
               />
+              <div
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#a0aec0',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px'
+                }}
+              >
+                {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+              </div>
             </div>
           </div>
 

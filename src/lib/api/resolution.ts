@@ -19,7 +19,6 @@ export class ResolutionService {
       throw error;
     }
   }
-
   static getOptionById = async (optionId: string) => {
     try {
       return apiClient.get(`/api/options/${optionId}`);
@@ -39,6 +38,14 @@ export class ResolutionService {
   static deleteOption = async (optionId: string) => {
     try {
       return apiClient.delete(`/api/options/${optionId}`);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static deleteResolution = async (resolutionId: string) => {
+    try {
+      return apiClient.delete(`/api/resolutions/${resolutionId}`);
     } catch (error) {
       throw error;
     }

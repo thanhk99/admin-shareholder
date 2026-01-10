@@ -1,5 +1,4 @@
 export interface addShareholderRequest {
-  username: string;
   password?: string;
   fullName: string;
   email: string;
@@ -14,7 +13,6 @@ export interface addShareholderRequest {
 }
 
 export interface ShareholderForm {
-  username: string;
   password?: string;
   fullName: string;
   email: string;
@@ -29,7 +27,6 @@ export interface ShareholderForm {
 }
 
 export interface FormErrors {
-  username?: string;
   password?: string;
   fullName?: string;
   email?: string;
@@ -54,7 +51,6 @@ export interface updateShareholderRequest {
 
 export interface Shareholder {
   id: string;
-  username: string;
   email: string;
   fullName: string;
   sharesOwned: number;

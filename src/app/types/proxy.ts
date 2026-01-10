@@ -17,3 +17,22 @@ export interface ProxyRequest {
     sharesDelegated: number;
     authorizationDocument?: string;
 }
+
+export interface NonShareholderProxyRequest {
+    fullName: string;
+    cccd: string;
+    dateOfIssue: string;
+    address: string;
+    meetingId: string;
+    delegatorCccd: string;
+    sharesDelegated: number;
+}
+
+export interface NonShareholderProxyResponse {
+    id: string;
+    fullName: string;
+    cccd: string;
+    generatedPassword: string;
+    meetingId: string;
+    sharesDelegated: number;
+}

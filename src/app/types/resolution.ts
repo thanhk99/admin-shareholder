@@ -1,5 +1,8 @@
 export type VotingType = 'RESOLUTION' | 'BOARD_OF_DIRECTORS' | 'SUPERVISORY_BOARD' | 'YES_NO';
 
+// Voting option types for resolutions
+export type VotingOptionType = 'AGREE' | 'DISAGREE' | 'NO_IDEA';
+
 export interface VotingItem {
   id: string;
   meetingId: string;
@@ -9,20 +12,29 @@ export interface VotingItem {
   maxSelections: number;
   startTime: string;
   endTime: string;
-  createdAt?: string;
+  createdAt: string;
   updatedAt?: string;
   isActive: boolean;
   displayOrder: number;
-  votingOptions?: any[];
+  votingOptions?: VotingOption[];
+  userVotes?: UserVote[] | null;
 }
 
 export interface VotingOption {
   id: string;
   name: string;
-  position: string | null;
-  bio: string | null;
-  photoUrl: string | null;
+  type?: VotingOptionType; // For resolutions
+  position?: string | null; // For elections
+  bio?: string | null; // For elections
+  photoUrl?: string | null; // For elections
   displayOrder: number;
+}
+
+export interface UserVote {
+  votingOptionId: string;
+  votingOptionName: string;
+  voteWeight: number;
+  votedAt: string;
 }
 
 export interface VotingItemRequest {

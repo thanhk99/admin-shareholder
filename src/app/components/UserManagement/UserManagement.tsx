@@ -7,13 +7,15 @@ import {
   DeleteOutlined,
   SearchOutlined,
   UserOutlined,
-  EyeOutlined
+  EyeOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import styles from './UserManagement.module.css';
 import ShareholderManage from '@/lib/api/shareholdermanagement';
 import AddShareholderModal from './AddShareholderModal/AddShareholderModal';
 import EditShareholderModal from './EditShareholderModal/EditShareholderModal';
+import AddRepresentativeModal from './AddRepresentativeModal/AddRepresentativeModal';
 import { Shareholder } from '@/app/types/shareholder';
 
 
@@ -21,6 +23,7 @@ import { Shareholder } from '@/app/types/shareholder';
 export default function UserManagement() {
   const [shareholders, setShareholders] = useState<Shareholder[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddRepModal, setShowAddRepModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingShareholder, setEditingShareholder] = useState<Shareholder | null>(null);
@@ -64,11 +67,11 @@ export default function UserManagement() {
   };
 
   // Kích hoạt lại người dùng
-  const handleActivateShareholder = async (investorCode: string) => {
+  const handleActivateShareholder = async (cccd: string) => {
     setLoading(true);
     try {
       const response = await ShareholderManage.updateShareholder({
-        investorCode: investorCode,
+        cccd: cccd,
         enabled: true
       });
 
@@ -79,6 +82,24 @@ export default function UserManagement() {
     } catch (error) {
       console.error('Error activating user:', error);
       alert('Có lỗi xảy ra khi kích hoạt người dùng');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cấp lại mật khẩu
+  const handleResetPassword = async (userId: string) => {
+    if (!confirm('Bạn có chắc chắn muốn cấp lại mật khẩu cho người dùng này?')) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await ShareholderManage.resetPassword(userId);
+      alert(`Đã cấp lại mật khẩu thành công!\n\nMật khẩu mới: ${response.newPassword}\n\nVui lòng lưu lại mật khẩu này để cấp cho người dùng.`);
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      alert(error.response?.data?.message || 'Có lỗi xảy ra khi cấp lại mật khẩu');
     } finally {
       setLoading(false);
     }
@@ -133,14 +154,24 @@ export default function UserManagement() {
           <h1>Quản lý Người dùng</h1>
           <p>Quản lý thông tin người dùng và quyền biểu quyết</p>
         </div>
-        <button
-          className={styles.addButton}
-          onClick={() => setShowAddModal(true)}
-          disabled={loading}
-        >
-          <PlusOutlined />
-          Thêm Người dùng
-        </button>
+        <div className={styles.headerButtons}>
+          <button
+            className={styles.addRepButton}
+            onClick={() => setShowAddRepModal(true)}
+            disabled={loading}
+          >
+            <PlusOutlined />
+            Thêm Đại diện (Ngoài)
+          </button>
+          <button
+            className={styles.addButton}
+            onClick={() => setShowAddModal(true)}
+            disabled={loading}
+          >
+            <PlusOutlined />
+            Thêm Người dùng
+          </button>
+        </div>
       </div>
 
       <div className={styles.toolbar}>
@@ -166,6 +197,13 @@ export default function UserManagement() {
       <AddShareholderModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
+        onSuccess={handleAddSuccess}
+      />
+
+      {/* Modal Thêm người đại diện */}
+      <AddRepresentativeModal
+        isOpen={showAddRepModal}
+        onClose={() => setShowAddRepModal(false)}
         onSuccess={handleAddSuccess}
       />
 
@@ -220,12 +258,12 @@ export default function UserManagement() {
                   <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
 
                     <button
-                      className={styles.editButton}
-                      title="Sửa"
-                      onClick={() => openEditModal(shareholder)}
+                      className={styles.resetButton}
+                      title="Cấp lại mật khẩu"
+                      onClick={() => handleResetPassword(shareholder.id)}
                       disabled={loading}
                     >
-                      <EditOutlined />
+                      <ReloadOutlined />
                     </button>
                     {shareholder.enabled ? (
                       <button

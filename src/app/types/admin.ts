@@ -1,6 +1,5 @@
 export interface adminInfo {
     id: string;
-    username: string;
     email: string;
     fullName: string;
     sharesOwned: number;

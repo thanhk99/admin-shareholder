@@ -10,7 +10,9 @@ import {
   KeyOutlined,
   CalendarOutlined,
   GlobalOutlined,
-  NumberOutlined
+  NumberOutlined,
+  EyeOutlined,
+  EyeInvisibleOutlined
 } from '@ant-design/icons';
 import ShareholderManage from '@/lib/api/shareholdermanagement';
 import { MeetingService } from '@/lib/api/meetings';
@@ -25,7 +27,6 @@ interface AddShareholderModalProps {
 }
 
 interface FormData {
-  username: string;
   password?: string;
   fullName: string;
   email: string;
@@ -39,7 +40,6 @@ interface FormData {
 }
 
 interface FormErrors {
-  username?: string;
   password?: string;
   fullName?: string;
   email?: string;
@@ -54,7 +54,6 @@ interface FormErrors {
 
 export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddShareholderModalProps) {
   const [formData, setFormData] = useState<FormData>({
-    username: '',
     password: '',
     fullName: '',
     email: '',
@@ -67,6 +66,7 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
     meetingId: ''
   });
   const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -99,9 +99,6 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!formData.username.trim()) {
-      newErrors.username = 'Tên đăng nhập là bắt buộc';
-    }
 
     if (!formData.password?.trim()) {
       newErrors.password = 'Mật khẩu là bắt buộc';
@@ -190,7 +187,6 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
 
   const handleClose = () => {
     setFormData({
-      username: '',
       password: '',
       fullName: '',
       email: '',
@@ -226,36 +222,33 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
           <div className={modalStyles.formRow}>
             <div className={modalStyles.formGroup}>
               <label className={`${modalStyles.formLabel} ${modalStyles.required}`}>
-                Tên đăng nhập
-              </label>
-              <div className={modalStyles.inputWithIcon}>
-                <UserOutlined className={modalStyles.inputIcon} />
-                <input
-                  type="text"
-                  value={formData.username}
-                  onChange={(e) => handleInputChange('username', e.target.value)}
-                  placeholder="Nhập tên đăng nhập"
-                  disabled={loading}
-                  className={`${modalStyles.formInput} ${errors.username ? modalStyles.error : ''}`}
-                />
-              </div>
-              {errors.username && <span className={modalStyles.errorText}>{errors.username}</span>}
-            </div>
-
-            <div className={modalStyles.formGroup}>
-              <label className={`${modalStyles.formLabel} ${modalStyles.required}`}>
                 Mật khẩu
               </label>
               <div className={modalStyles.inputWithIcon}>
                 <KeyOutlined className={modalStyles.inputIcon} />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
                   placeholder="Nhập mật khẩu"
                   disabled={loading}
                   className={`${modalStyles.formInput} ${errors.password ? modalStyles.error : ''}`}
                 />
+                <div
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#a0aec0',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                </div>
               </div>
               {errors.password && <span className={modalStyles.errorText}>{errors.password}</span>}
             </div>
