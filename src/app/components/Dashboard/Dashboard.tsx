@@ -26,6 +26,7 @@ import {
   SafetyCertificateOutlined,
   GlobalOutlined
 } from '@ant-design/icons';
+import WebSocketTest from '@/app/components/WebSocketTest';
 
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStatsResponse | null>(null);
@@ -102,7 +103,7 @@ export default function Dashboard() {
             <div className={styles.profileBaseInfo}>
               <h2>{admin.fullName}</h2>
               <span className={styles.adminBadge}>Administrator</span>
-              <p className={styles.username}>@{admin.username}</p>
+              <p className={styles.username}>@{admin.fullName}</p>
             </div>
           </div>
 
@@ -227,6 +228,9 @@ export default function Dashboard() {
               <span>Xuất báo cáo</span>
             </button>
           </div>
+        </div>
+        <div style={{ marginTop: '20px' }}>
+          <WebSocketTest />
         </div>
       </div>
       <AddShareholderModal

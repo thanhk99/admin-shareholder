@@ -11,9 +11,11 @@
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
+    "@stomp/stompjs": "^7.2.1",
     "@tanstack/react-query": "^5.90.5",
     "antd": "^5.28.0",
     "axios": "^1.13.0",
+    "html5-qrcode": "^2.3.8",
     "next": "16.0.0",
     "react": "19.2.0",
     "react-dom": "19.2.0"

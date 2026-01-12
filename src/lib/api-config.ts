@@ -13,15 +13,15 @@ export const API_CONFIG = {
             REFRESH: '/api/auth/refresh',
             EXISTEMAIL: '/api/auth/existEmail',
             MAGIC_QR: '/api/auth/qr/generate',
-            MAGIC_QR_TOKEN: '/api/auth/qr/token' // New Endpoint
+            MAGIC_QR_TOKEN: '/api/auth/qr/token'
         },
         ADMIN: {
             GETPBASEINFO: '/api/users/profile',
             UPDATE_PROFILE: '/api/shareholders/editShareholder',
             UPDATE_SHAREHOLDER_NAME: '/api/shareholders/changeName',
             UPDATE_ROLES: '/api/users',
-            GET_USER_VOTES: '/api/users', // + /{id}/votes
-            GET_USER_LOGIN_HISTORY: '/api/users', // + /{id}/login-history
+            GET_USER_VOTES: '/api/users',
+            GET_USER_LOGIN_HISTORY: '/api/users',
         },
         MEETING: {
             BASE: '/api/meetings',
