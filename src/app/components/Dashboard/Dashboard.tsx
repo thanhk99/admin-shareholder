@@ -1,238 +1,105 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import {
-  TeamOutlined,
-  CalendarOutlined,
-  CheckSquareOutlined,
-  PieChartOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
-  ScheduleOutlined,
-  SyncOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined
-} from '@ant-design/icons';
+import { useEffect, useState } from 'react';
 import styles from './Dashboard.module.css';
+import { useRealtime } from '@/lib/context/RealtimeContext';
+import { Progress, Card, List, Typography, Space } from 'antd';
+import { CheckCircleOutlined, TeamOutlined, BarChartOutlined } from '@ant-design/icons';
 import AddShareholderModal from '../UserManagement/AddShareholderModal/AddShareholderModal';
-import { DashboardService } from '@/lib/api/dashboard';
-import { useAuth } from '@/lib/context/AuthProvider';
-import { DashboardStatsResponse } from '@/app/types/dashboard';
-import {
-  UserOutlined,
-  MailOutlined,
-  IdcardOutlined,
-  PhoneOutlined,
-  SafetyCertificateOutlined,
-  GlobalOutlined
-} from '@ant-design/icons';
-import WebSocketTest from '@/app/components/WebSocketTest';
+
+const { Title, Text } = Typography;
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<DashboardStatsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const { admin } = useAuth();
+  const { realtimeStatus, isConnected } = useRealtime();
 
-  const formatNumber = (num: number): string => {
-    return new Intl.NumberFormat('vi-VN').format(num);
-  };
-
-  const fetchDashboardStats = async () => {
-    try {
-      setLoading(true);
-      const data = await DashboardService.getSummary();
-      setStats(data);
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDashboardStats();
-  }, []);
-
-  const StatCard = ({
-    title,
-    value,
-    icon,
-    color,
-    subValue
-  }: {
-    title: string;
-    value: string | number;
-    icon: React.ReactNode;
-    color: string;
-    subValue?: string;
-  }) => (
-    <div className={styles.statCard}>
-      <div className={styles.statIcon} style={{ backgroundColor: color }}>
-        {icon}
-      </div>
-      <div className={styles.statContent}>
-        <h3 className={styles.statValue}>{value}</h3>
-        <p className={styles.statTitle}>{title}</p>
-        {subValue && <span className={styles.subValue}>{subValue}</span>}
-      </div>
-    </div>
-  );
-
-  const handleAddShareholder = () => {
-    setShowAddModal(true);
-  };
-
-  const handleAddSuccess = async () => {
-    await fetchDashboardStats();
+  const handleAddSuccess = () => {
+    // Refresh logic if needed
   };
 
   return (
     <div className={styles.dashboard}>
       <div className={styles.header}>
-        <h1>Dashboard</h1>
-        <p>Tổng quan hệ thống quản lý cổ đông</p>
-      </div>
-
-      {admin && (
-        <div className={styles.adminProfileSection}>
-          <div className={styles.profileHeader}>
-            <div className={styles.profileAvatar}>
-              {admin.fullName?.split(' ').map(n => n[0]).join('')}
-            </div>
-            <div className={styles.profileBaseInfo}>
-              <h2>{admin.fullName}</h2>
-              <span className={styles.adminBadge}>Administrator</span>
-              <p className={styles.username}>@{admin.fullName}</p>
-            </div>
-          </div>
-
-          <div className={styles.profileDetailsGrid}>
-            <div className={styles.detailItem}>
-              <MailOutlined />
-              <div className={styles.detailContent}>
-                <span className={styles.detailLabel}>Email</span>
-                <span className={styles.detailValue}>{admin.email}</span>
-              </div>
-            </div>
-            <div className={styles.detailItem}>
-              <IdcardOutlined />
-              <div className={styles.detailContent}>
-                <span className={styles.detailLabel}>Mã nhà đầu tư / CCCD</span>
-                <span className={styles.detailValue}>{admin.investorCode} / {admin.cccd}</span>
-              </div>
-            </div>
-            <div className={styles.detailItem}>
-              <PhoneOutlined />
-              <div className={styles.detailContent}>
-                <span className={styles.detailLabel}>Số điện thoại</span>
-                <span className={styles.detailValue}>{admin.phoneNumber}</span>
-              </div>
-            </div>
-            <div className={styles.detailItem}>
-              <SafetyCertificateOutlined />
-              <div className={styles.detailContent}>
-                <span className={styles.detailLabel}>Cổ phần sở hữu</span>
-                <span className={styles.detailValue}>{formatNumber(admin.sharesOwned)} CP</span>
-              </div>
-            </div>
-            <div className={styles.detailItem}>
-              <GlobalOutlined />
-              <div className={styles.detailContent}>
-                <span className={styles.detailLabel}>Địa chỉ</span>
-                <span className={styles.detailValue}>{admin.address}</span>
-              </div>
-            </div>
-            <div className={styles.detailItem}>
-              <CalendarOutlined />
-              <div className={styles.detailContent}>
-                <span className={styles.detailLabel}>Ngày tham gia</span>
-                <span className={styles.detailValue}>{new Date(admin.createdAt).toLocaleDateString('vi-VN')}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Stats Grid */}
-      <div className={styles.statsGrid}>
-        <StatCard
-          title="Tổng Người dùng"
-          value={stats ? formatNumber(stats.userStats.totalShareholders) : '...'}
-          icon={<TeamOutlined />}
-          color="#3498db"
-        />
-        <StatCard
-          title="Tổng Cổ phần Đại diện"
-          value={stats ? formatNumber(stats.userStats.totalSharesRepresented) : '...'}
-          icon={<PieChartOutlined />}
-          color="#f39c12"
-        />
-        <StatCard
-          title="Tổng Cuộc họp"
-          value={stats ? formatNumber(stats.meetingStats.totalMeetings) : '...'}
-          icon={<CalendarOutlined />}
-          color="#9b59b6"
-        />
-      </div>
-
-      {/* Meeting Status Grid */}
-      <h2 className={styles.sectionTitle}>Trạng thái Cuộc họp</h2>
-      <div className={styles.statsGrid}>
-        <StatCard
-          title="Sắp diễn ra"
-          value={stats ? stats.meetingStats.scheduled : 0}
-          icon={<ScheduleOutlined />}
-          color="#3498db"
-        />
-        <StatCard
-          title="Đang diễn ra"
-          value={stats ? stats.meetingStats.ongoing : 0}
-          icon={<SyncOutlined spin />}
-          color="#e67e22"
-        />
-        <StatCard
-          title="Đã kết thúc"
-          value={stats ? stats.meetingStats.completed : 0}
-          icon={<CheckCircleOutlined />}
-          color="#27ae60"
-        />
-        <StatCard
-          title="Đã hủy"
-          value={stats ? stats.meetingStats.cancelled : 0}
-          icon={<CloseCircleOutlined />}
-          color="#c0392b"
-        />
-      </div>
-
-      <div className={styles.contentGrid}>
-        <div className={styles.quickActions}>
-          <div className={styles.sectionHeader}>
-            <h2>Thao tác nhanh</h2>
-          </div>
-          <div className={styles.actionsGrid}>
-            <button className={styles.actionButton} onClick={handleAddShareholder}>
-              <TeamOutlined />
-              <span>Thêm người dùng</span>
-            </button>
-            <button className={styles.actionButton}>
-              <CalendarOutlined />
-              <span>Tạo cuộc họp</span>
-            </button>
-            <button className={styles.actionButton}>
-              <CheckSquareOutlined />
-              <span>Bắt đầu bầu cử</span>
-            </button>
-            <button className={styles.actionButton}>
-              <PieChartOutlined />
-              <span>Xuất báo cáo</span>
-            </button>
-          </div>
-        </div>
-        <div style={{ marginTop: '20px' }}>
-          <WebSocketTest />
+        <Title level={2}>Bảng điều khiển & Kết quả trực tiếp</Title>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className={`${styles.statusIndicator} ${isConnected ? styles.active : styles.inactive}`} />
+          <Text>{isConnected ? 'Kết nối ổn định' : 'Mất kết nối'}</Text>
         </div>
       </div>
+
+      <div style={{ marginTop: '24px' }}>
+        {!realtimeStatus ? (
+          <div style={{ textAlign: 'center', padding: '40px', background: '#fff', borderRadius: '8px' }}>
+            <Text type="secondary">Chưa có dữ liệu biểu quyết realtime...</Text>
+          </div>
+        ) : (
+          <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            {/* Resolutions Section */}
+            {realtimeStatus.resolutionResults && realtimeStatus.resolutionResults.length > 0 && (
+              <Card title={<Space><BarChartOutlined /> Kết quả Biểu quyết</Space>} className={styles.statsCard}>
+                <List
+                  grid={{ gutter: 16, column: 1 }}
+                  dataSource={realtimeStatus.resolutionResults}
+                  renderItem={(res) => (
+                    <List.Item>
+                      <Card type="inner" title={res.resolutionTitle} size="small">
+                        <div style={{ marginBottom: '16px' }}>
+                          <Text strong>Tổng số phiếu: {res.totalVoters}</Text> | <Text strong>Tổng quyền biểu quyết: {res.totalWeight.toLocaleString()}</Text>
+                        </div>
+                        {res.results.map((opt) => (
+                          <div key={opt.votingOptionId} style={{ marginBottom: '12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                              <Text>{opt.votingOptionName} ({opt.voteCount} phiếu)</Text>
+                              <Text>{opt.percentage.toFixed(2)}%</Text>
+                            </div>
+                            <Progress percent={parseFloat(opt.percentage.toFixed(2))} status="active" strokeColor={
+                              opt.votingOptionName === 'Đồng ý' ? '#52c41a' :
+                                opt.votingOptionName === 'Không đồng ý' ? '#ff4d4f' : '#faad14'
+                            } />
+                            <Text type="secondary" style={{ fontSize: '12px' }}>Quyền biểu quyết: {opt.totalWeight.toLocaleString()}</Text>
+                          </div>
+                        ))}
+                      </Card>
+                    </List.Item>
+                  )}
+                />
+              </Card>
+            )}
+
+            {/* Elections Section */}
+            {realtimeStatus.electionResults && realtimeStatus.electionResults.length > 0 && (
+              <Card title={<Space><TeamOutlined /> Kết quả Bầu cử</Space>} className={styles.statsCard}>
+                <List
+                  grid={{ gutter: 16, column: 1 }}
+                  dataSource={realtimeStatus.electionResults}
+                  renderItem={(ele) => (
+                    <List.Item>
+                      <Card type="inner" title={ele.electionTitle} size="small">
+                        <div style={{ marginBottom: '16px' }}>
+                          <Text strong>Tổng số phiếu: {ele.totalVoters}</Text> | <Text strong>Tổng quyền biểu quyết: {ele.totalWeight.toLocaleString()}</Text>
+                        </div>
+                        <div style={{ marginTop: '16px' }}>
+                          {ele.results && ele.results.map((cand) => (
+                            <div key={cand.votingOptionId} style={{ marginBottom: '12px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                <Text>{cand.votingOptionName} ({cand.voteCount} phiếu)</Text>
+                                <Text>{cand.percentage.toFixed(2)}%</Text>
+                              </div>
+                              <Progress percent={parseFloat(cand.percentage.toFixed(2))} />
+                              <Text type="secondary" style={{ fontSize: '12px' }}>Quyền biểu quyết: {cand.totalWeight.toLocaleString()}</Text>
+                            </div>
+                          ))}
+                        </div>
+                      </Card>
+                    </List.Item>
+                  )}
+                />
+              </Card>
+            )}
+          </Space>
+        )}
+      </div>
+
       <AddShareholderModal
         isOpen={showAddModal}
         onClose={() => { setShowAddModal(false); }}

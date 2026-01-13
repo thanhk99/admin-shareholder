@@ -15,16 +15,17 @@
     "@tanstack/react-query": "^5.90.5",
     "antd": "^5.28.0",
     "axios": "^1.13.0",
-    "html5-qrcode": "^2.3.8",
     "next": "16.0.0",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "sockjs-client": "^1.6.1"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "baseline-browser-mapping": "^2.9.12",
+    "@types/sockjs-client": "^1.5.4",
+    "baseline-browser-mapping": "^2.9.14",
     "eslint": "^9",
     "eslint-config-next": "16.0.0",
     "typescript": "^5"

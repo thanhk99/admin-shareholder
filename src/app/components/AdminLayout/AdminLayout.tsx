@@ -6,6 +6,7 @@ import Header from '../shared/header/Header';
 import Sidebar from '../shared/sidebar/Sidebar';
 import styles from './AdminLayout.module.css';
 import { useAuth } from '@/lib/context/AuthProvider';
+import { RealtimeProvider } from '@/lib/context/RealtimeContext';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -15,7 +16,7 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const pathname = usePathname();
-  const { admin } = useAuth()
+  const { admin } = useAuth();
 
   const handleToggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -43,24 +44,26 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   return (
-    <div className={styles.adminLayout}>
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onToggle={handleToggleSidebar}
-      />
-
-      <div className={`${styles.mainContent} ${!isSidebarOpen ? styles.sidebarClosed : ''}`}>
-        <Header
-          user={admin}
-          onToggleSidebar={handleToggleSidebar}
-          isSidebarOpen={isSidebarOpen}
-          currentPage={getCurrentPageTitle()}
+    <RealtimeProvider>
+      <div className={styles.adminLayout}>
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onToggle={handleToggleSidebar}
         />
 
-        <div className={styles.content}>
-          {children}
+        <div className={`${styles.mainContent} ${!isSidebarOpen ? styles.sidebarClosed : ''}`}>
+          <Header
+            user={admin}
+            onToggleSidebar={handleToggleSidebar}
+            isSidebarOpen={isSidebarOpen}
+            currentPage={getCurrentPageTitle()}
+          />
+
+          <div className={styles.content}>
+            {children}
+          </div>
         </div>
       </div>
-    </div>
+    </RealtimeProvider>
   );
 }

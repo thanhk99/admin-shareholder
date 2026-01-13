@@ -71,4 +71,12 @@ export class MeetingService {
             throw error;
         }
     }
+
+    static getRealtimeStatus = async (meetingId: string) => {
+        try {
+            return apiClient.get(`${this.api_by_id}/${meetingId}/realtime`);
+        } catch (error) {
+            throw error;
+        }
+    }
 }
