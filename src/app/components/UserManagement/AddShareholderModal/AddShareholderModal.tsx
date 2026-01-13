@@ -225,7 +225,6 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
                 Mật khẩu
               </label>
               <div className={modalStyles.inputWithIcon}>
-                <KeyOutlined className={modalStyles.inputIcon} />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
@@ -353,7 +352,6 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
                 Số cổ phần
               </label>
               <div className={modalStyles.inputWithIcon}>
-                <NumberOutlined className={modalStyles.inputIcon} />
                 <input
                   type="number"
                   value={formData.sharesOwned}
@@ -372,7 +370,6 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
                 Ngày cấp CCCD
               </label>
               <div className={modalStyles.inputWithIcon}>
-                <CalendarOutlined className={modalStyles.inputIcon} />
                 <input
                   type="date"
                   value={formData.dateOfIssue}
@@ -389,7 +386,6 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
               Đại hội cổ đông
             </label>
             <div className={modalStyles.inputWithIcon}>
-              <GlobalOutlined className={modalStyles.inputIcon} />
               <select
                 value={formData.meetingId}
                 onChange={(e) => handleInputChange('meetingId', e.target.value)}

@@ -2,8 +2,8 @@ import { env } from "@/schemas/env";
 
 export const API_CONFIG = {
     // BASE_URL: env.NEXT_PUBLIC_API_URL,
-    BASE_URL: "http://localhost:8085",
-    // BASE_URL: "http://dhcd.vix.local:8085",
+    // BASE_URL: "http://localhost:8085",
+    BASE_URL: "http://dhcd.vix.local:8085",
     TIMEOUT: 10000,
     ENDPOINTS: {
         AUTH: {
