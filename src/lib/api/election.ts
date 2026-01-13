@@ -44,7 +44,13 @@ export class ElectionService {
 
     static updateElection = async (electionId: string, data: ElectionRequest) => {
         try {
-            return apiClient.put(`/api/elections/${electionId}`, data);
+            const payload = {
+                title: data.title,
+                description: data.description,
+                electionType: data.electionType,
+                displayOrder: data.displayOrder
+            };
+            return apiClient.post(`/api/elections/${electionId}/edit`, payload);
         } catch (error) {
             throw error;
         }

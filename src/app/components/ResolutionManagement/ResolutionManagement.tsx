@@ -56,7 +56,7 @@ export default function ResolutionManagement() {
       const normalizedResolutions = resList.map((r: any) => ({
         ...r,
         votingType: r.votingType || 'RESOLUTION'
-      }));
+      })).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0));
 
       setVotingItems(normalizedResolutions);
 

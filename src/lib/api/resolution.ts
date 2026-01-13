@@ -92,7 +92,12 @@ export class ResolutionService {
 
   static updateResolution = async (resolutionId: string, data: VotingItemRequest) => {
     try {
-      return apiClient.put(`/api/resolutions/${resolutionId}`, data);
+      const payload = {
+        title: data.title,
+        description: data.description,
+        displayOrder: data.displayOrder
+      };
+      return apiClient.put(`/api/resolutions/${resolutionId}`, payload);
     } catch (error) {
       throw error;
     }

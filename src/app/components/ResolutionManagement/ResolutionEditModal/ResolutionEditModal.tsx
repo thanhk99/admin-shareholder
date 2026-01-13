@@ -29,7 +29,7 @@ export default function ResolutionEditModal({
       form.setFieldsValue({
         title: votingItem.title,
         description: votingItem.description,
-        displayOrder: (votingItem as any).displayOrder || 1,
+        displayOrder: votingItem.displayOrder || 1,
       });
     }
   }, [isOpen, votingItem, form]);

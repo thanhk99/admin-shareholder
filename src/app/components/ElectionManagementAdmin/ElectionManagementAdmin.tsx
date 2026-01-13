@@ -51,7 +51,7 @@ export default function ElectionManagementAdmin() {
             const meeting = meetingResponse?.data || meetingResponse;
 
             // Elections đã có trong meeting response
-            const electionsData = meeting?.elections || [];
+            const electionsData = (meeting?.elections || []).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0));
             setElections(electionsData);
         } catch (error) {
             console.error('Error fetching elections:', error);
