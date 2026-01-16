@@ -5,12 +5,15 @@ import {
     UserOutlined,
     IdcardOutlined,
     EnvironmentOutlined,
-    CalendarOutlined,
     GlobalOutlined,
-    NumberOutlined,
     CheckCircleOutlined,
-    LockOutlined
+    LockOutlined,
+    PhoneOutlined,
+    MailOutlined,
+    NumberOutlined
 } from '@ant-design/icons';
+import { AutoComplete } from 'antd';
+import ShareholderManage from '@/lib/api/shareholdermanagement';
 import ProxyService from '@/lib/api/proxy';
 import { MeetingService } from '@/lib/api/meetings';
 import { Meeting } from '@/app/types/meeting';
@@ -32,12 +35,16 @@ export default function AddRepresentativeModal({ isOpen, onClose, onSuccess }: A
         address: '',
         meetingId: '',
         delegatorCccd: '',
-        sharesDelegated: 0
+        sharesDelegated: 0,
+        nation: '',
+        email: '',
+        phoneNumber: ''
     });
 
     const [meetings, setMeetings] = useState<Meeting[]>([]);
     const [loading, setLoading] = useState(false);
     const [successData, setSuccessData] = useState<NonShareholderProxyResponse | null>(null);
+    const [userOptions, setUserOptions] = useState<{ value: string; label: string }[]>([]);
 
     useEffect(() => {
         if (isOpen) {
@@ -57,6 +64,34 @@ export default function AddRepresentativeModal({ isOpen, onClose, onSuccess }: A
             }
         } catch (error) {
             console.error('Error fetching meetings:', error);
+        }
+    };
+
+    const onSearchUser = async (value: string) => {
+        if (!value) {
+            setUserOptions([]);
+            return;
+        }
+        try {
+            const response = await ShareholderManage.searchUsers(value);
+            const res = response as any;
+            if (Array.isArray(res)) {
+                const users = res;
+                const options = users.map((user: any) => ({
+                    value: user.cccd,
+                    label: `${user.cccd} - ${user.fullName}`
+                }));
+                setUserOptions(options);
+            } else if (res.status === "success" || res.status === 200) {
+                const users = res.data || [];
+                const options = users.map((user: any) => ({
+                    value: user.cccd,
+                    label: `${user.cccd} - ${user.fullName}`
+                }));
+                setUserOptions(options);
+            }
+        } catch (error) {
+            console.error('Error searching users:', error);
         }
     };
 
@@ -90,7 +125,10 @@ export default function AddRepresentativeModal({ isOpen, onClose, onSuccess }: A
             address: '',
             meetingId: '',
             delegatorCccd: '',
-            sharesDelegated: 0
+            sharesDelegated: 0,
+            nation: '',
+            email: '',
+            phoneNumber: ''
         });
         setSuccessData(null);
         onClose();
@@ -178,7 +216,6 @@ export default function AddRepresentativeModal({ isOpen, onClose, onSuccess }: A
                         <div className={modalStyles.formGroup}>
                             <label className={modalStyles.required}>Ngày cấp CCCD</label>
                             <div className={modalStyles.inputWithIcon}>
-                                <CalendarOutlined className={modalStyles.inputIcon} />
                                 <input
                                     type="date"
                                     required
@@ -198,6 +235,54 @@ export default function AddRepresentativeModal({ isOpen, onClose, onSuccess }: A
                                     value={formData.address}
                                     onChange={(e) => handleInputChange('address', e.target.value)}
                                     placeholder="Hà Nội"
+                                    className={modalStyles.formInput}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={modalStyles.formRow}>
+                        <div className={modalStyles.formGroup}>
+                            <label className={modalStyles.required}>Quốc tịch</label>
+                            <div className={modalStyles.inputWithIcon}>
+                                <GlobalOutlined className={modalStyles.inputIcon} />
+                                <input
+                                    type="text"
+                                    required
+                                    value={formData.nation}
+                                    onChange={(e) => handleInputChange('nation', e.target.value)}
+                                    placeholder="Việt Nam"
+                                    className={modalStyles.formInput}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={modalStyles.formRow}>
+                        <div className={modalStyles.formGroup}>
+                            <label className={modalStyles.required}>Email</label>
+                            <div className={modalStyles.inputWithIcon}>
+                                <MailOutlined className={modalStyles.inputIcon} />
+                                <input
+                                    type="email"
+                                    required
+                                    value={formData.email}
+                                    onChange={(e) => handleInputChange('email', e.target.value)}
+                                    placeholder="email@example.com"
+                                    className={modalStyles.formInput}
+                                />
+                            </div>
+                        </div>
+                        <div className={modalStyles.formGroup}>
+                            <label className={modalStyles.required}>Số điện thoại</label>
+                            <div className={modalStyles.inputWithIcon}>
+                                <PhoneOutlined className={modalStyles.inputIcon} />
+                                <input
+                                    type="tel"
+                                    required
+                                    value={formData.phoneNumber}
+                                    onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                                    placeholder="0912345678"
                                     className={modalStyles.formInput}
                                 />
                             </div>
@@ -230,13 +315,15 @@ export default function AddRepresentativeModal({ isOpen, onClose, onSuccess }: A
                             <label className={modalStyles.required}>CCCD người uỷ quyền</label>
                             <div className={modalStyles.inputWithIcon}>
                                 <IdcardOutlined className={modalStyles.inputIcon} />
-                                <input
-                                    type="text"
-                                    required
+                                <AutoComplete
+                                    options={userOptions}
+                                    onSearch={onSearchUser}
+                                    onSelect={(value) => handleInputChange('delegatorCccd', value)}
                                     value={formData.delegatorCccd}
-                                    onChange={(e) => handleInputChange('delegatorCccd', e.target.value)}
-                                    placeholder="Mã/CCCD cổ đông uỷ quyền"
-                                    className={modalStyles.formInput}
+                                    onChange={(value) => handleInputChange('delegatorCccd', value)}
+                                    placeholder="Tìm kiếm CCCD người uỷ quyền..."
+                                    style={{ width: '100%' }}
+                                    size="large"
                                 />
                             </div>
                         </div>
@@ -274,8 +361,8 @@ export default function AddRepresentativeModal({ isOpen, onClose, onSuccess }: A
                             {loading ? 'Đang xử lý...' : 'Thêm Người đại diện'}
                         </button>
                     </div>
-                </form>
-            </div>
-        </div>
+                </form >
+            </div >
+        </div >
     );
 }

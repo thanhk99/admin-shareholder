@@ -37,6 +37,7 @@ interface FormData {
   dateOfIssue?: string;
   investorCode: string;
   meetingId: string;
+  nation?: string;
 }
 
 interface FormErrors {
@@ -50,6 +51,7 @@ interface FormErrors {
   investorCode?: string;
   dateOfIssue?: string;
   meetingId?: string;
+  nation?: string;
 }
 
 export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddShareholderModalProps) {
@@ -63,7 +65,8 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
     address: '',
     dateOfIssue: '',
     investorCode: '',
-    meetingId: ''
+    meetingId: '',
+    nation: ''
   });
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [showPassword, setShowPassword] = useState(false);
@@ -196,7 +199,8 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
       address: '',
       dateOfIssue: '',
       investorCode: '',
-      meetingId: ''
+      meetingId: '',
+      nation: ''
     });
     setErrors({});
     onClose();
@@ -403,20 +407,39 @@ export default function AddShareholderModal({ isOpen, onClose, onSuccess }: AddS
             {errors.meetingId && <span className={modalStyles.errorText}>{errors.meetingId}</span>}
           </div>
 
-          <div className={modalStyles.formGroup}>
-            <label className={modalStyles.formLabel}>
-              Địa chỉ
-            </label>
-            <div className={modalStyles.inputWithIcon}>
-              <EnvironmentOutlined className={modalStyles.inputIcon} />
-              <input
-                type="text"
-                value={formData.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
-                placeholder="Nhập địa chỉ"
-                disabled={loading}
-                className={modalStyles.formInput}
-              />
+          <div className={modalStyles.formRow}>
+            <div className={modalStyles.formGroup}>
+              <label className={modalStyles.formLabel}>
+                Quốc tịch
+              </label>
+              <div className={modalStyles.inputWithIcon}>
+                <GlobalOutlined className={modalStyles.inputIcon} />
+                <input
+                  type="text"
+                  value={formData.nation}
+                  onChange={(e) => handleInputChange('nation', e.target.value)}
+                  placeholder="Việt Nam"
+                  disabled={loading}
+                  className={modalStyles.formInput}
+                />
+              </div>
+            </div>
+
+            <div className={modalStyles.formGroup}>
+              <label className={modalStyles.formLabel}>
+                Địa chỉ
+              </label>
+              <div className={modalStyles.inputWithIcon}>
+                <EnvironmentOutlined className={modalStyles.inputIcon} />
+                <input
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  placeholder="Nhập địa chỉ"
+                  disabled={loading}
+                  className={modalStyles.formInput}
+                />
+              </div>
             </div>
           </div>
 

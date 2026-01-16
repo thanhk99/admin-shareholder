@@ -42,15 +42,14 @@ export default function UserManagement() {
   };
 
   // "Xoá" người dùng (chuyển sang inactive)
-  const handleDeleteShareholder = async (investorCode: string) => {
+  const handleDeleteShareholder = async (id: string) => {
     if (!confirm('Bạn có chắc chắn muốn vô hiệu hoá người dùng này?')) {
       return;
     }
 
     setLoading(true);
     try {
-      const response = await ShareholderManage.updateShareholder({
-        investorCode: investorCode,
+      const response = await ShareholderManage.updateShareholder(id, {
         enabled: false
       });
 
@@ -67,11 +66,10 @@ export default function UserManagement() {
   };
 
   // Kích hoạt lại người dùng
-  const handleActivateShareholder = async (cccd: string) => {
+  const handleActivateShareholder = async (id: string) => {
     setLoading(true);
     try {
-      const response = await ShareholderManage.updateShareholder({
-        cccd: cccd,
+      const response = await ShareholderManage.updateShareholder(id, {
         enabled: true
       });
 
@@ -269,7 +267,7 @@ export default function UserManagement() {
                       <button
                         className={styles.deleteButton}
                         title="Vô hiệu hoá"
-                        onClick={() => handleDeleteShareholder(shareholder.investorCode)}
+                        onClick={() => handleDeleteShareholder(shareholder.id)}
                         disabled={loading}
                       >
                         <DeleteOutlined />
@@ -278,7 +276,7 @@ export default function UserManagement() {
                       <button
                         className={styles.activateButton}
                         title="Kích hoạt"
-                        onClick={() => handleActivateShareholder(shareholder.cccd)}
+                        onClick={() => handleActivateShareholder(shareholder.id)}
                         disabled={loading}
                       >
                         ✓

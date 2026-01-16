@@ -26,6 +26,9 @@ export interface NonShareholderProxyRequest {
     meetingId: string;
     delegatorCccd: string;
     sharesDelegated: number;
+    nation?: string;
+    email?: string;
+    phoneNumber?: string;
 }
 
 export interface NonShareholderProxyResponse {

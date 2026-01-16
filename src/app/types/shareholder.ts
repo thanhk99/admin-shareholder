@@ -37,16 +37,16 @@ export interface FormErrors {
 }
 
 export interface updateShareholderRequest {
+  cccd?: string;
+  investorCode?: string;
   fullName?: string;
   email?: string;
-  sharesOwned?: number;
-  cccd?: string;
   phoneNumber?: string;
-  enabled?: boolean;
-  address?: string;
   dateOfIssue?: string;
+  address?: string;
   nation?: string;
-  investorCode?: string;
+  sharesOwned?: number;
+  enabled?: boolean;
 }
 
 export interface Shareholder {

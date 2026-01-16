@@ -162,7 +162,7 @@ export default function EditShareholderModal({
       return;
     }
 
-    if (!shareholder?.investorCode) {
+    if (!shareholder?.id) {
       alert('Không tìm thấy ID người dùng');
       return;
     }
@@ -177,15 +177,14 @@ export default function EditShareholderModal({
         sharesOwned: formData.sharesOwned,
         cccd: formData.cccd,
         phoneNumber: formData.phoneNumber,
-        enabled: formData.enabled,
         address: formData.address,
         dateOfIssue: formatDateForAPI(formData.dateOfIssue || ''),
-        nation: formData.nation,
+        nation: formData.nation || '',
         investorCode: formData.investorCode
       };
 
-      const response = await ShareholderManage.updateShareholder(apiData);
-      if ((response as any).status === "success") {
+      const response = await ShareholderManage.updateShareholder(shareholder.id, apiData);
+      if ((response as any).status === "success" || (response as any).status === 200 || (response as any).id) {
         onSuccess();
         onClose();
         alert('Cập nhật thông tin người dùng thành công!');

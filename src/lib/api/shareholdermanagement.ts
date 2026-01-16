@@ -24,8 +24,8 @@ export default class ShareholderManage {
         return apiClient.post(this.api_add_shareholder, addShareholderRequest);
     }
 
-    static async updateShareholder(updateShareholder: updateShareholderRequest) {
-        return apiClient.post(this.api_update_shareholde, updateShareholder);
+    static async updateShareholder(id: string, updateShareholder: updateShareholderRequest) {
+        return apiClient.put(`${this.api_update_shareholde}/${id}`, updateShareholder);
     }
 
     static async getShareholderByCode(id: string) {
@@ -86,6 +86,14 @@ export default class ShareholderManage {
         } catch (error) {
             // It's acceptable for this to fail (404) if no token exists
             return null;
+        }
+    }
+
+    static async searchUsers(keyword: string) {
+        try {
+            return apiClient.get(API_CONFIG.ENDPOINTS.SHAREHOLDER.SEARCH, { params: { keyword } });
+        } catch (error) {
+            throw error;
         }
     }
 }
