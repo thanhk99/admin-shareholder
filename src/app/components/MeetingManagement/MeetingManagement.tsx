@@ -72,12 +72,6 @@ export default function MeetingManagement() {
   const handleManageCandidates = (meetingId: string) => {
     router.push(`/candidate/${meetingId}`);
   };
-
-  const handleManageElections = (meetingId: string) => {
-    router.push(`/election/${meetingId}`);
-  };
-
-
   // Mở form tạo mới
   const handleCreateNew = () => {
     setSelectedMeeting(null);
@@ -102,8 +96,7 @@ export default function MeetingManagement() {
       console.error("Error deleting meeting", error);
       alert("Không thể xóa cuộc họp");
     }
-  }
-
+  };
   // Tạo cuộc họp mới
   const handleCreateMeeting = async (meetingData: MeetingRequest) => {
     try {
@@ -220,7 +213,6 @@ export default function MeetingManagement() {
         loading={formLoading}
       />
 
-      {/* Modal Chi tiết */}
       <MeetingDetailModal
         isOpen={showDetailModal}
         meeting={selectedMeeting}
@@ -273,15 +265,9 @@ export default function MeetingManagement() {
                 </button>
                 <button
                   className={styles.actionBtn}
-                  onClick={() => handleManageElections(meeting.id)}
-                >
-                  <TrophyOutlined /> Bầu cử
-                </button>
-                <button
-                  className={styles.actionBtn}
                   onClick={() => handleManageCandidates(meeting.id)}
                 >
-                  <UserOutlined /> Ứng viên
+                  <TrophyOutlined /> Bầu cử
                 </button>
               </div>
 

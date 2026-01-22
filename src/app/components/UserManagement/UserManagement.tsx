@@ -16,6 +16,7 @@ import ShareholderManage from '@/lib/api/shareholdermanagement';
 import AddShareholderModal from './AddShareholderModal/AddShareholderModal';
 import EditShareholderModal from './EditShareholderModal/EditShareholderModal';
 import AddRepresentativeModal from './AddRepresentativeModal/AddRepresentativeModal';
+import ImportModal from '../MeetingManagement/ImportModal';
 import { Shareholder } from '@/app/types/shareholder';
 
 
@@ -28,6 +29,7 @@ export default function UserManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingShareholder, setEditingShareholder] = useState<Shareholder | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const router = useRouter();
 
   const filteredShareholders = shareholders.filter(sh =>
@@ -169,6 +171,14 @@ export default function UserManagement() {
             <PlusOutlined />
             Thêm Người dùng
           </button>
+          <button
+            className={styles.importButton}
+            onClick={() => setShowImportModal(true)}
+            disabled={loading}
+          >
+            <PlusOutlined />
+            Nhập dữ liệu
+          </button>
         </div>
       </div>
 
@@ -214,6 +224,13 @@ export default function UserManagement() {
           shareholder={editingShareholder}
         />
       )}
+
+      {/* Modal Import */}
+      <ImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onSuccess={handleAddSuccess}
+      />
 
       <div className={styles.tableContainer}>
         <table className={styles.table}>

@@ -59,6 +59,24 @@
   background-color: #2f855a;
 }
 
+.importButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background-color: #7f8c8d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.importButton:hover {
+  background-color: #6c757d;
+}
+
 .resetButton {
   display: flex;
   align-items: center;
