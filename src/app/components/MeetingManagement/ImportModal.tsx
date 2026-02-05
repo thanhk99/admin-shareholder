@@ -79,7 +79,29 @@ export default function ImportModal({
             if (onSuccess) onSuccess();
         } catch (error: any) {
             console.error('Import error:', error);
-            message.error(error.response?.data?.message || `Lỗi khi nhập dữ liệu ${selectedImportType === 'shareholders' ? 'cổ đông' : 'uỷ quyền'}`);
+
+            const errorData = error.response?.data;
+            const errorMessage = errorData?.message || `Lỗi khi nhập dữ liệu ${selectedImportType === 'shareholders' ? 'cổ đông' : 'uỷ quyền'}`;
+            const details = errorData?.errors || errorData?.details || [];
+
+            if (Array.isArray(details) && details.length > 0) {
+                Modal.error({
+                    title: 'Lỗi nhập dữ liệu',
+                    content: (
+                        <div style={{ maxHeight: '300px', overflowY: 'auto', marginTop: '10px' }}>
+                            <p>{errorMessage}</p>
+                            <ul style={{ paddingLeft: '20px' }}>
+                                {details.map((err: string, index: number) => (
+                                    <li key={index} style={{ color: '#ff4d4f', marginBottom: '4px' }}>{err}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    ),
+                    width: 600,
+                });
+            } else {
+                message.error(errorMessage);
+            }
         } finally {
             setUploading(false);
         }

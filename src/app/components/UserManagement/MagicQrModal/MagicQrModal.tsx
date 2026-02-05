@@ -1,6 +1,7 @@
 import { Modal, QRCode, Space, Button, message } from 'antd';
 import { CopyOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useRef } from 'react';
+import { copyToClipboard } from '@/utils/clipboard';
 
 interface MagicQrModalProps {
     isOpen: boolean;
@@ -30,10 +31,10 @@ export default function MagicQrModal({ isOpen, onClose, qrContent, qrToken, user
 
     const copyLink = async () => {
         if (qrContent) {
-            try {
-                await navigator.clipboard.writeText(qrContent);
+            const success = await copyToClipboard(qrContent);
+            if (success) {
                 messageApi.success('Đã sao chép liên kết đăng nhập');
-            } catch (err) {
+            } else {
                 messageApi.error('Lỗi khi sao chép');
             }
         }
@@ -78,10 +79,10 @@ export default function MagicQrModal({ isOpen, onClose, qrContent, qrToken, user
                                 icon={<CopyOutlined />}
                                 onClick={async () => {
                                     if (qrToken) {
-                                        try {
-                                            await navigator.clipboard.writeText(qrToken);
+                                        const success = await copyToClipboard(qrToken);
+                                        if (success) {
                                             messageApi.success('Đã sao chép Token');
-                                        } catch (err) {
+                                        } else {
                                             messageApi.error('Lỗi khi sao chép Token');
                                         }
                                     }

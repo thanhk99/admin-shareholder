@@ -8,6 +8,7 @@ export interface VoteOptionResult {
 
 export interface ResolutionResult {
     resolutionId: string;
+    resolutionTitle: string;
     results: VoteOptionResult[];
     totalVoters: number;
     totalWeight: number;
@@ -15,15 +16,12 @@ export interface ResolutionResult {
 
 export interface ElectionResult {
     electionId: string;
+    electionTitle: string;
     results: VoteOptionResult[];
     totalVoters: number;
     totalWeight: number;
 }
 
-/**
- * Payload chuẩn nhận về từ WebSocket Topic: /topic/meeting/{meetingId}
- * Phản ánh bản snapshot mới nhất từ Kafka Consumer
- */
 export interface MeetingRealtimeStatus {
     meetingId: string;
     resolutionResults: ResolutionResult[];

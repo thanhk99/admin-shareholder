@@ -143,7 +143,7 @@ export default function ShareholderDetail() {
       const response: any = await ShareholderManage.getExistingQrToken(shareholderId);
       const data = response?.data || response;
 
-      if (data && data.qrContent) {
+      if (data && data.qrContent && data.token) {
         setQrContent(data.qrContent);
         setQrToken(data.token);
         setShowQrModal(true);
@@ -170,7 +170,7 @@ export default function ShareholderDetail() {
       // Adjust based on actual API response structure (flat or nested data)
       const data = response.data || response;
 
-      if (data && data.qrContent) {
+      if (data && data.qrContent && data.token) {
         setQrContent(data.qrContent);
         setQrToken(data.token);
         setShowQrModal(true);
