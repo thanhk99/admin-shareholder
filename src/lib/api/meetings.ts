@@ -79,4 +79,12 @@ export class MeetingService {
             throw error;
         }
     }
+
+    static getShareholders = async (meetingId: string) => {
+        try {
+            return apiClient.get(`${this.api_by_id}/${meetingId}/shareholders`);
+        } catch (error) {
+            throw error;
+        }
+    }
 }
