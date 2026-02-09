@@ -9,7 +9,8 @@ import {
   CheckCircleOutlined,
   BarChartOutlined,
   BankOutlined,
-  CopyrightOutlined
+  CopyrightOutlined,
+  IdcardOutlined
 } from '@ant-design/icons';
 import { MenuItem } from '@/app/types/types';
 import styles from './Sidebar.module.css';
@@ -52,6 +53,12 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
       label: 'Uỷ quyền',
       icon: <CheckCircleOutlined />,
       href: '/proxy',
+    },
+    {
+      id: 'eligibility-check',
+      label: 'Kiểm tra tư cách',
+      icon: <IdcardOutlined />,
+      href: '/eligibility-check',
     }
   ];
 
