@@ -694,7 +694,7 @@ export default function EligibilityCheck() {
                         </div>
                         <Form form={form} layout="vertical">
                             <div className={styles.formGrid}>
-                                <Form.Item label="Tra cứu (Mã CĐ/CCCD/Tên)" name="keyword">
+                                <Form.Item label="Tra cứu (Mã CĐ/CCCD)" name="keyword">
                                     <div className={styles.idInput}>
                                         <AutoComplete
                                             options={searchOptions}
@@ -704,7 +704,7 @@ export default function EligibilityCheck() {
                                             filterOption={false}
                                         >
                                             <Input
-                                                placeholder="Nhập mã, tên hoặc CCCD..."
+                                                placeholder="Nhập mã hoặc CCCD..."
                                                 onPressEnter={() => handleSearchShareholder()}
                                             />
                                         </AutoComplete>
