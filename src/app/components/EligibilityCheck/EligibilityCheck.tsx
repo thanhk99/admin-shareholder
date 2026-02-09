@@ -42,6 +42,7 @@ import ShareholderManage from '@/lib/api/shareholdermanagement';
 import { MeetingService } from '@/lib/api/meetings';
 import ProxyService from '@/lib/api/proxy';
 import { DashboardService } from '@/lib/api/dashboard';
+import { AttendanceService, ParticipationType } from '@/lib/api/attendance';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -66,6 +67,8 @@ export default function EligibilityCheck() {
     const [proxySearchOptions, setProxySearchOptions] = useState<{ value: string; label: React.ReactNode; data: Shareholder }[]>([]);
     const [mainSearchTimeout, setMainSearchTimeout] = useState<NodeJS.Timeout | null>(null);
     const [proxySearchTimeout, setProxySearchTimeout] = useState<NodeJS.Timeout | null>(null);
+    const [selectedProxyId, setSelectedProxyId] = useState<number | null>(null);
+    const [proxyUserId, setProxyUserId] = useState<string | null>(null);
 
     const alreadyDelegatedCount = proxyList
         .filter(p => p.delegatorId === investorCodeWatch)
@@ -141,9 +144,29 @@ export default function EligibilityCheck() {
             setIsProxy(false);
 
             // Fetch proxies for this meeting
-            const proxies = await ProxyService.getMeetingProxies(meetingId);
+            const [proxies, attendedRes] = await Promise.all([
+                ProxyService.getMeetingProxies(meetingId),
+                AttendanceService.getAttendedList(meetingId)
+            ]);
+
             if (Array.isArray(proxies)) {
                 setProxyList(proxies);
+            }
+
+            if (Array.isArray(attendedRes)) {
+                // Map AttendanceResponse back to Shareholder-like object for table display
+                const attendants = attendedRes.map(att => ({
+                    id: att.userId,
+                    investorCode: att.investorCode,
+                    cccd: att.cccd,
+                    fullName: att.fullName,
+                    sharesOwned: att.sharesOwned,
+                    totalOwned: att.sharesOwned, // Fallback for table column dataIndex 'totalOwned'
+                    attendingShares: att.attendingShares,
+                    receivedProxyShares: att.receivedProxyShares,
+                    dateOfIssue: att.checkedInAt || undefined
+                }));
+                setShareholdersList(attendants as any);
             }
 
             // Also reload summary for the meeting context if possible
@@ -219,6 +242,11 @@ export default function EligibilityCheck() {
             return;
         }
 
+        if (!selectedMeetingId) {
+            message.warning('Vui lòng chọn đại hội trước');
+            return;
+        }
+
         const attendingShares = Number(values.attendingShares) || 0;
         const totalOwned = Number(values.sharesOwned) || 0;
 
@@ -232,33 +260,61 @@ export default function EligibilityCheck() {
             return;
         }
 
-        const newEntry = {
-            investorCode: values.investorCode,
-            cccd: values.cccd,
-            fullName: values.fullName,
-            totalOwned: totalOwned,
-            attendingShares: attendingShares,
-            receivedProxyShares: 0,
-            dateOfIssue: values.dateOfIssue ? dayjs(values.dateOfIssue).toISOString() : undefined,
-            placeOfIssue: values.placeOfIssue
-        };
-        setShareholdersList(prev => {
-            const index = prev.findIndex(s => s.investorCode === values.investorCode);
-            if (index > -1) {
-                const newList = [...prev];
-                newList[index] = newEntry as any;
-                return newList;
-            }
-            return [newEntry as any, ...prev];
-        });
+        setLoading(true);
+        try {
+            // Call API to register attendance
+            const response = await AttendanceService.register({
+                meetingId: selectedMeetingId,
+                investorCode: values.investorCode,
+                attendingShares: attendingShares,
+                participationType: ParticipationType.DIRECT
+                // In this UI, we treat manual confirm as DIRECT. 
+                // PROXY attendance is handled via saveProxy.
+            });
 
-        message.success('Xác nhận số lượng tham dự thành công');
+            const newEntry = {
+                investorCode: response.investorCode,
+                cccd: response.cccd,
+                fullName: response.fullName,
+                totalOwned: response.sharesOwned,
+                attendingShares: response.attendingShares,
+                receivedProxyShares: response.receivedProxyShares,
+                dateOfIssue: response.checkedInAt ? dayjs(response.checkedInAt).toISOString() : undefined,
+            };
+
+            setShareholdersList(prev => {
+                const index = prev.findIndex(s => s.investorCode === response.investorCode);
+                if (index > -1) {
+                    const newList = [...prev];
+                    newList[index] = newEntry as any;
+                    return newList;
+                }
+                return [newEntry as any, ...prev];
+            });
+
+            // Refresh summary to reflect new attendance
+            const summaryRes = await DashboardService.getSummary().catch(() => null);
+            if (summaryRes) {
+                setSummary(summaryRes);
+            }
+
+            message.success('Xác nhận số lượng tham dự thành công');
+        } catch (error: any) {
+            console.error('Error confirming attendance:', error);
+            message.error('Lỗi khi xác nhận tham dự: ' + (error.response?.data?.message || error.message));
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSaveProxy = async () => {
         const values = form.getFieldsValue();
-        if (!values.proxyId || !values.proxyFullName) {
-            message.warning('Vui lòng nhập đầy đủ thông tin người được ủy quyền');
+
+        // Use values.proxyUserId or values.proxyId (if it's already an ID)
+        const effectiveProxyId = values.proxyUserId || values.proxyId;
+
+        if (!effectiveProxyId || !values.proxyFullName) {
+            message.warning('Vui lòng tìm kiếm và chọn người nhận ủy quyền từ danh sách gợi ý');
             return;
         }
 
@@ -267,17 +323,34 @@ export default function EligibilityCheck() {
             return;
         }
 
+        const delegatorDbId = values.id || values.investorCode;
+        if (!delegatorDbId) {
+            message.error('Thiếu thông tin người ủy quyền');
+            return;
+        }
+
         const sharesOwned = Number(values.sharesOwned) || 0;
         const attendingShares = Number(values.attendingShares) || 0;
 
-        const existingProxyItem = proxyList.find(p => p.delegatorId === values.investorCode && p.proxyId === values.proxyId);
+        // Detect if this pair already exists (to implement "overwrite")
+        const existingPairProxy = proxyList.find(p =>
+            String(p.delegatorId) === String(delegatorDbId) &&
+            String(p.proxyId) === String(effectiveProxyId) &&
+            p.status === 'ACTIVE'
+        );
+
+        // Record to revoke: either the one we explicitly selected for editing, 
+        // or the one that already exists for this pair (auto-overwrite)
+        const proxyToRevokeId = selectedProxyId || existingPairProxy?.id;
 
         const totalDelegated = proxyList
-            .filter(p => p.delegatorId === values.investorCode)
+            .filter(p => String(p.delegatorId) === String(values.investorCode) || String(p.delegatorId) === String(values.id))
             .reduce((sum, p) => sum + (Number(p.sharesDelegated) || 0), 0);
 
-        const delegatedExcludingCurrent = existingProxyItem
-            ? totalDelegated - (Number(existingProxyItem.sharesDelegated) || 0)
+        // When calculating remaining shares, we must subtract the shares of the record we are about to replace
+        const proxyToReplace = proxyList.find(p => p.id === proxyToRevokeId);
+        const delegatedExcludingCurrent = proxyToReplace
+            ? totalDelegated - (Number(proxyToReplace.sharesDelegated) || 0)
             : totalDelegated;
 
         const remainingShares = sharesOwned - attendingShares - delegatedExcludingCurrent;
@@ -295,50 +368,109 @@ export default function EligibilityCheck() {
         }
 
         if (delegateAmount > remainingShares) {
-            message.error(`Số lượng ủy quyền (${delegateAmount.toLocaleString()}) vượt quá số cổ phần còn lại (${remainingShares.toLocaleString()})`);
+            message.error(`Số lượng ủy quyền (${delegateAmount.toLocaleString()}) vượt quá số cổ phần khả dụng (${remainingShares.toLocaleString()})`);
             return;
         }
 
+        setLoading(true);
         try {
-            // Call API to create proxy
+            // Revoke the old record (overwrite logic)
+            if (proxyToRevokeId) {
+                try {
+                    await ProxyService.revokeProxy(selectedMeetingId, proxyToRevokeId);
+                    console.log('Revoked existing proxy for overwrite:', proxyToRevokeId);
+                } catch (revokeError) {
+                    console.warn('Failed to revoke old proxy, current create might fail:', revokeError);
+                }
+            }
+
+            // Call API to create proxy with the NEW amount
             const proxyRequest: ProxyRequest = {
-                delegatorId: values.investorCode,
-                proxyId: values.proxyId,
+                delegatorId: delegatorDbId,
+                proxyId: effectiveProxyId,
                 sharesDelegated: delegateAmount
             };
 
-            console.log('Creating proxy - Meeting ID:', selectedMeetingId);
-            console.log('Proxy Request:', proxyRequest);
+            console.log('Saving proxy (overwrite):', proxyRequest);
 
             const createdProxy = await ProxyService.createProxy(selectedMeetingId, proxyRequest);
-            console.log('Proxy created successfully:', createdProxy);
+            console.log('Proxy saved successfully:', createdProxy);
 
-            message.success(`Lưu thông tin ủy quyền thành công cho ${delegateAmount.toLocaleString()} cổ phần`);
-            const newProxy: Partial<ProxyItem> = {
+            message.success(proxyToRevokeId ? `Đã cập nhật (ghi đè) thông tin ủy quyền thành công` : `Lưu thông tin ủy quyền thành công`);
+
+            // Build the new proxy item for local display
+            const newProxy: ProxyItem = {
                 ...createdProxy,
                 proxyName: values.proxyFullName,
                 delegatorName: values.fullName,
-            };
+                delegatorId: delegatorDbId
+            } as ProxyItem;
 
             setProxyList(prev => {
-                const index = prev.findIndex(p => p.delegatorId === values.investorCode && p.proxyId === values.proxyId);
-                if (index > -1) {
-                    const newList = [...prev];
-                    newList[index] = { ...newList[index], ...newProxy };
-                    return newList;
-                }
-                return [newProxy as ProxyItem, ...prev];
+                // Remove the old row(s) to avoid duplicates and reflect overwrite
+                let newList = prev.filter(p => p.id !== proxyToRevokeId);
+                return [newProxy, ...newList];
             });
+
+            // Reset proxy fields
+            setSelectedProxyId(null);
+            setProxyUserId(null);
             form.setFieldsValue({
+                isProxy: false,
                 proxyId: '',
+                proxyUserId: '',
                 proxyFullName: '',
                 proxyDateOfIssue: null,
                 proxyPlaceOfIssue: '',
                 proxyShares: ''
             });
+            setIsProxy(false);
+        } catch (error: any) {
+            console.error('Error saving proxy:', error);
+            const errorMsg = error.response?.data?.message || error.message || 'Lỗi không xác định từ máy chủ';
+            message.error(`Lỗi khi lưu thông tin ủy quyền: ${errorMsg}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+
+    const handleDeleteProxy = async () => {
+        if (!selectedProxyId) {
+            message.warning('Vui lòng chọn lượt ủy quyền cần xóa từ danh sách bên dưới');
+            return;
+        }
+
+        if (!selectedMeetingId) {
+            message.error('Không xác định được đai hội');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await ProxyService.revokeProxy(selectedMeetingId, selectedProxyId);
+            message.success('Đã xóa lượt ủy quyền thành công');
+
+            // Update local list
+            setProxyList(prev => prev.filter(p => p.id !== selectedProxyId));
+
+            // Reset proxy part of form
+            setSelectedProxyId(null);
+            form.setFieldsValue({
+                isProxy: false,
+                proxyId: '',
+                proxyFullName: '',
+                proxyDateOfIssue: undefined,
+                proxyPlaceOfIssue: '',
+                proxyShares: ''
+            });
+            setIsProxy(false);
         } catch (error) {
-            console.error('Error creating proxy:', error);
-            message.error('Lỗi khi lưu thông tin ủy quyền');
+            console.error('Error deleting proxy:', error);
+            message.error('Lỗi khi xóa lượt ủy quyền');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -420,40 +552,55 @@ export default function EligibilityCheck() {
     };
 
     const fillShareholderData = (shareholder: Shareholder, existingProxy?: ProxyItem) => {
+        const displayInvestorCode = shareholder.investorCode || shareholder.id;
         form.setFieldsValue({
-            keyword: shareholder.cccd || shareholder.id,
-            investorCode: shareholder.id,
+            id: shareholder.id,
+            keyword: shareholder.cccd || displayInvestorCode,
+            investorCode: displayInvestorCode,
             cccd: shareholder.cccd,
             fullName: shareholder.fullName,
             dateOfIssue: shareholder.dateOfIssue ? dayjs(shareholder.dateOfIssue) : null,
-            placeOfIssue: shareholder.address || (shareholder as any).placeOfIssue,
+            placeOfIssue: (shareholder as any).placeOfIssue || shareholder.address,
             sharesOwned: shareholder.sharesOwned || (shareholder as any).totalOwned,
-            attendingShares: shareholder.sharesOwned || (shareholder as any).attendingShares,
+            attendingShares: (shareholder as any).attendingShares || shareholder.sharesOwned || (shareholder as any).totalOwned,
         });
 
         if (existingProxy) {
+            setSelectedProxyId(existingProxy.id);
+            setProxyUserId(existingProxy.proxyId);
             setIsProxy(true);
             form.setFieldsValue({
                 isProxy: true,
                 proxyId: existingProxy.proxyId,
+                proxyUserId: existingProxy.proxyId,
                 proxyFullName: existingProxy.proxyName,
                 proxyShares: existingProxy.sharesDelegated
             });
         } else {
-            const foundProxy = proxyList.find(p => p.delegatorId === shareholder.id);
+            setSelectedProxyId(null);
+            setProxyUserId(null);
+            const foundProxy = proxyList.find(p =>
+                String(p.delegatorId) === String(shareholder.id) ||
+                String(p.delegatorId) === String(shareholder.investorCode)
+            );
             if (foundProxy) {
+                setSelectedProxyId(foundProxy.id);
+                setProxyUserId(foundProxy.proxyId);
                 setIsProxy(true);
                 form.setFieldsValue({
                     isProxy: true,
                     proxyId: foundProxy.proxyId,
+                    proxyUserId: foundProxy.proxyId,
                     proxyFullName: foundProxy.proxyName,
                     proxyShares: foundProxy.sharesDelegated
                 });
             } else {
                 setIsProxy(false);
+                setProxyUserId(null);
                 form.setFieldsValue({
                     isProxy: false,
                     proxyId: '',
+                    proxyUserId: '',
                     proxyFullName: '',
                     proxyDateOfIssue: undefined,
                     proxyPlaceOfIssue: '',
@@ -570,8 +717,10 @@ export default function EligibilityCheck() {
     const onSelectProxy = (value: string, option: any) => {
         if (option.data) {
             const sh = option.data;
+            setProxyUserId(sh.id);
             form.setFieldsValue({
                 proxyId: sh.id,
+                proxyUserId: sh.id,
                 proxyFullName: sh.fullName,
                 proxyDateOfIssue: sh.dateOfIssue ? dayjs(sh.dateOfIssue) : null,
                 proxyPlaceOfIssue: sh.address,
@@ -589,25 +738,45 @@ export default function EligibilityCheck() {
 
         setLoading(true);
         try {
-            const response: any = await ShareholderManage.searchUsers(proxy.delegatorId).catch(() => null);
-            const data = response?.data || response;
-            const results = Array.isArray(data) ? data : (data ? [data] : []);
+            // Fetch newest info from server for both delegator and proxy recipient
+            const [delegatorRes, proxyRes] = await Promise.all([
+                ShareholderManage.getShareholderByCode(proxy.delegatorId).catch(() => null),
+                ShareholderManage.getShareholderByCode(proxy.proxyId).catch(() => null)
+            ]);
 
-            const shareholder = results.find((s: Shareholder) =>
-                s.id === proxy.delegatorId ||
-                s.investorCode === proxy.delegatorId ||
-                s.cccd === proxy.delegatorId
-            );
+            const delegatorData = (delegatorRes as any)?.data || delegatorRes;
+            const proxyData = (proxyRes as any)?.data || proxyRes;
+
+            let shareholder: Shareholder | null = null;
+            if (delegatorData && (delegatorData.id || delegatorData.fullName)) {
+                shareholder = delegatorData;
+            } else {
+                // Last resort fallback to search
+                const searchRes: any = await ShareholderManage.searchUsers(proxy.delegatorId).catch(() => null);
+                const data = searchRes?.data || searchRes;
+                const results = Array.isArray(data) ? data : (data ? [data] : []);
+                shareholder = results.find((s: Shareholder) =>
+                    String(s.id) === String(proxy.delegatorId) ||
+                    String(s.investorCode) === String(proxy.delegatorId) ||
+                    String(s.cccd) === String(proxy.delegatorId)
+                );
+            }
 
             if (shareholder) {
-                fillShareholderData(shareholder, proxy);
-                message.info('Đang chỉnh sửa thông tin ủy quyền');
+                // If we found fresh info for the proxy recipient, update the proxy object with their latest name
+                const updatedProxy = {
+                    ...proxy,
+                    proxyName: (proxyData && proxyData.fullName) ? proxyData.fullName : proxy.proxyName
+                };
+
+                fillShareholderData(shareholder, updatedProxy);
+                message.info('Đang chỉnh sửa thông tin ủy quyền (Đã cập nhật từ cơ sở dữ liệu)');
             } else {
                 message.warning('Không tìm thấy thông tin cổ đông gốc');
             }
         } catch (error) {
-            console.error('Error fetching delegator info:', error);
-            message.error('Lỗi khi tải thông tin cổ đông');
+            console.error('Error fetching info:', error);
+            message.error('Lỗi khi tải thông tin gốc');
         } finally {
             setLoading(false);
         }
@@ -693,6 +862,12 @@ export default function EligibilityCheck() {
                             </Button>
                         </div>
                         <Form form={form} layout="vertical">
+                            <Form.Item name="id" noStyle>
+                                <Input type="hidden" />
+                            </Form.Item>
+                            <Form.Item name="proxyUserId" noStyle>
+                                <Input type="hidden" />
+                            </Form.Item>
                             <div className={styles.formGrid}>
                                 <Form.Item label="Tra cứu (Mã CĐ/CCCD)" name="keyword">
                                     <div className={styles.idInput}>
@@ -850,9 +1025,30 @@ export default function EligibilityCheck() {
                                 pagination={{ pageSize: 5 }}
                                 rowKey="investorCode"
                                 onRow={(record) => ({
-                                    onClick: () => {
-                                        fillShareholderData(record as any);
-                                        message.info(`Đang sửa thông tin cổ đông: ${record.fullName}`);
+                                    onClick: async () => {
+                                        setLoading(true);
+                                        try {
+                                            // Always fetch 'original' info from server even when clicking local list
+                                            const code = record.investorCode || (record as any).id;
+                                            const response: any = await ShareholderManage.getShareholderByCode(code).catch(() => null);
+                                            const data = response?.data || response;
+
+                                            if (data && (data.fullName || data.id)) {
+                                                // Keep the attendingShares from the record if it exists
+                                                const mergedData = {
+                                                    ...data,
+                                                    attendingShares: (record as any).attendingShares
+                                                };
+                                                fillShareholderData(mergedData);
+                                            } else {
+                                                fillShareholderData(record as any);
+                                            }
+                                            message.info(`Đang sửa thông tin cổ đông: ${record.fullName}`);
+                                        } catch (e) {
+                                            fillShareholderData(record as any);
+                                        } finally {
+                                            setLoading(false);
+                                        }
                                     },
                                     style: { cursor: 'pointer' }
                                 })}
@@ -881,7 +1077,15 @@ export default function EligibilityCheck() {
                                 <Button className={styles.listButton}>Danh sách cổ đông gửi UQ</Button>
                             </div>
                             <div className={styles.deleteButtonRow}>
-                                <Button danger style={{ width: 'auto', minWidth: '120px' }} icon={<DeleteOutlined />}>Xóa UQ</Button>
+                                <Button
+                                    danger
+                                    style={{ width: 'auto', minWidth: '120px' }}
+                                    icon={<DeleteOutlined />}
+                                    onClick={handleDeleteProxy}
+                                    loading={loading}
+                                >
+                                    Xóa UQ
+                                </Button>
                             </div>
                         </div>
                     </div>
