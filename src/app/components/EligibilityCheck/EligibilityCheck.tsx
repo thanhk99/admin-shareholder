@@ -77,7 +77,17 @@ export default function EligibilityCheck() {
     const totalShareholders = summary?.userStats?.totalShareholders || 0;
     const totalShares = summary?.userStats?.totalSharesRepresented || 0;
     const directAttendees = summary?.meetingStats?.totalInvited || 0;
-    const verifiedAttendees = shareholdersList.length;
+
+    const uniqueAttendees = new Set<string>();
+    shareholdersList.forEach(s => {
+        const key = s.cccd || s.investorCode;
+        if (key) uniqueAttendees.add(key);
+    });
+    proxyList.forEach(p => {
+        if (p.proxyId) uniqueAttendees.add(p.proxyId);
+    });
+    const verifiedAttendees = uniqueAttendees.size;
+
     const uniqueProxyRecipients = proxyList.length > 0 ? new Set(proxyList.map(p => p.proxyId)).size : 0;
 
     const totalProxyDelegations = proxyList.length;
@@ -110,6 +120,47 @@ export default function EligibilityCheck() {
         fetchInitialData();
     }, []);
 
+    useEffect(() => {
+        if (selectedMeetingId) {
+            loadMeetingData(selectedMeetingId);
+        } else {
+            setProxyList([]);
+            setShareholdersList([]);
+            form.resetFields();
+            setIsProxy(false);
+        }
+    }, [selectedMeetingId]);
+
+    const loadMeetingData = async (meetingId: string) => {
+        setLoading(true);
+        try {
+            // Reset state
+            setProxyList([]);
+            setShareholdersList([]);
+            form.resetFields();
+            setIsProxy(false);
+
+            // Fetch proxies for this meeting
+            const proxies = await ProxyService.getMeetingProxies(meetingId);
+            if (Array.isArray(proxies)) {
+                setProxyList(proxies);
+            }
+
+            // Also reload summary for the meeting context if possible
+            const summaryRes = await DashboardService.getSummary().catch(() => null);
+            if (summaryRes) {
+                setSummary(summaryRes);
+            }
+
+            message.info('Đã tải dữ liệu cuộc họp mới');
+        } catch (error) {
+            console.error('Error loading meeting data:', error);
+            message.error('Lỗi khi tải dữ liệu cuộc họp');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const fetchInitialData = async () => {
         try {
             const [meetingsRes, ongoingRes, summaryRes] = await Promise.all([
@@ -125,7 +176,6 @@ export default function EligibilityCheck() {
                 fetchedMeetings = (meetingsRes as any).data;
             }
 
-            // Filter out COMPLETED meetings
             const availableMeetings = fetchedMeetings.filter((m: Meeting) => m.status !== 'COMPLETED');
             setMeetings(availableMeetings);
 
@@ -152,14 +202,6 @@ export default function EligibilityCheck() {
 
             if (targetMeetingId) {
                 setSelectedMeetingId(targetMeetingId);
-                try {
-                    const proxies = await ProxyService.getMeetingProxies(targetMeetingId);
-                    if (Array.isArray(proxies)) {
-                        setProxyList(proxies);
-                    }
-                } catch (error) {
-                    console.error('Error loading proxies:', error);
-                }
             }
 
             if (summaryRes) {
@@ -227,11 +269,18 @@ export default function EligibilityCheck() {
 
         const sharesOwned = Number(values.sharesOwned) || 0;
         const attendingShares = Number(values.attendingShares) || 0;
-        const alreadyDelegated = proxyList
-            .filter(p => p.delegatorId === values.investorCode)
-            .reduce((sum, p) => sum + p.sharesDelegated, 0);
 
-        const remainingShares = sharesOwned - attendingShares - alreadyDelegated;
+        const existingProxyItem = proxyList.find(p => p.delegatorId === values.investorCode && p.proxyId === values.proxyId);
+
+        const totalDelegated = proxyList
+            .filter(p => p.delegatorId === values.investorCode)
+            .reduce((sum, p) => sum + (Number(p.sharesDelegated) || 0), 0);
+
+        const delegatedExcludingCurrent = existingProxyItem
+            ? totalDelegated - (Number(existingProxyItem.sharesDelegated) || 0)
+            : totalDelegated;
+
+        const remainingShares = sharesOwned - attendingShares - delegatedExcludingCurrent;
 
         let delegateAmount = values.proxyShares;
         if (!delegateAmount || delegateAmount === '') {
@@ -258,7 +307,11 @@ export default function EligibilityCheck() {
                 sharesDelegated: delegateAmount
             };
 
+            console.log('Creating proxy - Meeting ID:', selectedMeetingId);
+            console.log('Proxy Request:', proxyRequest);
+
             const createdProxy = await ProxyService.createProxy(selectedMeetingId, proxyRequest);
+            console.log('Proxy created successfully:', createdProxy);
 
             message.success(`Lưu thông tin ủy quyền thành công cho ${delegateAmount.toLocaleString()} cổ phần`);
             const newProxy: Partial<ProxyItem> = {
@@ -434,7 +487,7 @@ export default function EligibilityCheck() {
                 ).slice(0, 10);
 
                 const options = filteredResults.map((sh: Shareholder) => ({
-                    value: sh.cccd || sh.id,
+                    value: sh.id,
                     label: (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
@@ -485,7 +538,7 @@ export default function EligibilityCheck() {
                 }).slice(0, 10);
 
                 const options = filteredResults.map((sh: Shareholder) => ({
-                    value: sh.cccd || sh.id,
+                    value: sh.id,
                     label: (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
@@ -518,13 +571,45 @@ export default function EligibilityCheck() {
         if (option.data) {
             const sh = option.data;
             form.setFieldsValue({
-                proxyId: sh.cccd || sh.id,
+                proxyId: sh.id,
                 proxyFullName: sh.fullName,
                 proxyDateOfIssue: sh.dateOfIssue ? dayjs(sh.dateOfIssue) : null,
                 proxyPlaceOfIssue: sh.address,
             });
             setProxySearchOptions([]);
             message.success('Đã chọn người nhận ủy quyền: ' + sh.fullName);
+        }
+    };
+
+    const handleEditProxy = async (proxy: ProxyItem) => {
+        if (!proxy.delegatorId) {
+            message.warning('Không tìm thấy thông tin định danh người ủy quyền');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const response: any = await ShareholderManage.searchUsers(proxy.delegatorId).catch(() => null);
+            const data = response?.data || response;
+            const results = Array.isArray(data) ? data : (data ? [data] : []);
+
+            const shareholder = results.find((s: Shareholder) =>
+                s.id === proxy.delegatorId ||
+                s.investorCode === proxy.delegatorId ||
+                s.cccd === proxy.delegatorId
+            );
+
+            if (shareholder) {
+                fillShareholderData(shareholder, proxy);
+                message.info('Đang chỉnh sửa thông tin ủy quyền');
+            } else {
+                message.warning('Không tìm thấy thông tin cổ đông gốc');
+            }
+        } catch (error) {
+            console.error('Error fetching delegator info:', error);
+            message.error('Lỗi khi tải thông tin cổ đông');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -781,6 +866,10 @@ export default function EligibilityCheck() {
                                 size="small"
                                 pagination={{ pageSize: 5 }}
                                 rowKey="id"
+                                onRow={(record) => ({
+                                    onClick: () => handleEditProxy(record),
+                                    style: { cursor: 'pointer' }
+                                })}
                             />
                         </div>
 
