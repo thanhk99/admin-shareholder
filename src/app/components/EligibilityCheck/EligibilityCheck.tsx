@@ -58,7 +58,8 @@ export default function EligibilityCheck() {
     const sharesOwnedWatch = Form.useWatch('sharesOwned', form);
     const investorCodeWatch = Form.useWatch('investorCode', form);
 
-    // New state for standardized data
+
+
     const [shareholdersList, setShareholdersList] = useState<Shareholder[]>([]);
     const [proxyList, setProxyList] = useState<ProxyItem[]>([]);
     const [searchOptions, setSearchOptions] = useState<{ value: string; label: React.ReactNode; data: Shareholder }[]>([]);
@@ -73,24 +74,14 @@ export default function EligibilityCheck() {
     const remainingToAllocate = (Number(sharesOwnedWatch) || 0) - (Number(attendingSharesWatch) || 0) - alreadyDelegatedCount;
     const displayRemaining = Math.max(0, remainingToAllocate);
 
-    // Calculate statistics from API summary data
-    // Tổng số cổ đông của công ty (từ VSD)
     const totalShareholders = summary?.userStats?.totalShareholders || 0;
-
-    // Tổng số cổ phiếu công ty đang sở hữu (từ VSD)
     const totalShares = summary?.userStats?.totalSharesRepresented || 0;
-
-    // Số người có giấy mời (được mời tham dự)
     const directAttendees = summary?.meetingStats?.totalInvited || 0;
-
-    // Số người đã qua kiểm tra tư cách cổ đông (đã xác nhận tham dự)
     const verifiedAttendees = shareholdersList.length;
-
     const uniqueProxyRecipients = proxyList.length > 0 ? new Set(proxyList.map(p => p.proxyId)).size : 0;
 
     const totalProxyDelegations = proxyList.length;
 
-    // Tổng số cổ phiếu của người được mời (tham dự) - Tính toán Realtime từ danh sách
     const totalLocalDirectShares = shareholdersList.reduce((sum, sh) => sum + (Number((sh as any).attendingShares) || 0), 0);
     const totalLocalProxyShares = proxyList.reduce((sum, p) => sum + (Number(p.sharesDelegated) || 0), 0);
     const totalAttendingShares = totalLocalDirectShares + totalLocalProxyShares;
@@ -127,17 +118,42 @@ export default function EligibilityCheck() {
                 DashboardService.getSummary().catch(() => null)
             ]);
 
+            let fetchedMeetings: Meeting[] = [];
             if (Array.isArray(meetingsRes)) {
-                setMeetings(meetingsRes);
+                fetchedMeetings = meetingsRes;
             } else if ((meetingsRes as any).data) {
-                setMeetings((meetingsRes as any).data);
+                fetchedMeetings = (meetingsRes as any).data;
             }
 
+            // Filter out COMPLETED meetings
+            const availableMeetings = fetchedMeetings.filter((m: Meeting) => m.status !== 'COMPLETED');
+            setMeetings(availableMeetings);
+
+            let targetMeetingId = '';
+
             if (ongoingRes && (ongoingRes as any).id) {
-                const meetingId = (ongoingRes as any).id;
-                setSelectedMeetingId(meetingId);
+                targetMeetingId = (ongoingRes as any).id;
+            }
+
+            if (!targetMeetingId && availableMeetings.length > 0) {
+                const ongoingInList = availableMeetings.find(m => m.status === 'ONGOING');
+                if (ongoingInList) {
+                    targetMeetingId = ongoingInList.id;
+                } else {
+                    const upcoming = availableMeetings
+                        .filter(m => m.status === 'SCHEDULED')
+                        .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+                    if (upcoming.length > 0) {
+                        targetMeetingId = upcoming[0].id;
+                    }
+                }
+            }
+
+            if (targetMeetingId) {
+                setSelectedMeetingId(targetMeetingId);
                 try {
-                    const proxies = await ProxyService.getMeetingProxies(meetingId);
+                    const proxies = await ProxyService.getMeetingProxies(targetMeetingId);
                     if (Array.isArray(proxies)) {
                         setProxyList(proxies);
                     }
@@ -294,7 +310,6 @@ export default function EligibilityCheck() {
 
     const handleQRScan = () => {
         message.info('Tính năng quét QR đang được khởi tạo. Vui lòng kết nối camera.');
-        // Placeholder for real QR integration
     };
 
     const handlePrintQR = async () => {
@@ -307,14 +322,10 @@ export default function EligibilityCheck() {
         }
 
         try {
-            // Generate QR code for login
             const response = await ShareholderManage.generateQrLogin(userId || investorCode);
 
             if (response && (response as any).token) {
                 message.success('Đang chuẩn bị in mã QR đăng nhập cho cổ đông: ' + investorCode);
-
-                // TODO: Implement actual QR code printing
-                // You can use a library like qrcode.react to generate and print the QR
                 console.log('QR Token:', (response as any).token);
             } else {
                 message.error('Không thể tạo mã QR');
@@ -335,13 +346,17 @@ export default function EligibilityCheck() {
         try {
             const response: any = await ShareholderManage.searchUsers(keyword).catch(() => null);
             const data = response?.data || response;
-            const shareholder = Array.isArray(data) ? data[0] : data;
+            const results = Array.isArray(data) ? data : (data ? [data] : []);
 
-            if (shareholder && (shareholder.fullName || shareholder.investorCode)) {
+
+
+            const shareholder = results.find((s: Shareholder) => s && s.sharesOwned > 0);
+
+            if (shareholder && (shareholder.fullName || shareholder.id)) {
                 fillShareholderData(shareholder);
                 message.success('Đã tìm thấy thông tin cổ đông');
             } else {
-                message.error('Không tìm thấy cổ đông');
+                message.error('Không tìm thấy cổ đông hoặc người này không sở hữu cổ phần');
             }
         } catch (error) {
             console.error('Error searching shareholder:', error);
@@ -353,8 +368,8 @@ export default function EligibilityCheck() {
 
     const fillShareholderData = (shareholder: Shareholder, existingProxy?: ProxyItem) => {
         form.setFieldsValue({
-            keyword: shareholder.cccd || shareholder.investorCode,
-            investorCode: shareholder.investorCode,
+            keyword: shareholder.cccd || shareholder.id,
+            investorCode: shareholder.id,
             cccd: shareholder.cccd,
             fullName: shareholder.fullName,
             dateOfIssue: shareholder.dateOfIssue ? dayjs(shareholder.dateOfIssue) : null,
@@ -369,21 +384,16 @@ export default function EligibilityCheck() {
                 isProxy: true,
                 proxyId: existingProxy.proxyId,
                 proxyFullName: existingProxy.proxyName,
-                proxyDateOfIssue: existingProxy.proxyDateOfIssue ? dayjs(existingProxy.proxyDateOfIssue) : undefined,
-                proxyPlaceOfIssue: existingProxy.proxyPlaceOfIssue,
                 proxyShares: existingProxy.sharesDelegated
             });
         } else {
-            // Check if there's any existing proxy in the list for this shareholder
-            const foundProxy = proxyList.find(p => p.delegatorId === shareholder.investorCode);
+            const foundProxy = proxyList.find(p => p.delegatorId === shareholder.id);
             if (foundProxy) {
                 setIsProxy(true);
                 form.setFieldsValue({
                     isProxy: true,
                     proxyId: foundProxy.proxyId,
                     proxyFullName: foundProxy.proxyName,
-                    proxyDateOfIssue: foundProxy.proxyDateOfIssue ? dayjs(foundProxy.proxyDateOfIssue) : undefined,
-                    proxyPlaceOfIssue: foundProxy.proxyPlaceOfIssue,
                     proxyShares: foundProxy.sharesDelegated
                 });
             } else {
@@ -417,19 +427,21 @@ export default function EligibilityCheck() {
                 const results = Array.isArray(data) ? data : (data ? [data] : []);
 
                 const filteredResults = results.filter((sh: Shareholder) =>
-                    sh.cccd?.toLowerCase().startsWith(keyword.toLowerCase()) ||
-                    sh.investorCode?.toLowerCase().startsWith(keyword.toLowerCase())
+                    sh.sharesOwned > 0 && (
+                        sh.cccd?.toLowerCase().startsWith(keyword.toLowerCase()) ||
+                        sh.id?.toLowerCase().startsWith(keyword.toLowerCase())
+                    )
                 ).slice(0, 10);
 
                 const options = filteredResults.map((sh: Shareholder) => ({
-                    value: sh.cccd || sh.investorCode,
+                    value: sh.cccd || sh.id,
                     label: (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                                 <Text strong style={{ fontSize: '15px' }}>{sh.cccd}</Text>
                                 <div style={{ fontSize: '12px', color: '#666' }}>{sh.fullName}</div>
                             </div>
-                            <Tag color="blue">{sh.investorCode}</Tag>
+                            <Tag color="blue">{sh.id}</Tag>
                         </div>
                     ),
                     data: sh
@@ -463,24 +475,24 @@ export default function EligibilityCheck() {
                 const results = Array.isArray(data) ? data : (data ? [data] : []);
 
                 const filteredResults = results.filter((sh: Shareholder) => {
-                    const isSelf = (sh.investorCode && sh.investorCode === currentId) ||
+                    const isSelf = (sh.id && sh.id === currentId) ||
                         (sh.cccd && sh.cccd === currentCCCD);
 
                     if (isSelf) return false;
 
                     return sh.cccd?.toLowerCase().startsWith(keyword.toLowerCase()) ||
-                        sh.investorCode?.toLowerCase().startsWith(keyword.toLowerCase());
+                        sh.id?.toLowerCase().startsWith(keyword.toLowerCase());
                 }).slice(0, 10);
 
                 const options = filteredResults.map((sh: Shareholder) => ({
-                    value: sh.cccd || sh.investorCode,
+                    value: sh.cccd || sh.id,
                     label: (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                                 <Text strong style={{ fontSize: '15px' }}>{sh.cccd}</Text>
                                 <div style={{ fontSize: '12px', color: '#666' }}>{sh.fullName}</div>
                             </div>
-                            <Tag color="blue">{sh.investorCode}</Tag>
+                            <Tag color="blue">{sh.id}</Tag>
                         </div>
                     ),
                     data: sh
@@ -506,7 +518,7 @@ export default function EligibilityCheck() {
         if (option.data) {
             const sh = option.data;
             form.setFieldsValue({
-                proxyId: sh.cccd || sh.investorCode,
+                proxyId: sh.cccd || sh.id,
                 proxyFullName: sh.fullName,
                 proxyDateOfIssue: sh.dateOfIssue ? dayjs(sh.dateOfIssue) : null,
                 proxyPlaceOfIssue: sh.address,
@@ -520,7 +532,6 @@ export default function EligibilityCheck() {
         <div className={styles.container}>
             <Title level={3} className={styles.title}>Kiểm tra tư cách cổ đông</Title>
 
-            {/* Thông tin chung */}
             <div className={styles.section}>
                 <div className={styles.sectionHeader}>
                     <h2 className={styles.sectionTitle}>Thông tin chung</h2>
@@ -585,7 +596,6 @@ export default function EligibilityCheck() {
 
             <Row gutter={24}>
                 <Col span={24}>
-                    {/* Thông tin cổ đông */}
                     <div className={styles.section}>
                         <div className={styles.sectionHeader}>
                             <h2 className={styles.sectionTitle}>Thông tin cổ đông</h2>
