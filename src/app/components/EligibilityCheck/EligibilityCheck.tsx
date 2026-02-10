@@ -42,7 +42,6 @@ import ShareholderManage from '@/lib/api/shareholdermanagement';
 import { MeetingService } from '@/lib/api/meetings';
 import ProxyService from '@/lib/api/proxy';
 import { DashboardService } from '@/lib/api/dashboard';
-import { AttendanceService, ParticipationType } from '@/lib/api/attendance';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -144,29 +143,9 @@ export default function EligibilityCheck() {
             setIsProxy(false);
 
             // Fetch proxies for this meeting
-            const [proxies, attendedRes] = await Promise.all([
-                ProxyService.getMeetingProxies(meetingId),
-                AttendanceService.getAttendedList(meetingId)
-            ]);
-
+            const proxies = await ProxyService.getMeetingProxies(meetingId);
             if (Array.isArray(proxies)) {
                 setProxyList(proxies);
-            }
-
-            if (Array.isArray(attendedRes)) {
-                // Map AttendanceResponse back to Shareholder-like object for table display
-                const attendants = attendedRes.map(att => ({
-                    id: att.userId,
-                    investorCode: att.investorCode,
-                    cccd: att.cccd,
-                    fullName: att.fullName,
-                    sharesOwned: att.sharesOwned,
-                    totalOwned: att.sharesOwned, // Fallback for table column dataIndex 'totalOwned'
-                    attendingShares: att.attendingShares,
-                    receivedProxyShares: att.receivedProxyShares,
-                    dateOfIssue: att.checkedInAt || undefined
-                }));
-                setShareholdersList(attendants as any);
             }
 
             // Also reload summary for the meeting context if possible
@@ -242,11 +221,6 @@ export default function EligibilityCheck() {
             return;
         }
 
-        if (!selectedMeetingId) {
-            message.warning('Vui lòng chọn đại hội trước');
-            return;
-        }
-
         const attendingShares = Number(values.attendingShares) || 0;
         const totalOwned = Number(values.sharesOwned) || 0;
 
@@ -260,51 +234,27 @@ export default function EligibilityCheck() {
             return;
         }
 
-        setLoading(true);
-        try {
-            // Call API to register attendance
-            const response = await AttendanceService.register({
-                meetingId: selectedMeetingId,
-                investorCode: values.investorCode,
-                attendingShares: attendingShares,
-                participationType: ParticipationType.DIRECT
-                // In this UI, we treat manual confirm as DIRECT. 
-                // PROXY attendance is handled via saveProxy.
-            });
-
-            const newEntry = {
-                investorCode: response.investorCode,
-                cccd: response.cccd,
-                fullName: response.fullName,
-                totalOwned: response.sharesOwned,
-                attendingShares: response.attendingShares,
-                receivedProxyShares: response.receivedProxyShares,
-                dateOfIssue: response.checkedInAt ? dayjs(response.checkedInAt).toISOString() : undefined,
-            };
-
-            setShareholdersList(prev => {
-                const index = prev.findIndex(s => s.investorCode === response.investorCode);
-                if (index > -1) {
-                    const newList = [...prev];
-                    newList[index] = newEntry as any;
-                    return newList;
-                }
-                return [newEntry as any, ...prev];
-            });
-
-            // Refresh summary to reflect new attendance
-            const summaryRes = await DashboardService.getSummary().catch(() => null);
-            if (summaryRes) {
-                setSummary(summaryRes);
+        const newEntry = {
+            investorCode: values.investorCode,
+            cccd: values.cccd,
+            fullName: values.fullName,
+            totalOwned: totalOwned,
+            attendingShares: attendingShares,
+            receivedProxyShares: 0,
+            dateOfIssue: values.dateOfIssue ? dayjs(values.dateOfIssue).toISOString() : undefined,
+            placeOfIssue: values.placeOfIssue
+        };
+        setShareholdersList(prev => {
+            const index = prev.findIndex(s => s.investorCode === values.investorCode);
+            if (index > -1) {
+                const newList = [...prev];
+                newList[index] = newEntry as any;
+                return newList;
             }
+            return [newEntry as any, ...prev];
+        });
 
-            message.success('Xác nhận số lượng tham dự thành công');
-        } catch (error: any) {
-            console.error('Error confirming attendance:', error);
-            message.error('Lỗi khi xác nhận tham dự: ' + (error.response?.data?.message || error.message));
-        } finally {
-            setLoading(false);
-        }
+        message.success('Xác nhận số lượng tham dự thành công');
     };
 
     const handleSaveProxy = async () => {
