@@ -42,6 +42,7 @@ import ShareholderManage from '@/lib/api/shareholdermanagement';
 import { MeetingService } from '@/lib/api/meetings';
 import ProxyService from '@/lib/api/proxy';
 import { DashboardService } from '@/lib/api/dashboard';
+import { AttendanceService } from '@/lib/api/attendance';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -148,6 +149,22 @@ export default function EligibilityCheck() {
                 setProxyList(proxies);
             }
 
+            // Fetch attended participants for this meeting
+            const attended = await AttendanceService.getAttendedParticipants(meetingId).catch(() => []);
+            if (Array.isArray(attended)) {
+                // Map AttendanceResponse to Shareholder structure for the table
+                const mappedShareholders = attended.map(a => ({
+                    investorCode: a.investorCode,
+                    cccd: a.cccd,
+                    fullName: a.fullName,
+                    totalOwned: a.sharesOwned,
+                    attendingShares: a.attendingShares,
+                    receivedProxyShares: a.receivedProxyShares,
+                    id: a.userId
+                }));
+                setShareholdersList(mappedShareholders as any[]);
+            }
+
             // Also reload summary for the meeting context if possible
             const summaryRes = await DashboardService.getSummary().catch(() => null);
             if (summaryRes) {
@@ -234,27 +251,43 @@ export default function EligibilityCheck() {
             return;
         }
 
-        const newEntry = {
-            investorCode: values.investorCode,
-            cccd: values.cccd,
-            fullName: values.fullName,
-            totalOwned: totalOwned,
-            attendingShares: attendingShares,
-            receivedProxyShares: 0,
-            dateOfIssue: values.dateOfIssue ? dayjs(values.dateOfIssue).toISOString() : undefined,
-            placeOfIssue: values.placeOfIssue
-        };
-        setShareholdersList(prev => {
-            const index = prev.findIndex(s => s.investorCode === values.investorCode);
-            if (index > -1) {
-                const newList = [...prev];
-                newList[index] = newEntry as any;
-                return newList;
-            }
-            return [newEntry as any, ...prev];
-        });
+        setLoading(true);
+        try {
+            const response = await AttendanceService.registerAttendance({
+                meetingId: selectedMeetingId,
+                investorCode: values.investorCode,
+                attendingShares: attendingShares,
+                participationType: 'DIRECT'
+            });
 
-        message.success('Xác nhận số lượng tham dự thành công');
+            const newEntry = {
+                investorCode: response.investorCode,
+                cccd: response.cccd,
+                fullName: response.fullName,
+                totalOwned: response.sharesOwned,
+                attendingShares: response.attendingShares,
+                receivedProxyShares: response.receivedProxyShares,
+                id: response.userId
+            };
+
+            setShareholdersList(prev => {
+                const index = prev.findIndex(s => s.investorCode === response.investorCode);
+                if (index > -1) {
+                    const newList = [...prev];
+                    newList[index] = newEntry as any;
+                    return newList;
+                }
+                return [newEntry as any, ...prev];
+            });
+
+            message.success('Xác nhận số lượng tham dự thành công');
+        } catch (error: any) {
+            console.error('Error confirming attendance:', error);
+            const errorMsg = error.response?.data?.message || error.message || 'Lỗi không xác định';
+            message.error(`Lỗi khi xác nhận tham dự: ${errorMsg}`);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSaveProxy = async () => {
@@ -362,6 +395,27 @@ export default function EligibilityCheck() {
                 return [newProxy, ...newList];
             });
 
+            // Refresh attended list as proxy impacts share counts
+            const attended = await AttendanceService.getAttendedParticipants(selectedMeetingId).catch(() => []);
+            if (Array.isArray(attended)) {
+                const mappedShareholders = attended.map(a => ({
+                    investorCode: a.investorCode,
+                    cccd: a.cccd,
+                    fullName: a.fullName,
+                    totalOwned: a.sharesOwned,
+                    attendingShares: a.attendingShares,
+                    receivedProxyShares: a.receivedProxyShares,
+                    id: a.userId
+                }));
+                setShareholdersList(mappedShareholders as any[]);
+            }
+
+            // Refresh summary
+            const summaryRes = await DashboardService.getSummary().catch(() => null);
+            if (summaryRes) {
+                setSummary(summaryRes);
+            }
+
             // Reset proxy fields
             setSelectedProxyId(null);
             setProxyUserId(null);
@@ -404,6 +458,27 @@ export default function EligibilityCheck() {
 
             // Update local list
             setProxyList(prev => prev.filter(p => p.id !== selectedProxyId));
+
+            // Refresh attended list
+            const attended = await AttendanceService.getAttendedParticipants(selectedMeetingId).catch(() => []);
+            if (Array.isArray(attended)) {
+                const mappedShareholders = attended.map(a => ({
+                    investorCode: a.investorCode,
+                    cccd: a.cccd,
+                    fullName: a.fullName,
+                    totalOwned: a.sharesOwned,
+                    attendingShares: a.attendingShares,
+                    receivedProxyShares: a.receivedProxyShares,
+                    id: a.userId
+                }));
+                setShareholdersList(mappedShareholders as any[]);
+            }
+
+            // Refresh summary
+            const summaryRes = await DashboardService.getSummary().catch(() => null);
+            if (summaryRes) {
+                setSummary(summaryRes);
+            }
 
             // Reset proxy part of form
             setSelectedProxyId(null);
