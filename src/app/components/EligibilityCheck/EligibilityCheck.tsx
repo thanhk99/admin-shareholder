@@ -3,236 +3,89 @@
 import '@ant-design/v5-patch-for-react-19';
 
 import { useState, useEffect } from 'react';
-import {
-    Form,
-    Input,
-    Button,
-    Select,
-    Card,
-    Checkbox,
-    Row,
-    Col,
-    Table,
-    Tag,
-    Space,
-    Typography,
-    Divider,
-    message,
-    AutoComplete,
-    DatePicker
-} from 'antd';
+import { Form, Row, Col, Typography, message } from 'antd';
 import dayjs from 'dayjs';
-import {
-    SearchOutlined,
-    ReloadOutlined,
-    SaveOutlined,
-    DeleteOutlined,
-    TeamOutlined,
-    CalendarOutlined,
-    CheckCircleOutlined,
-    QrcodeOutlined,
-    PrinterOutlined
-} from '@ant-design/icons';
 import styles from './EligibilityCheck.module.css';
 
-import { Shareholder } from '@/app/types/shareholder';
 import { ProxyItem, ProxyRequest } from '@/app/types/proxy';
-import { Meeting } from '@/app/types/meeting';
 import ShareholderManage from '@/lib/api/shareholdermanagement';
-import { MeetingService } from '@/lib/api/meetings';
 import ProxyService from '@/lib/api/proxy';
 import { DashboardService } from '@/lib/api/dashboard';
 import { AttendanceService } from '@/lib/api/attendance';
 
-const { Title, Text } = Typography;
-const { Option } = Select;
+import MeetingStats from './MeetingStats';
+import ShareholderSearchForm from './ShareholderSearchForm';
+import ProxyForm from './ProxyForm';
+import AttendanceTable from './AttendanceTable';
+import ProxyTable from './ProxyTable';
+import { useEligibilityData } from './useEligibilityData';
+
+const { Title } = Typography;
 
 export default function EligibilityCheck() {
     const [form] = Form.useForm();
     const [isProxy, setIsProxy] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [meetings, setMeetings] = useState<Meeting[]>([]);
-    const [selectedMeetingId, setSelectedMeetingId] = useState<string>('');
-    const [summary, setSummary] = useState<any>(null);
+
+    const {
+        loading,
+        setLoading,
+        meetings,
+        selectedMeetingId,
+        setSelectedMeetingId,
+        summary,
+        setSummary,
+        shareholdersList,
+        setShareholdersList,
+        proxyList,
+        setProxyList,
+        searchOptions,
+        setSearchOptions,
+        proxySearchOptions,
+        setProxySearchOptions,
+        selectedProxyId,
+        setSelectedProxyId,
+        proxyUserId,
+        setProxyUserId,
+        fillShareholderData,
+        handleQuickSearch,
+        handleProxyQuickSearch
+    } = useEligibilityData(form);
 
     const attendingSharesWatch = Form.useWatch('attendingShares', form);
     const sharesOwnedWatch = Form.useWatch('sharesOwned', form);
     const investorCodeWatch = Form.useWatch('investorCode', form);
-
-
-
-    const [shareholdersList, setShareholdersList] = useState<Shareholder[]>([]);
-    const [proxyList, setProxyList] = useState<ProxyItem[]>([]);
-    const [searchOptions, setSearchOptions] = useState<{ value: string; label: React.ReactNode; data: Shareholder }[]>([]);
-    const [proxySearchOptions, setProxySearchOptions] = useState<{ value: string; label: React.ReactNode; data: Shareholder }[]>([]);
-    const [mainSearchTimeout, setMainSearchTimeout] = useState<NodeJS.Timeout | null>(null);
-    const [proxySearchTimeout, setProxySearchTimeout] = useState<NodeJS.Timeout | null>(null);
-    const [selectedProxyId, setSelectedProxyId] = useState<number | null>(null);
-    const [proxyUserId, setProxyUserId] = useState<string | null>(null);
+    const delegatorIdWatch = Form.useWatch('id', form);
 
     const alreadyDelegatedCount = proxyList
-        .filter(p => p.delegatorId === investorCodeWatch)
-        .reduce((sum, p) => sum + (Number(p.sharesDelegated) || 0), 0);
+        .filter((p: ProxyItem) => {
+            if (selectedProxyId && p.id === selectedProxyId) {
+                return false;
+            }
+            return String(p.delegatorId) === String(investorCodeWatch) || String(p.delegatorId) === String(delegatorIdWatch);
+        })
+        .reduce((sum: number, p: ProxyItem) => sum + (Number(p.sharesDelegated) || 0), 0);
 
     const remainingToAllocate = (Number(sharesOwnedWatch) || 0) - (Number(attendingSharesWatch) || 0) - alreadyDelegatedCount;
     const displayRemaining = Math.max(0, remainingToAllocate);
 
     const totalShareholders = summary?.userStats?.totalShareholders || 0;
     const totalShares = summary?.userStats?.totalSharesRepresented || 0;
-    const directAttendees = summary?.meetingStats?.totalInvited || 0;
 
-    const uniqueAttendees = new Set<string>();
-    shareholdersList.forEach(s => {
-        const key = s.cccd || s.investorCode;
-        if (key) uniqueAttendees.add(key);
-    });
-    proxyList.forEach(p => {
-        if (p.proxyId) uniqueAttendees.add(p.proxyId);
-    });
-    const verifiedAttendees = uniqueAttendees.size;
+    const directAttendeeIds = new Set(shareholdersList.map((s: any) => s.investorCode || s.id).filter(Boolean));
+    const proxyRecipientIds = new Set(proxyList.map((p: ProxyItem) => p.proxyId).filter(Boolean));
+    const allAttendeeIds = new Set([...directAttendeeIds, ...proxyRecipientIds]);
+    const totalAttendees = allAttendeeIds.size;
 
-    const uniqueProxyRecipients = proxyList.length > 0 ? new Set(proxyList.map(p => p.proxyId)).size : 0;
+    const shareholderIds = new Set(shareholdersList.map((s: any) => s.investorCode || s.id).filter(Boolean));
+    const proxyRecipientsWhoAreShareholders = proxyList.filter((p: ProxyItem) => shareholderIds.has(p.proxyId)).map((p: ProxyItem) => p.proxyId);
+    const uniqueShareholderAttendees = new Set([...shareholderIds, ...proxyRecipientsWhoAreShareholders]);
+    const totalShareholderCount = uniqueShareholderAttendees.size;
 
-    const totalProxyDelegations = proxyList.length;
-
-    const totalLocalDirectShares = shareholdersList.reduce((sum, sh) => sum + (Number((sh as any).attendingShares) || 0), 0);
-    const totalLocalProxyShares = proxyList.reduce((sum, p) => sum + (Number(p.sharesDelegated) || 0), 0);
+    const totalLocalDirectShares = shareholdersList.reduce((sum: number, sh: any) => sum + (Number(sh.attendingShares) || 0), 0);
+    const totalLocalProxyShares = proxyList.reduce((sum: number, p: ProxyItem) => sum + (Number(p.sharesDelegated) || 0), 0);
     const totalAttendingShares = totalLocalDirectShares + totalLocalProxyShares;
 
     const participationPercent = totalShares > 0 ? ((totalAttendingShares / totalShares) * 100).toFixed(2) : '0.00';
-
-    const shareholderColumns = [
-        { title: 'Mã CĐ', dataIndex: 'shareholderCode', key: 'shareholderCode' },
-        { title: 'Số CMND/Hộ...', dataIndex: 'cccd', key: 'cccd' },
-        { title: 'Họ và tên', dataIndex: 'fullName', key: 'fullName' },
-        { title: 'Tổng sở hữu', dataIndex: 'sharesOwned', key: 'sharesOwned', render: (val: number) => val?.toLocaleString() },
-        { title: 'SL Tham dự', dataIndex: 'attendingShares', key: 'attendingShares', render: (val: number) => val?.toLocaleString() },
-        { title: 'Đã ủy quyền', dataIndex: 'delegatedShares', key: 'delegatedShares', render: (val: number) => val?.toLocaleString() },
-        { title: 'SPCP được UQ', dataIndex: 'receivedProxyShares', key: 'receivedProxyShares', render: (val: number) => val?.toLocaleString() },
-        { title: 'Quyền biểu quyết', dataIndex: 'totalShares', key: 'totalShares', render: (val: number) => val?.toLocaleString() },
-    ];
-
-    const proxyColumns = [
-        { title: 'Người nhận UQ', dataIndex: 'proxyId', key: 'proxyId' },
-        { title: 'Họ tên người nhận UQ', dataIndex: 'proxyName', key: 'proxyName' },
-        { title: 'Mã người UQ', dataIndex: 'delegatorId', key: 'delegatorId' },
-        { title: 'Họ tên người UQ', dataIndex: 'delegatorName', key: 'delegatorName' },
-        { title: 'Số lượng UQ', dataIndex: 'sharesDelegated', key: 'sharesDelegated', render: (val: number) => val?.toLocaleString() },
-        { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (val: string) => <Tag color={val === 'ACTIVE' ? 'green' : 'red'}>{val}</Tag> },
-    ];
-
-    useEffect(() => {
-        fetchInitialData();
-    }, []);
-
-    useEffect(() => {
-        if (selectedMeetingId) {
-            loadMeetingData(selectedMeetingId);
-        } else {
-            setProxyList([]);
-            setShareholdersList([]);
-            form.resetFields();
-            setIsProxy(false);
-        }
-    }, [selectedMeetingId]);
-
-    const loadMeetingData = async (meetingId: string) => {
-        setLoading(true);
-        try {
-            setProxyList([]);
-            setShareholdersList([]);
-            form.resetFields();
-            setIsProxy(false);
-
-            const response = await ProxyService.getMeetingProxies(meetingId);
-            const proxies = (response as any)?.data || response;
-            if (Array.isArray(proxies)) {
-                setProxyList(proxies);
-            }
-
-            const responseAttended = await AttendanceService.getAttendedParticipants(meetingId).catch(() => []);
-            const attended = (responseAttended as any)?.data || responseAttended;
-
-            if (Array.isArray(attended)) {
-                const mappedShareholders = attended.map((a: any) => ({
-                    shareholderCode: a.shareholderCode || a.userId || a.investorCode,
-                    investorCode: a.investorCode,
-                    cccd: a.cccd,
-                    fullName: a.fullName,
-                    sharesOwned: a.sharesOwned,
-                    attendingShares: a.attendingShares,
-                    delegatedShares: a.delegatedShares || 0,
-                    receivedProxyShares: a.receivedProxyShares,
-                    totalShares: a.totalShares,
-                    id: a.userId
-                }));
-                setShareholdersList(mappedShareholders as any[]);
-            }
-
-            const summaryRes = await DashboardService.getSummary().catch(() => null);
-            if (summaryRes) {
-                setSummary(summaryRes);
-            }
-
-            message.info('Đã tải dữ liệu cuộc họp mới');
-        } catch (error) {
-            console.error('Error loading meeting data:', error);
-            message.error('Lỗi khi tải dữ liệu cuộc họp');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchInitialData = async () => {
-        try {
-            const [meetingsRes, ongoingRes, summaryRes] = await Promise.all([
-                MeetingService.getAllMeetings(),
-                MeetingService.getOngoingMeeting().catch(() => null),
-                DashboardService.getSummary().catch(() => null)
-            ]);
-
-            let fetchedMeetings: Meeting[] = [];
-            if (Array.isArray(meetingsRes)) {
-                fetchedMeetings = meetingsRes;
-            } else if ((meetingsRes as any).data) {
-                fetchedMeetings = (meetingsRes as any).data;
-            }
-
-            const availableMeetings = fetchedMeetings.filter((m: Meeting) => m.status !== 'COMPLETED');
-            setMeetings(availableMeetings);
-
-            let targetMeetingId = '';
-
-            if (ongoingRes && (ongoingRes as any).id) {
-                targetMeetingId = (ongoingRes as any).id;
-            }
-
-            if (!targetMeetingId && availableMeetings.length > 0) {
-                const ongoingInList = availableMeetings.find(m => m.status === 'ONGOING');
-                if (ongoingInList) {
-                    targetMeetingId = ongoingInList.id;
-                } else {
-                    const upcoming = availableMeetings
-                        .filter(m => m.status === 'SCHEDULED')
-                        .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-
-                    if (upcoming.length > 0) {
-                        targetMeetingId = upcoming[0].id;
-                    }
-                }
-            }
-
-            if (targetMeetingId) {
-                setSelectedMeetingId(targetMeetingId);
-            }
-
-            if (summaryRes) {
-                setSummary(summaryRes);
-            }
-        } catch (error) {
-            console.error('Error fetching initial data:', error);
-        }
-    };
 
     const handleConfirmAttendance = async () => {
         const values = form.getFieldsValue();
@@ -276,8 +129,8 @@ export default function EligibilityCheck() {
                 id: response.userId
             };
 
-            setShareholdersList(prev => {
-                const index = prev.findIndex(s => s.investorCode === response.investorCode);
+            setShareholdersList((prev: any) => {
+                const index = prev.findIndex((s: any) => s.investorCode === response.investorCode);
                 if (index > -1) {
                     const newList = [...prev];
                     newList[index] = newEntry as any;
@@ -286,9 +139,34 @@ export default function EligibilityCheck() {
                 return [newEntry as any, ...prev];
             });
 
+            const [responseAttended, summaryRes] = await Promise.all([
+                AttendanceService.getAttendedParticipants(selectedMeetingId).catch(() => []),
+                DashboardService.getSummary().catch(() => null)
+            ]);
+
+            const attended = (responseAttended as any)?.data || responseAttended;
+            if (Array.isArray(attended)) {
+                const mappedShareholders = attended.map((a: any) => ({
+                    shareholderCode: a.shareholderCode || a.userId || a.investorCode,
+                    investorCode: a.investorCode,
+                    cccd: a.cccd,
+                    fullName: a.fullName,
+                    sharesOwned: a.sharesOwned,
+                    attendingShares: a.attendingShares,
+                    delegatedShares: a.delegatedShares || 0,
+                    receivedProxyShares: a.receivedProxyShares,
+                    totalShares: a.totalShares,
+                    id: a.userId
+                }));
+                setShareholdersList(mappedShareholders as any[]);
+            }
+
+            if (summaryRes) {
+                setSummary(summaryRes);
+            }
+
             message.success('Xác nhận số lượng tham dự thành công');
         } catch (error: any) {
-            console.error('Error confirming attendance:', error);
             const errorMsg = error.response?.data?.message || error.message || 'Lỗi không xác định';
             message.error(`Lỗi khi xác nhận tham dự: ${errorMsg}`);
         } finally {
@@ -298,7 +176,6 @@ export default function EligibilityCheck() {
 
     const handleSaveProxy = async () => {
         const values = form.getFieldsValue();
-
         const effectiveProxyId = values.proxyUserId || values.proxyId;
 
         if (!effectiveProxyId || !values.proxyFullName) {
@@ -320,23 +197,19 @@ export default function EligibilityCheck() {
         const sharesOwned = Number(values.sharesOwned) || 0;
         const attendingShares = Number(values.attendingShares) || 0;
 
-        // Detect if this pair already exists (to implement "overwrite")
-        const existingPairProxy = proxyList.find(p =>
+        const existingPairProxy = proxyList.find((p: ProxyItem) =>
             String(p.delegatorId) === String(delegatorDbId) &&
             String(p.proxyId) === String(effectiveProxyId) &&
             p.status === 'ACTIVE'
         );
 
-        // Record to revoke: either the one we explicitly selected for editing, 
-        // or the one that already exists for this pair (auto-overwrite)
         const proxyToRevokeId = selectedProxyId || existingPairProxy?.id;
 
         const totalDelegated = proxyList
-            .filter(p => String(p.delegatorId) === String(values.investorCode) || String(p.delegatorId) === String(values.id))
-            .reduce((sum, p) => sum + (Number(p.sharesDelegated) || 0), 0);
+            .filter((p: ProxyItem) => String(p.delegatorId) === String(values.investorCode) || String(p.delegatorId) === String(values.id))
+            .reduce((sum: number, p: ProxyItem) => sum + (Number(p.sharesDelegated) || 0), 0);
 
-        // When calculating remaining shares, we must subtract the shares of the record we are about to replace
-        const proxyToReplace = proxyList.find(p => p.id === proxyToRevokeId);
+        const proxyToReplace = proxyList.find((p: ProxyItem) => p.id === proxyToRevokeId);
         const delegatedExcludingCurrent = proxyToReplace
             ? totalDelegated - (Number(proxyToReplace.sharesDelegated) || 0)
             : totalDelegated;
@@ -366,25 +239,20 @@ export default function EligibilityCheck() {
                 try {
                     await ProxyService.revokeProxy(selectedMeetingId, proxyToRevokeId);
                 } catch (revokeError) {
-                    console.warn('Failed to revoke old proxy, current create might fail:', revokeError);
+                    // Ignore revoke errors
                 }
             }
 
-            // Call API to create proxy with the NEW amount
             const proxyRequest: ProxyRequest = {
                 delegatorId: delegatorDbId,
                 proxyId: effectiveProxyId,
                 sharesDelegated: delegateAmount
             };
 
-            console.log('Saving proxy (overwrite):', proxyRequest);
-
             const createdProxy = await ProxyService.createProxy(selectedMeetingId, proxyRequest);
-            console.log('Proxy saved successfully:', createdProxy);
 
             message.success(proxyToRevokeId ? `Đã cập nhật (ghi đè) thông tin ủy quyền thành công` : `Lưu thông tin ủy quyền thành công`);
 
-            // Build the new proxy item for local display
             const newProxy: ProxyItem = {
                 ...createdProxy,
                 proxyName: values.proxyFullName,
@@ -392,17 +260,15 @@ export default function EligibilityCheck() {
                 delegatorId: delegatorDbId
             } as ProxyItem;
 
-            setProxyList(prev => {
-                // Remove the old row(s) to avoid duplicates and reflect overwrite
-                let newList = prev.filter(p => p.id !== proxyToRevokeId);
+            setProxyList((prev: ProxyItem[]) => {
+                let newList = prev.filter((p: ProxyItem) => p.id !== proxyToRevokeId);
                 return [newProxy, ...newList];
             });
 
-            // Refresh attended list as proxy impacts share counts
             const responseAttended = await AttendanceService.getAttendedParticipants(selectedMeetingId).catch(() => []);
             const attended = (responseAttended as any)?.data || responseAttended;
             if (Array.isArray(attended)) {
-                const mappedShareholders = attended.map(a => ({
+                const mappedShareholders = attended.map((a: any) => ({
                     shareholderCode: a.shareholderCode || a.userId || a.investorCode,
                     investorCode: a.investorCode,
                     cccd: a.cccd,
@@ -417,13 +283,11 @@ export default function EligibilityCheck() {
                 setShareholdersList(mappedShareholders as any[]);
             }
 
-            // Refresh summary
             const summaryRes = await DashboardService.getSummary().catch(() => null);
             if (summaryRes) {
                 setSummary(summaryRes);
             }
 
-            // Reset proxy fields
             setSelectedProxyId(null);
             setProxyUserId(null);
             form.setFieldsValue({
@@ -437,15 +301,12 @@ export default function EligibilityCheck() {
             });
             setIsProxy(false);
         } catch (error: any) {
-            console.error('Error saving proxy:', error);
             const errorMsg = error.response?.data?.message || error.message || 'Lỗi không xác định từ máy chủ';
             message.error(`Lỗi khi lưu thông tin ủy quyền: ${errorMsg}`);
         } finally {
             setLoading(false);
         }
     };
-
-
 
     const handleDeleteProxy = async () => {
         if (!selectedProxyId) {
@@ -463,14 +324,12 @@ export default function EligibilityCheck() {
             await ProxyService.revokeProxy(selectedMeetingId, selectedProxyId);
             message.success('Đã xóa lượt ủy quyền thành công');
 
-            // Update local list
-            setProxyList(prev => prev.filter(p => p.id !== selectedProxyId));
+            setProxyList((prev: ProxyItem[]) => prev.filter((p: ProxyItem) => p.id !== selectedProxyId));
 
-            // Refresh attended list
             const responseAttended = await AttendanceService.getAttendedParticipants(selectedMeetingId).catch(() => []);
             const attended = (responseAttended as any)?.data || responseAttended;
             if (Array.isArray(attended)) {
-                const mappedShareholders = attended.map(a => ({
+                const mappedShareholders = attended.map((a: any) => ({
                     shareholderCode: a.shareholderCode || a.userId || a.investorCode,
                     investorCode: a.investorCode,
                     cccd: a.cccd,
@@ -485,13 +344,11 @@ export default function EligibilityCheck() {
                 setShareholdersList(mappedShareholders as any[]);
             }
 
-            // Refresh summary
             const summaryRes = await DashboardService.getSummary().catch(() => null);
             if (summaryRes) {
                 setSummary(summaryRes);
             }
 
-            // Reset proxy part of form
             setSelectedProxyId(null);
             form.setFieldsValue({
                 isProxy: false,
@@ -503,7 +360,6 @@ export default function EligibilityCheck() {
             });
             setIsProxy(false);
         } catch (error) {
-            console.error('Error deleting proxy:', error);
             message.error('Lỗi khi xóa lượt ủy quyền');
         } finally {
             setLoading(false);
@@ -526,7 +382,6 @@ export default function EligibilityCheck() {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleQRScan = () => {
@@ -547,18 +402,16 @@ export default function EligibilityCheck() {
 
             if (response && (response as any).token) {
                 message.success('Đang chuẩn bị in mã QR đăng nhập cho cổ đông: ' + investorCode);
-                console.log('QR Token:', (response as any).token);
             } else {
                 message.error('Không thể tạo mã QR');
             }
         } catch (error) {
-            console.error('Error generating QR:', error);
             message.error('Lỗi khi tạo mã QR đăng nhập');
         }
     };
 
-    const handleSearchShareholder = async (keywordOverride?: string) => {
-        const keyword = keywordOverride || form.getFieldValue('keyword');
+    const handleSearchShareholder = async () => {
+        const keyword = form.getFieldValue('keyword');
         if (!keyword) {
             message.warning('Vui lòng nhập Mã CĐ hoặc CMND/CCCD');
             return;
@@ -569,9 +422,7 @@ export default function EligibilityCheck() {
             const data = response?.data || response;
             const results = Array.isArray(data) ? data : (data ? [data] : []);
 
-
-
-            const shareholder = results.find((s: Shareholder) => s && s.sharesOwned > 0);
+            const shareholder = results.find((s: any) => s && s.sharesOwned > 0);
 
             if (shareholder && (shareholder.fullName || shareholder.id)) {
                 fillShareholderData(shareholder);
@@ -580,179 +431,13 @@ export default function EligibilityCheck() {
                 message.error('Không tìm thấy cổ đông hoặc người này không sở hữu cổ phần');
             }
         } catch (error) {
-            console.error('Error searching shareholder:', error);
             message.error('Lỗi khi tìm kiếm cổ đông');
         } finally {
             setLoading(false);
         }
     };
 
-    const fillShareholderData = (shareholder: any, existingProxy?: ProxyItem) => {
-        const userId = shareholder.id || shareholder.userId || shareholder.shareholderCode;
-        const displayCode = userId; // User ID is the intended "Mã cổ đông"
-
-        form.setFieldsValue({
-            id: userId,
-            keyword: shareholder.cccd || displayCode,
-            investorCode: displayCode,
-            cccd: shareholder.cccd,
-            fullName: shareholder.fullName,
-            dateOfIssue: shareholder.dateOfIssue ? dayjs(shareholder.dateOfIssue) : null,
-            placeOfIssue: shareholder.placeOfIssue || shareholder.address,
-            sharesOwned: shareholder.sharesOwned,
-            attendingShares: shareholder.attendingShares !== undefined ? shareholder.attendingShares : shareholder.sharesOwned,
-        });
-
-        if (existingProxy) {
-            setSelectedProxyId(existingProxy.id);
-            setProxyUserId(existingProxy.proxyId);
-            setIsProxy(true);
-            form.setFieldsValue({
-                isProxy: true,
-                proxyId: existingProxy.proxyId,
-                proxyUserId: existingProxy.proxyId,
-                proxyFullName: existingProxy.proxyName,
-                proxyShares: existingProxy.sharesDelegated
-            });
-        } else {
-            setSelectedProxyId(null);
-            setProxyUserId(null);
-            const foundProxy = proxyList.find(p =>
-                String(p.delegatorId) === String(shareholder.id) ||
-                String(p.delegatorId) === String(shareholder.investorCode)
-            );
-            if (foundProxy) {
-                setSelectedProxyId(foundProxy.id);
-                setProxyUserId(foundProxy.proxyId);
-                setIsProxy(true);
-                form.setFieldsValue({
-                    isProxy: true,
-                    proxyId: foundProxy.proxyId,
-                    proxyUserId: foundProxy.proxyId,
-                    proxyFullName: foundProxy.proxyName,
-                    proxyShares: foundProxy.sharesDelegated
-                });
-            } else {
-                setIsProxy(false);
-                setProxyUserId(null);
-                form.setFieldsValue({
-                    isProxy: false,
-                    proxyId: '',
-                    proxyUserId: '',
-                    proxyFullName: '',
-                    proxyDateOfIssue: undefined,
-                    proxyPlaceOfIssue: '',
-                    proxyShares: ''
-                });
-            }
-        }
-
-        setTimeout(() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            if (window.pageYOffset > 0) {
-                window.scrollTo(0, 0);
-            }
-        }, 100);
-    }
-
-    const handleQuickSearch = (keyword: string) => {
-        if (mainSearchTimeout) {
-            clearTimeout(mainSearchTimeout);
-        }
-
-        if (!keyword || keyword.trim().length < 1) {
-            setSearchOptions([]);
-            return;
-        }
-
-        const timeout = setTimeout(async () => {
-            try {
-                const response: any = await ShareholderManage.searchUsers(keyword).catch(() => null);
-                const data = response?.data || response;
-                const results = Array.isArray(data) ? data : (data ? [data] : []);
-
-                const filteredResults = results.filter((sh: Shareholder) =>
-                    sh.sharesOwned > 0 && (
-                        sh.cccd?.toLowerCase().startsWith(keyword.toLowerCase()) ||
-                        sh.investorCode?.toLowerCase().startsWith(keyword.toLowerCase()) ||
-                        sh.fullName?.toLowerCase().startsWith(keyword.toLowerCase())
-                    )
-                ).slice(0, 10);
-
-                const options = filteredResults.map((sh: Shareholder) => ({
-                    value: sh.id,
-                    label: (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                                <Text strong style={{ fontSize: '15px' }}>{sh.cccd}</Text>
-                                <div style={{ fontSize: '12px', color: '#666' }}>{sh.fullName}</div>
-                            </div>
-                            <Tag color="blue">{sh.id}</Tag>
-                        </div>
-                    ),
-                    data: sh
-                }));
-                setSearchOptions(options);
-            } catch (error) {
-                console.error('Quick search error:', error);
-            }
-        }, 300);
-
-        setMainSearchTimeout(timeout);
-    };
-
-    const handleProxyQuickSearch = (keyword: string) => {
-        if (proxySearchTimeout) {
-            clearTimeout(proxySearchTimeout);
-        }
-
-        if (!keyword || keyword.trim().length < 1) {
-            setProxySearchOptions([]);
-            return;
-        }
-
-        const timeout = setTimeout(async () => {
-            try {
-                const currentId = form.getFieldValue('investorCode');
-                const currentCCCD = form.getFieldValue('cccd');
-
-                const response: any = await ShareholderManage.searchUsers(keyword).catch(() => null);
-                const data = response?.data || response;
-                const results = Array.isArray(data) ? data : (data ? [data] : []);
-
-                const filteredResults = results.filter((sh: Shareholder) => {
-                    const isSelf = (sh.id && sh.id === currentId) ||
-                        (sh.cccd && sh.cccd === currentCCCD);
-
-                    if (isSelf) return false;
-
-                    return sh.cccd?.toLowerCase().startsWith(keyword.toLowerCase()) ||
-                        sh.id?.toLowerCase().startsWith(keyword.toLowerCase());
-                }).slice(0, 10);
-
-                const options = filteredResults.map((sh: Shareholder) => ({
-                    value: sh.id,
-                    label: (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                                <Text strong style={{ fontSize: '15px' }}>{sh.cccd}</Text>
-                                <div style={{ fontSize: '12px', color: '#666' }}>{sh.fullName}</div>
-                            </div>
-                            <Tag color="blue">{sh.id}</Tag>
-                        </div>
-                    ),
-                    data: sh
-                }));
-                setProxySearchOptions(options);
-            } catch (error) {
-                console.error('Proxy quick search error:', error);
-            }
-        }, 300);
-
-        setProxySearchTimeout(timeout);
-    };
-
-    const onSelectShareholder = (value: string, option: any) => {
+    const onSelectShareholder = (_value: string, option: any) => {
         if (option.data) {
             fillShareholderData(option.data);
             setSearchOptions([]);
@@ -760,7 +445,7 @@ export default function EligibilityCheck() {
         }
     };
 
-    const onSelectProxy = (value: string, option: any) => {
+    const onSelectProxy = (_value: string, option: any) => {
         if (option.data) {
             const sh = option.data;
             setProxyUserId(sh.id);
@@ -792,14 +477,14 @@ export default function EligibilityCheck() {
             const delegatorData = (delegatorRes as any)?.data || delegatorRes;
             const proxyData = (proxyRes as any)?.data || proxyRes;
 
-            let shareholder: Shareholder | null = null;
+            let shareholder: any = null;
             if (delegatorData && (delegatorData.id || delegatorData.fullName)) {
                 shareholder = delegatorData;
             } else {
                 const searchRes: any = await ShareholderManage.searchUsers(proxy.delegatorId).catch(() => null);
                 const data = searchRes?.data || searchRes;
                 const results = Array.isArray(data) ? data : (data ? [data] : []);
-                shareholder = results.find((s: Shareholder) =>
+                shareholder = results.find((s: any) =>
                     String(s.id) === String(proxy.delegatorId) ||
                     String(s.investorCode) === String(proxy.delegatorId) ||
                     String(s.cccd) === String(proxy.delegatorId)
@@ -818,8 +503,31 @@ export default function EligibilityCheck() {
                 message.warning('Không tìm thấy thông tin cổ đông gốc');
             }
         } catch (error) {
-            console.error('Error fetching info:', error);
             message.error('Lỗi khi tải thông tin gốc');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAttendanceRowClick = async (record: any) => {
+        setLoading(true);
+        try {
+            const code = record.shareholderCode || record.investorCode || record.id;
+            const response: any = await ShareholderManage.getShareholderByCode(code).catch(() => null);
+            const data = response?.data || response;
+
+            if (data && (data.fullName || data.id)) {
+                const mergedData = {
+                    ...data,
+                    attendingShares: record.attendingShares
+                };
+                fillShareholderData(mergedData);
+            } else {
+                fillShareholderData(record);
+            }
+            message.info(`Đang sửa thông tin cổ đông: ${record.fullName}`);
+        } catch (e) {
+            fillShareholderData(record);
         } finally {
             setLoading(false);
         }
@@ -829,229 +537,45 @@ export default function EligibilityCheck() {
         <div className={styles.container}>
             <Title level={3} className={styles.title}>Kiểm tra tư cách cổ đông</Title>
 
-            <div className={styles.section}>
-                <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>Thông tin chung</h2>
-                </div>
-                <Form layout="vertical">
-                    <Row gutter={24}>
-                        <Col span={16}>
-                            <Form.Item label="Đại hội cổ đông">
-                                <Select
-                                    value={selectedMeetingId}
-                                    onChange={setSelectedMeetingId}
-                                    className={styles.meetingSelect}
-                                    options={meetings.map(m => ({ label: m.title, value: m.id }))}
-                                />
-                            </Form.Item>
-                        </Col>
-                        <Col span={8} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: '30px' }}>
-                            <div className={styles.headerStats}>
-                                <span className={styles.headerStatLabel}>Tỷ lệ tham dự:</span>
-                                <span className={styles.headerStatValue}>{participationPercent}%</span>
-                                {Number(participationPercent) >= 50 && (
-                                    <Tag color="success" icon={<CheckCircleOutlined />}>Đủ điều kiện</Tag>
-                                )}
-                            </div>
-                        </Col>
-                    </Row>
-
-                    <div className={styles.statsGrid}>
-                        <div className={styles.statCard}>
-                            <span className={styles.statLabel}>Tổng số cổ đông</span>
-                            <span className={styles.statValue}>
-                                {totalShareholders.toLocaleString()}
-                            </span>
-                        </div>
-                        <div className={styles.statCard}>
-                            <span className={styles.statLabel}>Tổng số cổ phiếu</span>
-                            <span className={styles.statValue}>
-                                {totalShares.toLocaleString()}
-                            </span>
-                        </div>
-                        <div className={styles.statCard}>
-                            <span className={styles.statLabel}>Tham dự</span>
-                            <span className={`${styles.statValue} ${styles.statValueGreen}`}>
-                                {directAttendees.toLocaleString()}
-                            </span>
-                        </div>
-                        <div className={styles.statCard}>
-                            <span className={styles.statLabel}>Số cổ đông</span>
-                            <span className={`${styles.statValue} ${styles.statValueGreen}`}>
-                                {verifiedAttendees.toLocaleString()}
-                            </span>
-                        </div>
-                        <div className={styles.statCard}>
-                            <span className={styles.statLabel}>Số cổ phần</span>
-                            <span className={`${styles.statValue} ${styles.statValueGreen}`}>
-                                {totalAttendingShares.toLocaleString()}
-                            </span>
-                        </div>
-                    </div>
-                </Form>
-            </div>
+            <MeetingStats
+                meetings={meetings}
+                selectedMeetingId={selectedMeetingId}
+                onMeetingChange={setSelectedMeetingId}
+                totalShareholders={totalShareholders}
+                totalShares={totalShares}
+                totalAttendees={totalAttendees}
+                totalShareholderCount={totalShareholderCount}
+                totalAttendingShares={totalAttendingShares}
+                participationPercent={participationPercent}
+            />
 
             <Row gutter={24}>
                 <Col span={24}>
-                    <div className={styles.section}>
-                        <div className={styles.sectionHeader}>
-                            <h2 className={styles.sectionTitle}>Thông tin cổ đông</h2>
-                            <Button
-                                icon={<PrinterOutlined />}
-                                onClick={handlePrintQR}
-                                style={{ marginLeft: 'auto' }}
-                            >
-                                In mã QR đăng nhập
-                            </Button>
-                        </div>
-                        <Form form={form} layout="vertical">
-                            <Form.Item name="id" noStyle>
-                                <Input type="hidden" />
-                            </Form.Item>
-                            <Form.Item name="proxyUserId" noStyle>
-                                <Input type="hidden" />
-                            </Form.Item>
-                            <div className={styles.formGrid}>
-                                <Form.Item label="Tra cứu (Mã CĐ/CCCD)" name="keyword">
-                                    <div className={styles.idInput}>
-                                        <AutoComplete
-                                            options={searchOptions}
-                                            onSearch={handleQuickSearch}
-                                            onSelect={onSelectShareholder}
-                                            style={{ width: '100%' }}
-                                            filterOption={false}
-                                        >
-                                            <Input
-                                                placeholder="Nhập mã hoặc CCCD..."
-                                                onPressEnter={() => handleSearchShareholder()}
-                                            />
-                                        </AutoComplete>
-                                        <Button
-                                            type="primary"
-                                            icon={<SearchOutlined />}
-                                            onClick={() => handleSearchShareholder()}
-                                            loading={loading}
-                                        />
-                                        <Button
-                                            icon={<QrcodeOutlined />}
-                                            onClick={handleQRScan}
-                                            title="Quét QR Code"
-                                        />
-                                    </div>
-                                </Form.Item>
-                                <Form.Item label="Mã cổ đông" name="investorCode">
-                                    <Input readOnly />
-                                </Form.Item>
-                                <Form.Item label="Số CMND/CCCD" name="cccd">
-                                    <Input readOnly />
-                                </Form.Item>
-                                <Form.Item label="Họ tên" name="fullName">
-                                    <Input readOnly />
-                                </Form.Item>
-                                <Form.Item label="Ngày cấp" name="dateOfIssue">
-                                    <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày" disabled />
-                                </Form.Item>
-                                <Form.Item label="Nơi cấp/Địa chỉ" name="placeOfIssue">
-                                    <Input readOnly />
-                                </Form.Item>
-                                <Form.Item label="Số lượng CP" name="sharesOwned">
-                                    <Input readOnly suffix="(cp)" />
-                                </Form.Item>
-                                <Form.Item
-                                    label="Số lượng tham dự"
-                                    name="attendingShares"
-                                    help={remainingToAllocate < 0 ? <span style={{ color: 'red' }}>Vượt quá số lượng sở hữu</span> : `Còn lại: ${displayRemaining.toLocaleString()} cp`}
-                                >
-                                    <Input
-                                        type="text"
-                                        inputMode="numeric"
-                                        min={0}
-                                        suffix="(cp)"
-                                        placeholder="Nhập số lượng CP tham dự"
-                                        onKeyDown={(e) => {
-                                            if (e.key === '-' || e.key === 'e') e.preventDefault();
-                                        }}
-                                    />
-                                </Form.Item>
-                            </div>
-                            <div className={styles.actionRow}>
-                                <Button
-                                    type="primary"
-                                    className={styles.confirmButton}
-                                    onClick={handleConfirmAttendance}
-                                >
-                                    Xác nhận số lượng tham dự
-                                </Button>
-                            </div>
+                    <ShareholderSearchForm
+                        form={form}
+                        loading={loading}
+                        searchOptions={searchOptions}
+                        remainingToAllocate={remainingToAllocate}
+                        displayRemaining={displayRemaining}
+                        onQuickSearch={handleQuickSearch}
+                        onSelectShareholder={onSelectShareholder}
+                        onSearch={handleSearchShareholder}
+                        onQRScan={handleQRScan}
+                        onPrintQR={handlePrintQR}
+                        onConfirmAttendance={handleConfirmAttendance}
+                    />
 
-                            <Divider />
-
-                            <Space size="large" align="center" style={{ marginBottom: 16 }}>
-                                <Form.Item name="isProxy" valuePropName="checked" noStyle>
-                                    <Checkbox onChange={(e) => setIsProxy(e.target.checked)}>Ủy quyền biểu quyết</Checkbox>
-                                </Form.Item>
-                                {isProxy && (
-                                    <Space>
-                                        <Text strong>Số lượng:</Text>
-                                        <Form.Item name="proxyShares" noStyle>
-                                            <Input
-                                                type="text"
-                                                inputMode="numeric"
-                                                min={0}
-                                                suffix="(cp)"
-                                                placeholder="Bỏ trống = Toàn bộ"
-                                                style={{ width: '180px' }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === '-' || e.key === 'e') e.preventDefault();
-                                                }}
-                                            />
-                                        </Form.Item>
-                                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                                            {remainingToAllocate > 0 ? `(Cổ phần còn lại: ${displayRemaining.toLocaleString()} cp)` : "(Đã hết cổ phần)"}
-                                        </Text>
-                                    </Space>
-                                )}
-                            </Space>
-
-                            {isProxy && (
-                                <div className={styles.proxyBox}>
-                                    <Text strong style={{ color: '#d32f2f', display: 'block', marginBottom: 12 }}>THÔNG TIN NGƯỜI ĐƯỢC ỦY QUYỀN</Text>
-                                    <div className={styles.formGrid}>
-                                        <Form.Item label="Mã/CCCD người được UQ" name="proxyId">
-                                            <AutoComplete
-                                                options={proxySearchOptions}
-                                                onSearch={handleProxyQuickSearch}
-                                                onSelect={onSelectProxy}
-                                                style={{ width: '100%' }}
-                                                filterOption={false}
-                                            >
-                                                <Input placeholder="Nhập mã hoặc CCCD người nhận UQ" />
-                                            </AutoComplete>
-                                        </Form.Item>
-                                        <Form.Item label="Họ tên người nhận UQ" name="proxyFullName">
-                                            <Input />
-                                        </Form.Item>
-                                        <Form.Item label="Ngày cấp" name="proxyDateOfIssue">
-                                            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày" />
-                                        </Form.Item>
-                                        <Form.Item label="Nơi cấp" name="proxyPlaceOfIssue">
-                                            <Input />
-                                        </Form.Item>
-                                    </div>
-                                    <div className={styles.actionRow}>
-                                        <Button
-                                            type="primary"
-                                            icon={<SaveOutlined />}
-                                            className={styles.confirmButton}
-                                            onClick={handleSaveProxy}
-                                        >
-                                            Lưu thông tin Ủy quyền (Ctr+S)
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-                        </Form>
-                    </div>
+                    <ProxyForm
+                        form={form}
+                        isProxy={isProxy}
+                        proxySearchOptions={proxySearchOptions}
+                        remainingToAllocate={remainingToAllocate}
+                        displayRemaining={displayRemaining}
+                        onProxyChange={setIsProxy}
+                        onProxyQuickSearch={handleProxyQuickSearch}
+                        onSelectProxy={onSelectProxy}
+                        onSaveProxy={handleSaveProxy}
+                    />
                 </Col>
             </Row>
 
@@ -1061,76 +585,16 @@ export default function EligibilityCheck() {
                         <div className={styles.sectionHeader}>
                             <h2 className={styles.sectionTitle}>Dữ liệu tham dự & ủy quyền hiện tại</h2>
                         </div>
-                        <div className={styles.tableSection}>
-                            <Title level={5}>Danh sách cổ đông đã xác nhận</Title>
-                            <Table
-                                columns={shareholderColumns}
-                                dataSource={shareholdersList}
-                                size="small"
-                                pagination={{ pageSize: 5 }}
-                                rowKey={(record: any) => record.shareholderCode || record.investorCode || record.id}
-                                onRow={(record) => ({
-                                    onClick: async () => {
-                                        setLoading(true);
-                                        try {
-                                            const code = (record as any).shareholderCode || record.investorCode || (record as any).id;
-                                            const response: any = await ShareholderManage.getShareholderByCode(code).catch(() => null);
-                                            const data = response?.data || response;
-
-                                            if (data && (data.fullName || data.id)) {
-                                                const mergedData = {
-                                                    ...data,
-                                                    attendingShares: (record as any).attendingShares
-                                                };
-                                                fillShareholderData(mergedData);
-                                            } else {
-                                                fillShareholderData(record as any);
-                                            }
-                                            message.info(`Đang sửa thông tin cổ đông: ${record.fullName}`);
-                                        } catch (e) {
-                                            fillShareholderData(record as any);
-                                        } finally {
-                                            setLoading(false);
-                                        }
-                                    },
-                                    style: { cursor: 'pointer' }
-                                })}
-                            />
-                        </div>
-                        <div className={styles.tableSection}>
-                            <Title level={5}>Danh sách lượt ủy quyền</Title>
-                            <Table
-                                columns={proxyColumns}
-                                dataSource={proxyList}
-                                size="small"
-                                pagination={{ pageSize: 5 }}
-                                rowKey="id"
-                                onRow={(record) => ({
-                                    onClick: () => handleEditProxy(record),
-                                    style: { cursor: 'pointer' }
-                                })}
-                            />
-                        </div>
-
-                        <div className={styles.footerContainer}>
-                            <div className={styles.buttonGrid2x2}>
-                                <Button className={styles.listButton}>Danh sách tham dự trực tiếp (F11)</Button>
-                                <Button className={styles.listButton}>Danh sách cổ đông tham dự (F12)</Button>
-                                <Button className={styles.listButton}>Danh sách người được UQ</Button>
-                                <Button className={styles.listButton}>Danh sách cổ đông gửi UQ</Button>
-                            </div>
-                            <div className={styles.deleteButtonRow}>
-                                <Button
-                                    danger
-                                    style={{ width: 'auto', minWidth: '120px' }}
-                                    icon={<DeleteOutlined />}
-                                    onClick={handleDeleteProxy}
-                                    loading={loading}
-                                >
-                                    Xóa UQ
-                                </Button>
-                            </div>
-                        </div>
+                        <AttendanceTable
+                            shareholdersList={shareholdersList}
+                            onRowClick={handleAttendanceRowClick}
+                        />
+                        <ProxyTable
+                            proxyList={proxyList}
+                            loading={loading}
+                            onEditProxy={handleEditProxy}
+                            onDeleteProxy={handleDeleteProxy}
+                        />
                     </div>
                 </Col>
             </Row>
