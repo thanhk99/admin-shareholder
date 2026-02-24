@@ -62,7 +62,7 @@ export default function MeetingStats({
                         </span>
                     </div>
                     <div className={styles.statCard}>
-                        <span className={styles.statLabel}>Tổng số cổ phiếu</span>
+                        <span className={styles.statLabel}>Tổng số cổ phần</span>
                         <span className={styles.statValue}>
                             {totalShares.toLocaleString()}
                         </span>
@@ -90,3 +90,4 @@ export default function MeetingStats({
         </div>
     );
 }
+
