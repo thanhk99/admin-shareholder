@@ -28,92 +28,89 @@
 .summaryHeader {
   background: #d1b181;
   border-radius: 4px;
-  padding: 12px 16px;
+  padding: 10px 15px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+  gap: 15px;
   color: #000;
   font-family: Arial, sans-serif;
+  min-height: 100px;
 }
 
 .summarySection {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 30px;
-  /* Reduced gap to prevent overflow */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 20px;
 }
 
 .metricColumn {
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
   min-width: 0;
-  /* Allow column to shrink */
 }
 
 .metricRow {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
+  gap: 4px;
+  margin-bottom: 3px;
   width: 100%;
 }
 
 .rowLabel {
   font-size: 13px;
-  width: 130px;
-  /* Slightly wider to prevent text wrapping */
+  width: 120px;
   text-align: left;
-  line-height: 1.2;
+  line-height: 1.1;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .inputBox {
   background: white;
   border: 1px solid #999;
-  padding: 2px 6px;
-  min-width: 45px;
+  padding: 0 4px;
+  min-width: 35px;
   text-align: right;
   font-weight: bold;
   font-size: 13px;
-  height: 26px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .sharesBox {
   flex: 1;
-  min-width: 110px;
-  max-width: 130px;
+  min-width: 60px;
+  max-width: 110px;
 }
 
 .unitLabel {
   font-size: 11px;
   font-style: italic;
-  color: #444;
-  width: 25px;
+  color: #333;
+  width: 20px;
   flex-shrink: 0;
 }
 
 .percentageMarker {
-  color: #008000;
-  font-weight: bold;
-  font-size: 13px;
+  color: #008033;
+  font-weight: 800;
+  font-size: 12px;
   text-align: right;
-  margin-top: 4px;
-  padding-right: 32px;
-  width: 100%;
+  margin-top: 1px;
+  padding-right: 24px;
   white-space: nowrap;
 }
 
 .valueTop {
   font-weight: 800;
-  font-size: 16px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+  font-size: 14px;
 }
 
 .separator {
@@ -126,6 +123,12 @@
   font-size: 16px;
   line-height: 1.1;
   margin-top: 2px;
+}
+
+.valueBottom {
+  font-size: 12px;
+  color: #555;
+  font-style: italic;
 }
 
 .unitRow {
@@ -169,17 +172,48 @@
 .viewTableBtn {
   background: white;
   border: 1px solid #999;
-  width: 32px;
-  height: 32px;
+  padding: 2px 8px;
   border-radius: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  color: #666;
+  font-size: 11px;
+  font-weight: bold;
+  color: #000;
+  flex-shrink: 0;
+  height: 26px;
+  white-space: nowrap;
+  margin-left: 8px;
+}
+
+.viewTableBtn:hover {
+  background: #f0f0f0;
+}
+
+.viewTableBtnActive {
+  background: #f5f5f5;
+  border-color: #333;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.sidebarActions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   flex-shrink: 0;
 }
+
+.ellipsis {
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.8;
+  padding-bottom: 2px;
+}
+
 
 /* Report Table */
 .reportSection {
@@ -324,4 +358,191 @@
   padding: 40px;
   text-align: center;
   color: #999;
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.voterModal {
+  background: #ffffff;
+  width: 100%;
+  max-width: 1100px;
+  max-height: 90vh;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.modalHeader {
+  background: #fff;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a4a8c;
+}
+
+.closeBtn {
+  background: #f5f5f5;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: #666;
+}
+
+.closeBtn:hover {
+  background: #ff4d4f;
+  color: white;
+}
+
+.modalFilterGrid {
+  background: #fafafa;
+  padding: 16px 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filterGroup label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.staticField {
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+}
+
+.modalContent {
+  padding: 24px;
+  flex: 1;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.tableCard {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.tableHeaderSection {
+  background: #f8fafc;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tableHeaderSection h3 {
+  margin: 0;
+  font-size: 15px;
+  color: #333;
+}
+
+.voterCount {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.voterTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.voterTable th {
+  background: #fdfdfd;
+  color: #555;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.voterTable td {
+  padding: 12px 16px;
+  font-size: 14px;
+  border-bottom: 1px solid #f5f5f5;
+  color: #444;
+}
+
+.voterTable tr:hover td {
+  background: #fcfcfc;
+}
+
+.voterName {
+  font-weight: 600;
+  color: #111;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: #e6f7ff;
+  color: #1890ff;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  border: 1px solid #91d5ff;
+}
+
+.emptyRow {
+  text-align: center;
+  padding: 40px !important;
+  color: #999;
+  font-style: italic;
 }
