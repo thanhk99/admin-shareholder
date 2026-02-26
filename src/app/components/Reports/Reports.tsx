@@ -53,6 +53,9 @@ export default function Reports() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [activeTab, setActiveTab] = useState<'voting' | 'election'>('voting');
   const [selectedItemId, setSelectedItemId] = useState<string>('');
+  const [showStatsTable, setShowStatsTable] = useState<boolean>(false);
+  const [isVoterModalOpen, setIsVoterModalOpen] = useState<boolean>(false);
+  const [voterList, setVoterList] = useState<any[]>([]);
 
   const fetchMeetings = async () => {
     try {
@@ -122,6 +125,7 @@ export default function Reports() {
       };
 
       setReportData(mappedData);
+      setVoterList(attendedList);
 
       if (mappedData.resolutions.length > 0) {
         setSelectedItemId(mappedData.resolutions[0].resolutionId);
@@ -145,6 +149,21 @@ export default function Reports() {
     if (selectedMeetingId) {
       fetchReport(selectedMeetingId);
     }
+  }, [selectedMeetingId]);
+
+  // Handle F3 key shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F3') {
+        e.preventDefault();
+        if (selectedMeetingId) {
+          fetchReport(selectedMeetingId);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedMeetingId]);
 
   const getCurrentStats = () => {
@@ -243,6 +262,20 @@ export default function Reports() {
             </div>
           </div>
         </div>
+        <div className={styles.sidebarActions}>
+          <button
+            className={styles.ellipsis}
+            onClick={() => setIsVoterModalOpen(true)}
+          >
+            ...
+          </button>
+          <button
+            className={`${styles.viewTableBtn} ${showStatsTable ? styles.viewTableBtnActive : ''}`}
+            onClick={() => setShowStatsTable(!showStatsTable)}
+          >
+            View bảng
+          </button>
+        </div>
       </div>
     );
   };
@@ -338,8 +371,147 @@ export default function Reports() {
     );
   };
 
+  const renderSummaryTable = () => {
+    const stats = getCurrentStats();
+    if (!stats) return null;
+
+    const title = activeTab === 'voting' ? 'Phiếu biểu quyết' : 'Phiếu bầu cử';
+
+    return (
+      <div className={styles.reportSection}>
+        <div className={styles.sectionTitle}>Kết quả kiểm phiếu {title}</div>
+        <table className={styles.styledTable} style={{ maxWidth: '600px' }}>
+          <thead>
+            <tr>
+              <th>Nội dung</th>
+              <th>Số tờ phiếu</th>
+              <th>Số phiếu bầu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Số phiếu bầu đã phát</td>
+              <td style={{ textAlign: 'right' }}>{stats.issuedBallots.toLocaleString()}</td>
+              <td style={{ textAlign: 'right' }}>{stats.issuedShares.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td>Số phiếu không tham gia bầu</td>
+              <td style={{ textAlign: 'right' }}>{stats.noVoteBallots.toLocaleString()}</td>
+              <td style={{ textAlign: 'right' }}>{stats.noVoteShares.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td>Số phiếu bầu thu về</td>
+              <td style={{ textAlign: 'right' }}>{stats.collectedBallots.toLocaleString()}</td>
+              <td style={{ textAlign: 'right' }}>{stats.collectedShares.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td>Số phiếu bầu không hợp lệ</td>
+              <td style={{ textAlign: 'right' }}>{stats.invalidBallots.toLocaleString()}</td>
+              <td style={{ textAlign: 'right' }}>{stats.invalidShares.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td>Số phiếu bầu hợp lệ</td>
+              <td style={{ textAlign: 'right' }}>{stats.validBallots.toLocaleString()}</td>
+              <td style={{ textAlign: 'right' }}>{stats.validShares.toLocaleString()}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const renderVoterDetailModal = () => {
+    if (!isVoterModalOpen) return null;
+
+    const currentItemTitle = activeTab === 'voting'
+      ? reportData?.resolutions.find(r => r.resolutionId === selectedItemId)?.resolutionTitle
+      : reportData?.elections.find(e => e.electionId === selectedItemId)?.electionTitle;
+
+    return (
+      <div className={styles.modalOverlay} onClick={() => setIsVoterModalOpen(false)}>
+        <div className={styles.voterModal} onClick={e => e.stopPropagation()}>
+          <div className={styles.modalHeader}>
+            <h2 className={styles.modalTitle}>Chi tiết kết quả bầu cử</h2>
+            <button className={styles.closeBtn} onClick={() => setIsVoterModalOpen(false)}>×</button>
+          </div>
+
+          <div className={styles.modalFilterGrid}>
+            <div className={styles.filterGroup}>
+              <label>Cuộc họp</label>
+              <div className={styles.staticField}>
+                {meetings.find(m => m.id === selectedMeetingId)?.title || '---'}
+              </div>
+            </div>
+            <div className={styles.filterGroup}>
+              <label>Nội dung biểu quyết/bầu cử</label>
+              <div className={styles.staticField}>{currentItemTitle || '---'}</div>
+            </div>
+          </div>
+
+          <div className={styles.modalContent}>
+            <div className={styles.tableCard}>
+              <div className={styles.tableHeaderSection}>
+                <h3>Danh sách cổ đông tham gia bỏ phiếu</h3>
+                <span className={styles.voterCount}>Tổng số: {voterList.length} cổ đông</span>
+              </div>
+              <div className={styles.modalTableContainer}>
+                <table className={styles.voterTable}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: '60px', textAlign: 'center' }}>STT</th>
+                      <th>Họ và tên</th>
+                      <th>Số CMND/CCCD</th>
+                      <th>Mã tham dự</th>
+                      <th style={{ textAlign: 'right' }}>Số lượng CP</th>
+                      <th style={{ textAlign: 'center' }}>Thu phiếu</th>
+                      <th style={{ textAlign: 'center' }}>Hợp lệ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {voterList.map((v, i) => {
+                      // Hiện tại coi như các cổ đông trong danh sách đã điểm danh là đã thu phiếu và hợp lệ
+                      // Nếu backend có trường check riêng, hãy cập nhật tại đây:
+                      const isCollected = true;
+                      const isValid = true;
+
+                      return (
+                        <tr key={v.userId || i}>
+                          <td style={{ textAlign: 'center', color: '#888' }}>{i + 1}</td>
+                          <td>
+                            <div className={styles.voterName}>{v.fullName || v.name}</div>
+                          </td>
+                          <td style={{ fontFamily: 'monospace', fontSize: '13px' }}>{v.cccd || '---'}</td>
+                          <td style={{ color: '#1a4a8c', fontWeight: 600 }}>{v.investorCode || '---'}</td>
+                          <td style={{ textAlign: 'right', fontWeight: '700' }}>
+                            {(v.totalShares || v.sharesOwned || 0).toLocaleString()}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            {isCollected && <div className={styles.statusBadge}>✔</div>}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            {isValid && <div className={styles.statusBadge}>✔</div>}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {voterList.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className={styles.emptyRow}>Không có dữ liệu cổ đông tham gia bỏ phiếu</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={styles.reportsContainer}>
+      {renderVoterDetailModal()}
       <div className={styles.headerActions}>
         <h1>Kết quả họp</h1>
       </div>
@@ -351,9 +523,14 @@ export default function Reports() {
           <div className={styles.contentBody}>
             {!reportData && <div className={styles.noData}>Đang tải dữ liệu báo cáo...</div>}
 
-            {activeTab === 'voting' && reportData?.resolutions.map(res => renderVotingReport(res))}
-
-            {activeTab === 'election' && reportData?.elections.map(elec => renderElectionReport(elec))}
+            {showStatsTable ? (
+              renderSummaryTable()
+            ) : (
+              <>
+                {activeTab === 'voting' && reportData?.resolutions.map(res => renderVotingReport(res))}
+                {activeTab === 'election' && reportData?.elections.map(elec => renderElectionReport(elec))}
+              </>
+            )}
           </div>
         </div>
 
