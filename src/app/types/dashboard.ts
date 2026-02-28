@@ -1,6 +1,9 @@
 export interface UserStats {
     totalShareholders: number;
     totalSharesRepresented: number;
+    attendedCount: number;
+    attendedShares: number;
+    participationRate: number;
 }
 
 export interface MeetingStats {

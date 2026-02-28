@@ -1,3 +1,4 @@
+'use client'
 import { useState, useEffect, useRef } from 'react';
 import { FormInstance, message, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
@@ -8,7 +9,7 @@ import ShareholderManage from '@/lib/api/shareholdermanagement';
 import { MeetingService } from '@/lib/api/meetings';
 import ProxyService from '@/lib/api/proxy';
 import { DashboardService } from '@/lib/api/dashboard';
-import { AttendanceService } from '@/lib/api/attendance';
+import { AttendanceService, CheckInBundleResponse } from '@/lib/api/attendance';
 
 const { Text } = Typography;
 
@@ -18,11 +19,8 @@ export function useEligibilityData(form: FormInstance) {
     const [selectedMeetingId, setSelectedMeetingId] = useState<string>('');
     const [summary, setSummary] = useState<any>(null);
     const [shareholdersList, setShareholdersList] = useState<Shareholder[]>([]);
-    const [proxyList, setProxyList] = useState<ProxyItem[]>([]);
     const [searchOptions, setSearchOptions] = useState<{ value: string; label: React.ReactNode; data: Shareholder }[]>([]);
-    const [proxySearchOptions, setProxySearchOptions] = useState<{ value: string; label: React.ReactNode; data: Shareholder }[]>([]);
-    const [selectedProxyId, setSelectedProxyId] = useState<number | null>(null);
-    const [proxyUserId, setProxyUserId] = useState<string | null>(null);
+    const [currentBundle, setCurrentBundle] = useState<CheckInBundleResponse | null>(null);
 
     const mainSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const proxySearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -30,15 +28,8 @@ export function useEligibilityData(form: FormInstance) {
     const loadMeetingData = async (meetingId: string) => {
         setLoading(true);
         try {
-            setProxyList([]);
             setShareholdersList([]);
             form.resetFields();
-
-            const response = await ProxyService.getMeetingProxies(meetingId);
-            const proxies = (response as any)?.data || response;
-            if (Array.isArray(proxies)) {
-                setProxyList(proxies);
-            }
 
             const responseAttended = await AttendanceService.getAttendedParticipants(meetingId).catch(() => []);
             const attended = (responseAttended as any)?.data || responseAttended;
@@ -123,61 +114,28 @@ export function useEligibilityData(form: FormInstance) {
         }
     };
 
-    const fillShareholderData = (shareholder: any, existingProxy?: ProxyItem) => {
-        const userId = shareholder.id || shareholder.userId || shareholder.shareholderCode;
-        const displayCode = userId;
+    const fillShareholderData = (shareholder: any) => {
+        const userId = shareholder.userId || shareholder.id || shareholder.shareholderCode;
+        // Định danh để gửi lên backend khi xác nhận tham dự (investorCode ưu tiên, fallback sang cccd)
+        const identifier = shareholder.investorCode || shareholder.cccd;
 
         form.setFieldsValue({
             id: userId,
-            keyword: shareholder.cccd || displayCode,
-            investorCode: displayCode,
+            keyword: shareholder.cccd || identifier,
+            investorCode: identifier,   // Dùng investorCode/cccd thực tế, không phải userId
             cccd: shareholder.cccd,
             fullName: shareholder.fullName,
             dateOfIssue: shareholder.dateOfIssue ? dayjs(shareholder.dateOfIssue) : null,
             placeOfIssue: shareholder.placeOfIssue || shareholder.address,
             sharesOwned: shareholder.sharesOwned,
-            attendingShares: shareholder.attendingShares !== undefined ? shareholder.attendingShares : shareholder.sharesOwned,
+            delegatedShares: shareholder.delegatedShares || 0,
+            receivedProxyShares: shareholder.receivedProxyShares || 0,
+            // Sử dụng giá trị attendingShares đã được tính toán từ handleBundleSearch
+            // hoặc fallback về công thức nếu dùng trực tiếp
+            attendingShares: shareholder.attendingShares > 0
+                ? shareholder.attendingShares
+                : Math.max(0, shareholder.sharesOwned - (shareholder.delegatedShares || 0) + (shareholder.receivedProxyShares || 0)),
         });
-
-        if (existingProxy) {
-            setSelectedProxyId(existingProxy.id);
-            setProxyUserId(existingProxy.proxyId);
-            form.setFieldsValue({
-                isProxy: true,
-                proxyId: existingProxy.proxyId,
-                proxyUserId: existingProxy.proxyId,
-                proxyFullName: existingProxy.proxyName,
-                proxyShares: existingProxy.sharesDelegated
-            });
-        } else {
-            setSelectedProxyId(null);
-            setProxyUserId(null);
-            const foundProxy = proxyList.find(p =>
-                String(p.delegatorId) === String(shareholder.id) ||
-                String(p.delegatorId) === String(shareholder.investorCode)
-            );
-            if (foundProxy) {
-                setSelectedProxyId(foundProxy.id);
-                setProxyUserId(foundProxy.proxyId);
-                form.setFieldsValue({
-                    isProxy: true,
-                    proxyId: foundProxy.proxyId,
-                    proxyUserId: foundProxy.proxyId,
-                    proxyFullName: foundProxy.proxyName,
-                    proxyShares: foundProxy.sharesDelegated
-                });
-            } else {
-                form.setFieldsValue({
-                    isProxy: false,
-                    proxyId: '',
-                    proxyUserId: '',
-                    proxyFullName: '',
-                    proxyDateOfIssue: undefined,
-                    proxyPlaceOfIssue: '',
-                    proxyShares: ''
-                });
-            }
-        }
 
         setTimeout(() => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -185,6 +143,46 @@ export function useEligibilityData(form: FormInstance) {
                 window.scrollTo(0, 0);
             }
         }, 100);
+    };
+
+    const handleBundleSearch = async (keyword: string) => {
+        if (!selectedMeetingId) {
+            message.error('Vui lòng chọn đại hội trước');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const bundle = await AttendanceService.getCheckInBundle(selectedMeetingId, keyword);
+            setCurrentBundle(bundle);
+
+            // Tính số cổ phần đã uỷ quyền (đi) và nhận uỷ quyền (đến) từ proxy lists
+            const delegatedShares = (bundle.outgoingProxies || [])
+                .reduce((sum, p) => sum + (p.sharesDelegated || 0), 0);
+            const receivedProxyShares = (bundle.incomingProxies || [])
+                .reduce((sum, p) => sum + (p.sharesDelegated || 0), 0);
+
+            // Tính attendingShares = sharesOwned - delegatedShares + receivedProxyShares
+            const sharesOwned = bundle.shareholder.sharesOwned || 0;
+            const effectiveAttendingShares = Math.max(0, sharesOwned - delegatedShares + receivedProxyShares);
+
+            fillShareholderData({
+                ...bundle.shareholder,
+                delegatedShares,
+                receivedProxyShares,
+                // Nếu đã check-in thì dùng giá trị thực, chưa thì tính theo công thức
+                attendingShares: bundle.shareholder.checkedInAt
+                    ? bundle.shareholder.attendingShares
+                    : effectiveAttendingShares
+            });
+
+            message.success('Đã tìm thấy thông tin cổ đông và các đại diện');
+        } catch (error: any) {
+            const msg = error.response?.data?.message || 'Không tìm thấy cổ đông';
+            message.error(msg);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleQuickSearch = (keyword: string) => {
@@ -231,54 +229,6 @@ export function useEligibilityData(form: FormInstance) {
         }, 300);
     };
 
-    const handleProxyQuickSearch = (keyword: string) => {
-        if (proxySearchTimeoutRef.current) {
-            clearTimeout(proxySearchTimeoutRef.current);
-        }
-
-        if (!keyword || keyword.trim().length < 1) {
-            setProxySearchOptions([]);
-            return;
-        }
-
-        proxySearchTimeoutRef.current = setTimeout(async () => {
-            try {
-                const currentId = form.getFieldValue('investorCode');
-                const currentCCCD = form.getFieldValue('cccd');
-
-                const response: any = await ShareholderManage.searchUsers(keyword).catch(() => null);
-                const data = response?.data || response;
-                const results = Array.isArray(data) ? data : (data ? [data] : []);
-
-                const filteredResults = results.filter((sh: Shareholder) => {
-                    const isSelf = (sh.id && sh.id === currentId) ||
-                        (sh.cccd && sh.cccd === currentCCCD);
-
-                    if (isSelf) return false;
-
-                    return sh.cccd?.toLowerCase().startsWith(keyword.toLowerCase()) ||
-                        sh.id?.toLowerCase().startsWith(keyword.toLowerCase());
-                }).slice(0, 10);
-
-                const options = filteredResults.map((sh: Shareholder) => ({
-                    value: sh.id,
-                    label: (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                                <Text strong style={{ fontSize: '15px' }}>{sh.cccd}</Text>
-                                <div style={{ fontSize: '12px', color: '#666' }}>{sh.fullName}</div>
-                            </div>
-                            <Tag color="blue">{sh.id}</Tag>
-                        </div>
-                    ),
-                    data: sh
-                }));
-                setProxySearchOptions(options);
-            } catch (error) {
-                // Ignore search error
-            }
-        }, 300);
-    };
 
     useEffect(() => {
         return () => {
@@ -299,7 +249,6 @@ export function useEligibilityData(form: FormInstance) {
         if (selectedMeetingId) {
             loadMeetingData(selectedMeetingId);
         } else {
-            setProxyList([]);
             setShareholdersList([]);
             form.resetFields();
         }
@@ -315,19 +264,13 @@ export function useEligibilityData(form: FormInstance) {
         setSummary,
         shareholdersList,
         setShareholdersList,
-        proxyList,
-        setProxyList,
         searchOptions,
         setSearchOptions,
-        proxySearchOptions,
-        setProxySearchOptions,
-        selectedProxyId,
-        setSelectedProxyId,
-        proxyUserId,
-        setProxyUserId,
         fillShareholderData,
         handleQuickSearch,
-        handleProxyQuickSearch,
-        loadMeetingData
+        loadMeetingData,
+        currentBundle,
+        setCurrentBundle,
+        handleBundleSearch
     };
 }

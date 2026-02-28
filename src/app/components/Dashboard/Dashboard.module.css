@@ -6,6 +6,25 @@
   margin-bottom: 30px;
 }
 
+.statMiniCard {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: none;
+  height: 100%;
+  transition: transform 0.3s ease;
+}
+
+.statMiniCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.statsCard {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: none;
+}
+
 .header h1 {
   color: #2c3e50;
   margin: 0 0 5px 0;

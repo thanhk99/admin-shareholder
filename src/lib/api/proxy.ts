@@ -48,6 +48,17 @@ export default class ProxyService {
         }
     }
 
+    // 6.5b. Cập nhật uỷ quyền
+    static async updateProxyShares(meetingId: string, delegationId: number, sharesDelegated: number) {
+        try {
+            return apiClient.put(`${API_CONFIG.ENDPOINTS.MEETING.BASE}/${meetingId}/proxy/${delegationId}`, {
+                sharesDelegated
+            });
+        } catch (error) {
+            throw error;
+        }
+    }
+
     // 6.6. Thêm người được uỷ quyền (không phải cổ đông)
     static async createNonShareholderProxy(data: NonShareholderProxyRequest): Promise<NonShareholderProxyResponse> {
         try {

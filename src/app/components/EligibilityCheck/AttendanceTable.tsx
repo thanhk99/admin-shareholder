@@ -1,4 +1,4 @@
-import { Table, Typography } from 'antd';
+import { Table, Typography, Tag } from 'antd';
 import { Shareholder } from '@/app/types/shareholder';
 import styles from './EligibilityCheck.module.css';
 
@@ -13,6 +13,19 @@ const shareholderColumns = [
     { title: 'Mã CĐ', dataIndex: 'shareholderCode', key: 'shareholderCode' },
     { title: 'Số CMND/Hộ...', dataIndex: 'cccd', key: 'cccd' },
     { title: 'Họ và tên', dataIndex: 'fullName', key: 'fullName' },
+    {
+        title: 'Loại hình',
+        dataIndex: 'participationType',
+        key: 'participationType',
+        render: (type: string, record: any) => {
+            const isProxy = record.sharesOwned === 0;
+            return (
+                <Tag color={isProxy ? 'orange' : 'blue'}>
+                    {isProxy ? 'ỦY QUYỀN' : 'TRỰC TIẾP'}
+                </Tag>
+            );
+        }
+    },
     { title: 'Tổng sở hữu', dataIndex: 'sharesOwned', key: 'sharesOwned', render: (val: number) => val?.toLocaleString() },
     { title: 'SL Tham dự', dataIndex: 'attendingShares', key: 'attendingShares', render: (val: number) => val?.toLocaleString() },
     { title: 'Đã ủy quyền', dataIndex: 'delegatedShares', key: 'delegatedShares', render: (val: number) => val?.toLocaleString() },

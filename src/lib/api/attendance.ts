@@ -12,8 +12,13 @@ export interface AttendanceResponse {
     userId: string;
     meetingId: string;
     investorCode: string;
+    shareholderCode?: string;
     fullName: string;
     cccd: string;
+    dateOfIssue?: string;
+    placeOfIssue?: string;
+    phoneNumber?: string;
+    email?: string;
     sharesOwned: number;
     attendingShares: number;
     receivedProxyShares: number;
@@ -21,6 +26,24 @@ export interface AttendanceResponse {
     totalShares: number;
     participationType: 'DIRECT' | 'PROXY';
     checkedInAt: string;
+}
+
+export interface ProxyAttendeeDTO {
+    delegationId: number;
+    sharesDelegated: number;
+    proxyParticipant: AttendanceResponse;
+}
+
+export interface IncomingProxyDTO {
+    delegationId: number;
+    sharesDelegated: number;
+    delegatorParticipant: AttendanceResponse;
+}
+
+export interface CheckInBundleResponse {
+    shareholder: AttendanceResponse;
+    outgoingProxies: ProxyAttendeeDTO[];
+    incomingProxies: IncomingProxyDTO[];
 }
 
 export class AttendanceService {
@@ -39,6 +62,16 @@ export class AttendanceService {
         try {
             return await apiClient.get(this.api_attended, {
                 params: { meetingId: meeting_id }
+            });
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static getCheckInBundle = async (meetingId: string, keyword: string): Promise<CheckInBundleResponse> => {
+        try {
+            return await apiClient.get('api/attend/checkin-bundle', {
+                params: { meetingId, keyword }
             });
         } catch (error) {
             throw error;

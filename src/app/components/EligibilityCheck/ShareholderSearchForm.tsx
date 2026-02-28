@@ -7,13 +7,14 @@ interface ShareholderSearchFormProps {
     form: FormInstance;
     loading: boolean;
     searchOptions: { value: string; label: React.ReactNode; data: Shareholder }[];
-    remainingToAllocate: number;
-    displayRemaining: number;
+    remainingToAllocate?: number;
+    displayRemaining?: number;
     onQuickSearch: (keyword: string) => void;
-    onSelectShareholder: (value: string, option: any) => void;
-    onSearch: () => void;
-    onQRScan: () => void;
-    onPrintQR: () => void;
+    onSelectShareholder: (value: string, option: any) => void | Promise<void>;
+    onBundleSearch: (keyword: string) => Promise<void>;
+    onSearch?: () => void;
+    onQRScan?: () => void;
+    onPrintQR?: () => void;
     onConfirmAttendance: () => void;
 }
 
@@ -21,13 +22,14 @@ export default function ShareholderSearchForm({
     form,
     loading,
     searchOptions,
-    remainingToAllocate,
-    displayRemaining,
+    remainingToAllocate = 0,
+    displayRemaining = 0,
     onQuickSearch,
     onSelectShareholder,
-    onSearch,
-    onQRScan,
-    onPrintQR,
+    onBundleSearch,
+    onSearch = () => { },
+    onQRScan = () => { },
+    onPrintQR = () => { },
     onConfirmAttendance
 }: ShareholderSearchFormProps) {
     return (
@@ -47,6 +49,12 @@ export default function ShareholderSearchForm({
                     <Input type="hidden" />
                 </Form.Item>
                 <Form.Item name="proxyUserId" noStyle>
+                    <Input type="hidden" />
+                </Form.Item>
+                <Form.Item name="delegatedShares" noStyle>
+                    <Input type="hidden" />
+                </Form.Item>
+                <Form.Item name="receivedProxyShares" noStyle>
                     <Input type="hidden" />
                 </Form.Item>
                 <div className={styles.formGrid}>
@@ -98,7 +106,7 @@ export default function ShareholderSearchForm({
                     <Form.Item
                         label="Số lượng tham dự"
                         name="attendingShares"
-                        help={remainingToAllocate < 0 ? <span style={{ color: 'red' }}>Vượt quá số lượng sở hữu</span> : `Còn lại: ${displayRemaining.toLocaleString()} cp`}
+                        help={remainingToAllocate < 0 ? <span style={{ color: 'red' }}>Vượt quá số lượng có thể tham dự</span> : `Còn lại: ${displayRemaining.toLocaleString()} cp`}
                     >
                         <Input
                             type="text"
