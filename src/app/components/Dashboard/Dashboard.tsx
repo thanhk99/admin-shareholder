@@ -17,23 +17,32 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const { realtimeStatus, isConnected } = useRealtime();
 
-  useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        const data = await DashboardService.getSummary();
-        setSummary(data);
-      } catch (error) {
-        console.error('Error fetching dashboard summary:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSummary();
-    // Refresh summary every 30 seconds
-    const interval = setInterval(fetchSummary, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    useEffect(() => {
+      let isMounted = true;
+      const fetchSummary = async () => {
+        try {
+          const data = await DashboardService.getSummary();
+          if (isMounted) {
+            setSummary(data);
+          }
+        } catch (error) {
+          console.error('Error fetching dashboard summary:', error);
+        } finally {
+          if (isMounted) {
+            setLoading(false);
+          }
+        }
+      };
+  
+      fetchSummary();
+      // Refresh summary every 30 seconds
+      const interval = setInterval(fetchSummary, 30000);
+      
+      return () => {
+        isMounted = false;
+        clearInterval(interval);
+      };
+    }, []);
 
   const handleAddSuccess = () => {
     // Refresh logic if needed
