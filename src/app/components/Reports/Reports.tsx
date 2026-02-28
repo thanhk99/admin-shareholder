@@ -1,75 +1,54 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import {
-  DownloadOutlined,
-  FilterOutlined,
-  TeamOutlined,
-  CheckCircleOutlined
-} from '@ant-design/icons';
-import ElectionResults from './ElectionResults/ElectionResults';
-import VotingResults from './VotingResults/VotingResults';
 import styles from './Reports.module.css';
 import { MeetingService } from '@/lib/api/meetings';
 import { Meeting } from '@/app/types/meeting';
 import ReportService from '@/lib/api/report';
 
-interface MeetingResults {
-  status: string;
-  resolutions: {
-    totalAgree: number;
-    totalNotAgree: number;
-    totalNotIdea: number;
-    title: string;
-  }[];
-  candidates: {
-    candidateName: string;
-    amountVotes: number;
-  }[];
+interface VoteStats {
+  issuedShares: number;
+  validShares: number;
+  invalidShares: number;
+  collectedShares: number;
+}
+
+interface VotingReportData {
+  resolutionStats: VoteStats;
+  electionStats: VoteStats;
 }
 
 export default function Reports() {
-  const [selectedMeeting, setSelectedMeeting] = useState<string>('');
-  const [meetingResults, setMeetingResults] = useState<MeetingResults | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [selectedMeetingId, setSelectedMeetingId] = useState<string>('');
   const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [reportData, setReportData] = useState<VotingReportData | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const fetchMeetings = async () => {
     try {
       const response = await MeetingService.getAllMeetings();
-      if (response.status === 200) {
-        setMeetings(response.data);
+      const data = (response as any).data || response;
+      if (Array.isArray(data)) {
+        setMeetings(data);
+        if (data.length > 0 && !selectedMeetingId) {
+          const ongoing = data.find(m => m.status === 'ONGOING');
+          setSelectedMeetingId(ongoing ? ongoing.id : data[0].id);
+        }
       }
     } catch (error) {
       console.error('Error fetching meetings:', error);
     }
-  }
+  };
 
-  const fetchMeetingResults = async (meetingCode: string) => {
-    if (!meetingCode) {
-      setMeetingResults(null);
-      return;
-    }
-
+  const fetchStats = async (meetingId: string) => {
+    if (!meetingId) return;
     setLoading(true);
     try {
-      const response = await ReportService.getReportMeeting(meetingCode);
-
-      // SỬA QUAN TRỌNG: Xử lý response đúng cách
-      if (response.status === 200) {
-        // Nếu response có cấu trúc {status: 'success', data: {...}}
-        if (response.data) {
-          setMeetingResults(response.data);
-        } else {
-          // Nếu response là dữ liệu trực tiếp
-          // setMeetingResults(response);
-        }
-      } else {
-        setMeetingResults(null);
-      }
+      const response = await ReportService.getVotingStats(meetingId);
+      const data = (response as any).data || response;
+      setReportData(data);
     } catch (error) {
-      console.error('Error fetching meeting results:', error);
-      setMeetingResults(null);
+      console.error('Error fetching voting stats:', error);
     } finally {
       setLoading(false);
     }
@@ -80,208 +59,106 @@ export default function Reports() {
   }, []);
 
   useEffect(() => {
-    if (selectedMeeting) {
-      fetchMeetingResults(selectedMeeting);
-    } else {
-      setMeetingResults(null);
+    if (selectedMeetingId) {
+      fetchStats(selectedMeetingId);
     }
-  }, [selectedMeeting]);
+  }, [selectedMeetingId]);
 
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('vi-VN');
-    } catch {
-      return dateString;
-    }
-  };
+  // Handle F3 key shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F3') {
+        e.preventDefault();
+        if (selectedMeetingId) {
+          fetchStats(selectedMeetingId);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedMeetingId]);
 
-  const getStats = () => {
-    if (!selectedMeeting || !meetingResults) {
-      const totalCandidates = meetings.reduce((sum, meeting) =>
-        sum + (meeting.candidates?.length || 0), 0
-      );
-      const totalVotings = meetings.reduce((sum, meeting) =>
-        sum + (meeting.agenda?.length || 0), 0
-      );
+  const renderStatsCard = (title: string, stats: VoteStats | undefined) => {
+    if (!stats) return null;
 
-      return {
-        totalCandidates,
-        totalVotings,
-        totalVotes: 0,
-        approvedVotings: 0,
-      };
-    } else {
-      const totalCandidates = meetingResults.candidates?.length || 0;
-      const totalVotings = meetingResults.resolutions?.length || 0;
-
-      const candidateVotes = meetingResults.candidates?.reduce((sum, candidate) =>
-        sum + candidate.amountVotes, 0
-      ) || 0;
-
-      const resolutionVotes = meetingResults.resolutions?.reduce((sum, resolution) =>
-        sum + resolution.totalAgree + resolution.totalNotAgree + resolution.totalNotIdea, 0
-      ) || 0;
-
-      const totalVotes = candidateVotes + resolutionVotes;
-
-      const approvedVotings = meetingResults.resolutions?.filter(
-        resolution => resolution.totalAgree > resolution.totalNotAgree
-      ).length || 0;
-
-      return {
-        totalCandidates,
-        totalVotings,
-        totalVotes,
-        approvedVotings,
-      };
-    }
-  };
-
-  const stats = getStats();
-
-  const renderResults = () => {
-    if (!selectedMeeting) {
-      return (
-        <div className={styles.noSelection}>
-          <div className={styles.noSelectionContent}>
-            <TeamOutlined className={styles.noSelectionIcon} />
-            <h3>Chưa chọn cuộc họp</h3>
-            <p>Vui lòng chọn một cuộc họp từ danh sách để xem báo cáo chi tiết</p>
-          </div>
-        </div>
-      );
-    }
-
-    if (loading) {
-      return (
-        <div className={styles.loadingContainer}>
-          <div className={styles.loading}>Đang tải dữ liệu...</div>
-        </div>
-      );
-    }
-
-    if (!meetingResults) {
-      return (
-        <div className={styles.noData}>
-          <TeamOutlined className={styles.noDataIcon} />
-          <h3>Không có dữ liệu</h3>
-          <p>Không tìm thấy dữ liệu cho cuộc họp này</p>
-        </div>
-      );
-    }
-
-    const hasCandidates = meetingResults.candidates && meetingResults.candidates.length > 0;
-    const hasResolutions = meetingResults.resolutions && meetingResults.resolutions.length > 0;
-
-    if (!hasCandidates && !hasResolutions) {
-      return (
-        <div className={styles.noData}>
-          <TeamOutlined className={styles.noDataIcon} />
-          <h3>Không có dữ liệu</h3>
-          <p>Không tìm thấy dữ liệu bầu cử hoặc biểu quyết cho cuộc họp này</p>
-        </div>
-      );
-    }
+    const validPercent = stats.issuedShares > 0 ? ((stats.validShares / stats.issuedShares) * 100).toFixed(2) : '0.00';
+    const invalidPercent = stats.issuedShares > 0 ? ((stats.invalidShares / stats.issuedShares) * 100).toFixed(2) : '0.00';
 
     return (
-      <div className={styles.resultsContainer}>
-        {hasCandidates && (
-          <ElectionResults
-            candidates={meetingResults.candidates}
-            loading={loading}
-          />
-        )}
-
-        {hasResolutions && (
-          <VotingResults
-            resolutions={meetingResults.resolutions}
-            loading={loading}
-          />
-        )}
+      <div className={styles.statsCard}>
+        <h2 className={styles.cardTitle}>{title}</h2>
+        <div className={styles.statsGrid}>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Số cổ phần phát ra:</span>
+            <span className={styles.statValue}>{stats.issuedShares.toLocaleString()}</span>
+            <span className={styles.statUnit}>(cp)</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Số cổ phần thu về:</span>
+            <span className={styles.statValue}>{stats.collectedShares.toLocaleString()}</span>
+            <span className={styles.statUnit}>(cp)</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Số cổ phần hợp lệ:</span>
+            <span className={styles.statValue}>{stats.validShares.toLocaleString()}</span>
+            <span className={styles.statUnit}>(cp)</span>
+            <span className={styles.statPercent}>({validPercent}%)</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Số cổ phần không hợp lệ:</span>
+            <span className={styles.statValue}>{stats.invalidShares.toLocaleString()}</span>
+            <span className={styles.statUnit}>(cp)</span>
+            <span className={styles.statPercent}>({invalidPercent}%)</span>
+          </div>
+        </div>
       </div>
     );
   };
 
   return (
-    <div className={styles.reports}>
+    <div className={styles.reportsContainer}>
       <div className={styles.header}>
-        <div>
-          <h1>Thống kê Biểu quyết & Bầu cử</h1>
-          <p>Theo dõi kết quả bầu cử HĐQT và biểu quyết quan trọng</p>
-        </div>
-        <button className={styles.generateButton}>
-          <DownloadOutlined />
-          Xuất báo cáo
-        </button>
-      </div>
-
-      <div className={styles.statsGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>
-            <TeamOutlined />
-          </div>
-          <div className={styles.statContent}>
-            <h3>{stats.totalCandidates}</h3>
-            <p>Tổng ứng viên</p>
-          </div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>
-            <CheckCircleOutlined />
-          </div>
-          <div className={styles.statContent}>
-            <h3>{stats.totalVotings}</h3>
-            <p>Tổng biểu quyết</p>
-          </div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>
-            <DownloadOutlined />
-          </div>
-          <div className={styles.statContent}>
-            <h3>{stats.totalVotes.toLocaleString()}</h3>
-            <p>Tổng số phiếu</p>
-          </div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>
-            <FilterOutlined />
-          </div>
-          <div className={styles.statContent}>
-            <h3>{stats.approvedVotings}</h3>
-            <p>Biểu quyết thông qua</p>
-          </div>
+        <h1 className={styles.title}>Báo cáo Kết quả Đại hội</h1>
+        <div className={styles.controls}>
+          <select
+            className={styles.meetingSelect}
+            value={selectedMeetingId}
+            onChange={(e) => setSelectedMeetingId(e.target.value)}
+          >
+            <option value="">-- Chọn cuộc họp --</option>
+            {meetings.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.title}
+              </option>
+            ))}
+          </select>
+          <button
+            className={styles.refreshBtn}
+            onClick={() => fetchStats(selectedMeetingId)}
+            disabled={loading || !selectedMeetingId}
+          >
+            {loading ? 'Đang tải...' : 'Làm mới (F3)'}
+          </button>
         </div>
       </div>
 
       <div className={styles.content}>
-        <div className={styles.filters}>
-          <div className={styles.filterGroup}>
-            <label>Cuộc họp</label>
-            <div className={styles.meetingFilter}>
-              <select
-                value={selectedMeeting}
-                onChange={(e) => setSelectedMeeting(e.target.value)}
-                className={styles.meetingSelect}
-                disabled={loading}
-              >
-                <option value="">chưa chọn</option>
-                {meetings.map(meeting => (
-                  <option key={meeting.meetingCode} value={meeting.meetingCode}>
-                    {/* {meeting.title} ({formatDate(meeting.meetingDate)}) */}
-                  </option>
-                ))}
-              </select>
-              <button className={styles.filterButton} disabled={loading}>
-                <FilterOutlined />
-                {loading ? 'Đang tải...' : 'Lọc'}
-              </button>
-            </div>
+        {!selectedMeetingId ? (
+          <div className={styles.emptyState}>Vui lòng chọn một cuộc họp để xem báo cáo</div>
+        ) : loading && !reportData ? (
+          <div className={styles.loadingState}>Đang tính toán số liệu báo cáo...</div>
+        ) : (
+          <div className={styles.reportsGrid}>
+            {renderStatsCard("Thống kê Biểu quyết (Resolutions)", reportData?.resolutionStats)}
+            {renderStatsCard("Thống kê Bầu cử (Elections)", reportData?.electionStats)}
           </div>
-        </div>
+        )}
+      </div>
 
-        {renderResults()}
+      <div className={styles.footer}>
+        <p className={styles.note}>* Số liệu Hợp lệ của Bầu cử được tính theo công thức: Tổng phiếu bầu / Số lượng ứng viên.</p>
+        <p className={styles.note}>* Số liệu Phát ra được tính dựa trên Tổng số Cổ phần của cổ đông đã tham dự.</p>
+        <button className={styles.printBtn} onClick={() => window.print()}>In Báo Cáo</button>
       </div>
     </div>
   );

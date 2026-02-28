@@ -1,0 +1,176 @@
+.container {
+  padding: 24px;
+  background-color: #f0f2f5;
+  min-height: 100vh;
+}
+
+.title {
+  margin-bottom: 24px !important;
+  color: #1a1a1a;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.section {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  margin-bottom: 24px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 12px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f1f1f;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+/* Header Participation Stats */
+.headerStats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.headerStatLabel {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.headerStatValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2e7d32;
+  /* Green */
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  /* Changed to 5 columns */
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.statCard {
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.statCard:hover {
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.statLabel {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f1f1f;
+}
+
+.statValueGreen {
+  color: #2e7d32;
+  /* Green color for attendance stats */
+}
+
+/* ... existing styles ... */
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.idInput {
+  display: flex;
+  gap: 8px;
+}
+
+.actionRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.confirmButton {
+  min-width: 120px;
+}
+
+.proxyBox {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: #fff1f0;
+  border: 1px solid #ffccc7;
+  border-radius: 8px;
+}
+
+.tableSection {
+  margin-bottom: 24px;
+}
+
+/* Button Layout */
+.footerContainer {
+  margin-top: 20px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+}
+
+.buttonGrid2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+/* Removed greenButton class to fallback to default or use inline style if needed */
+.listButton {
+  width: 100%;
+}
+
+.deleteButtonRow {
+  display: flex;
+  justify-content: flex-start;
+  /* Align left */
+}
+
+/* Hide spin buttons for number inputs */
+:global(input::-webkit-outer-spin-button),
+:global(input::-webkit-inner-spin-button) {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+:global(input[type=number]) {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.meetingSelect {
+  width: 100%;
+}
