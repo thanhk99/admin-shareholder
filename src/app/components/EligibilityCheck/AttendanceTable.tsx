@@ -30,7 +30,7 @@ const shareholderColumns = [
     { title: 'SL Tham dự', dataIndex: 'attendingShares', key: 'attendingShares', render: (val: number) => val?.toLocaleString() },
     { title: 'Đã ủy quyền', dataIndex: 'delegatedShares', key: 'delegatedShares', render: (val: number) => val?.toLocaleString() },
     { title: 'SPCP được UQ', dataIndex: 'receivedProxyShares', key: 'receivedProxyShares', render: (val: number) => val?.toLocaleString() },
-    { title: 'Quyền biểu quyết', dataIndex: 'totalShares', key: 'totalShares', render: (val: number) => val?.toLocaleString() },
+    { title: 'Quyền biểu quyết', dataIndex: 'attendingShares', key: 'attendingShares', render: (val: number) => val?.toLocaleString() },
 ];
 
 export default function AttendanceTable({ shareholdersList, onRowClick }: AttendanceTableProps) {

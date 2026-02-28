@@ -121,11 +121,9 @@ export default function EligibilityCheck() {
                     cccd: a.cccd,
                     fullName: a.fullName,
                     participationType: a.participationType,
-                    sharesOwned: a.sharesOwned,
                     attendingShares: a.attendingShares,
                     delegatedShares: a.delegatedShares || 0,
                     receivedProxyShares: a.receivedProxyShares || 0,
-                    totalShares: a.totalShares,
                     id: a.userId
                 }));
                 setShareholdersList(mappedShareholders as any[]);
@@ -176,11 +174,9 @@ export default function EligibilityCheck() {
                     cccd: a.cccd,
                     fullName: a.fullName,
                     participationType: a.participationType,
-                    sharesOwned: a.sharesOwned,
                     attendingShares: a.attendingShares,
                     delegatedShares: a.delegatedShares || 0,
                     receivedProxyShares: a.receivedProxyShares || 0,
-                    totalShares: a.totalShares,
                     id: a.userId
                 }));
                 setShareholdersList(mappedShareholders as any[]);
@@ -299,16 +295,19 @@ export default function EligibilityCheck() {
                                             align: 'center',
                                             width: 130,
                                             render: (_: any, p: any) => {
+                                                const isProxyCheckedIn = p.proxyParticipant?.checkedInAt != null;
                                                 return (
                                                     <Button
-                                                        type="primary"
+                                                        type={isProxyCheckedIn ? "default" : "primary"}
                                                         size="small"
                                                         onClick={() => handleConfirmProxyAttendance(
                                                             p,
                                                             (p as any)._tempDelegated ?? p.sharesDelegated
                                                         )}
+                                                        style={isProxyCheckedIn ? {} : { backgroundColor: '#52c41a', borderColor: '#52c41a' }}
                                                     >
-                                                        <SyncOutlined /> Cập nhật
+                                                        {isProxyCheckedIn ? <SyncOutlined /> : <CheckOutlined />}
+                                                        {isProxyCheckedIn ? ' Cập nhật' : ' Xác nhận tham dự'}
                                                     </Button>
                                                 );
                                             }

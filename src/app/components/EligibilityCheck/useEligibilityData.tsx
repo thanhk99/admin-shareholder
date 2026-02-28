@@ -40,11 +40,9 @@ export function useEligibilityData(form: FormInstance) {
                     investorCode: a.investorCode,
                     cccd: a.cccd,
                     fullName: a.fullName,
-                    sharesOwned: a.sharesOwned,
                     attendingShares: a.attendingShares,
                     delegatedShares: a.delegatedShares || 0,
                     receivedProxyShares: a.receivedProxyShares,
-                    totalShares: a.totalShares,
                     id: a.userId
                 }));
                 setShareholdersList(mappedShareholders as any[]);
