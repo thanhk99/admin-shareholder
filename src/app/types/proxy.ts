@@ -22,6 +22,7 @@ export interface NonShareholderProxyRequest {
     fullName: string;
     cccd: string;
     dateOfIssue: string;
+    placeOfIssue?: string;
     address: string;
     meetingId: string;
     delegatorCccd: string;
@@ -29,6 +30,7 @@ export interface NonShareholderProxyRequest {
     nation?: string;
     email?: string;
     phoneNumber?: string;
+    note?: string;
 }
 
 export interface NonShareholderProxyResponse {

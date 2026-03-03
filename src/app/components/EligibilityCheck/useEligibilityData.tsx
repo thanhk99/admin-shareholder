@@ -132,7 +132,7 @@ export function useEligibilityData(form: FormInstance) {
             // hoặc fallback về công thức nếu dùng trực tiếp
             attendingShares: shareholder.attendingShares > 0
                 ? shareholder.attendingShares
-                : Math.max(0, shareholder.sharesOwned - (shareholder.delegatedShares || 0) + (shareholder.receivedProxyShares || 0)),
+                : 0,
         });
 
         setTimeout(() => {

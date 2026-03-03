@@ -1,8 +1,8 @@
 'use client';
-
+import React, { useState } from 'react';
 import '@ant-design/v5-patch-for-react-19';
 
-import { Form, Row, Col, Typography, message, Input, Button, Table, Tag } from 'antd';
+import { Form, Row, Col, Typography, message, Input, Button, Table, Tag, Collapse } from 'antd';
 import {
     IdcardOutlined,
     BarcodeOutlined,
@@ -11,7 +11,9 @@ import {
     PhoneOutlined,
     MailOutlined,
     SyncOutlined,
-    CheckOutlined
+    CheckOutlined,
+    DownOutlined,
+    UpOutlined
 } from '@ant-design/icons';
 import styles from './EligibilityCheck.module.css';
 
@@ -22,11 +24,13 @@ import { useEligibilityData } from './useEligibilityData';
 import { AttendanceService } from '@/lib/api/attendance';
 import { DashboardService } from '@/lib/api/dashboard';
 import ProxyService from '@/lib/api/proxy';
+import AddProxyModal from './AddProxyModal';
 
 const { Text } = Typography;
 
 export default function EligibilityCheck() {
     const [form] = Form.useForm();
+    const [isAttendanceSectionExpanded, setIsAttendanceSectionExpanded] = useState(true);
 
     const {
         loading,
@@ -55,9 +59,14 @@ export default function EligibilityCheck() {
     // Tính số cổ phần tối đa có thể tham dự dựa trên công thức
     const maxAttendingShares = Number(sharesOwnedWatch) - Number(delegatedSharesWatch) + Number(receivedProxySharesWatch);
 
-    // Tính số cổ phần còn lại có thể xác nhận
+    // Tính số cổ phần còn lại có thể xác nhận tham dự
     const remainingToAllocate = maxAttendingShares - Number(attendingSharesWatch);
     const displayRemaining = Math.max(0, remainingToAllocate);
+
+    // Công thức yêu cầu: Cổ sở hữu - Cổ tham gia
+    // Lưu ý: Cổ tham gia (attendingSharesWatch) bao gồm cả phần tự có và phần nhận uỷ quyền. 
+    // Nếu tham gia bằng toàn bộ quyền biểu quyết (bao gồm proxy nhận được), thì phần sở hữu còn lại để uỷ quyền đi sẽ giảm tương ứng.
+    const remainingToProxy = Math.max(0, Number(sharesOwnedWatch) - Number(attendingSharesWatch) - Number(delegatedSharesWatch));
 
     const totalShareholders = summary?.userStats?.totalShareholders || 0;
     const totalShares = summary?.userStats?.totalSharesRepresented || 0;
@@ -106,7 +115,8 @@ export default function EligibilityCheck() {
                 participationType: participationType
             });
 
-            message.success('Xác nhận tham dự thành công');
+            const isUpdate = !!currentBundle?.shareholder?.checkedInAt;
+            message.success(isUpdate ? 'Cập nhật thành công' : 'Xác nhận tham dự thành công');
 
             const [responseAttended, summaryRes] = await Promise.all([
                 AttendanceService.getAttendedParticipants(selectedMeetingId).catch(() => []),
@@ -137,6 +147,8 @@ export default function EligibilityCheck() {
             setLoading(false);
         }
     };
+
+    const [isAddProxyModalOpen, setIsAddProxyModalOpen] = useState(false);
 
     const handleConfirmProxyAttendance = async (proxyAttendee: any, newDelegatedShares: number) => {
         const identifier = proxyAttendee.proxyParticipant.investorCode || proxyAttendee.proxyParticipant.cccd;
@@ -190,8 +202,20 @@ export default function EligibilityCheck() {
         }
     };
 
-    const handleDeleteAttendee = async (id: string) => {
-        // Implementation for deleting attendee if needed, or just refresh
+    const handleOpenAddProxy = () => {
+        if (!selectedMeetingId) {
+            message.warning('Vui lòng chọn đại hội');
+            return;
+        }
+        setIsAddProxyModalOpen(true);
+    };
+
+    const handleAddProxySuccess = async () => {
+        setIsAddProxyModalOpen(false);
+        const keyword = form.getFieldValue('keyword');
+        if (keyword) {
+            await handleBundleSearch(keyword);
+        }
     };
 
     return (
@@ -216,105 +240,138 @@ export default function EligibilityCheck() {
                         searchOptions={searchOptions}
                         remainingToAllocate={remainingToAllocate}
                         displayRemaining={displayRemaining}
+                        isParticipated={!!currentBundle?.shareholder?.checkedInAt}
+                        checkedInAt={currentBundle?.shareholder?.checkedInAt}
+                        remainingToProxy={remainingToProxy}
+                        isAttendanceSectionExpanded={isAttendanceSectionExpanded}
+                        onToggleAttendanceSection={() => setIsAttendanceSectionExpanded(!isAttendanceSectionExpanded)}
+                        shouldHideAttendance={isAddProxyModalOpen}
                         onQuickSearch={handleQuickSearch}
                         onSelectShareholder={(userId, option) => handleBundleSearch(option.data.cccd || option.data.investorCode)}
                         onBundleSearch={handleBundleSearch}
                         onConfirmAttendance={handleConfirmAttendance}
+                        onOpenAddProxy={handleOpenAddProxy}
                         onSearch={() => {
                             const keyword = form.getFieldValue('keyword');
                             if (keyword) handleBundleSearch(keyword);
                         }}
                     />
 
+                    <AddProxyModal
+                        open={isAddProxyModalOpen}
+                        onCancel={() => setIsAddProxyModalOpen(false)}
+                        onSuccess={handleAddProxySuccess}
+                        meetingId={selectedMeetingId || ""}
+                        delegatorCccd={form.getFieldValue('cccd')}
+                        delegatorName={form.getFieldValue('fullName')}
+                        maxShares={remainingToProxy}
+                        renderInline={true}
+                    />
+
                     {/* Bảng Danh sách những người mà cổ đông này uỷ quyền cho (Outgoing) */}
                     {currentBundle && currentBundle.outgoingProxies && currentBundle.outgoingProxies.length > 0 && (
                         <div className={styles.section} style={{ marginTop: 24, border: '2px solid #ff4d4f', backgroundColor: '#fff', borderRadius: 12, padding: 0, overflow: 'hidden', boxShadow: '0 4px 12px rgba(255, 77, 79, 0.15)' }}>
-                            <div style={{ backgroundColor: '#ff4d4f', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h2 style={{ color: '#fff', margin: 0, fontSize: 16, fontWeight: 600 }}>Cổ đông này uỷ quyền cho những người sau:</h2>
+                            <div
+                                style={{
+                                    backgroundColor: '#ff4d4f',
+                                    padding: '12px 20px',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    cursor: 'pointer'
+                                }}
+                                onClick={() => setIsAttendanceSectionExpanded(!isAttendanceSectionExpanded)}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <h2 style={{ color: '#fff', margin: 0, fontSize: 16, fontWeight: 600 }}>Cổ đông này uỷ quyền cho những người sau:</h2>
+                                    {isAttendanceSectionExpanded ? <UpOutlined style={{ color: '#fff' }} /> : <DownOutlined style={{ color: '#fff' }} />}
+                                </div>
                                 <span style={{ color: '#fff', fontSize: 12 }}>Xác nhận từng đại diện tham dự</span>
                             </div>
-                            <div style={{ padding: 12 }}>
-                                <Table
-                                    dataSource={currentBundle.outgoingProxies}
-                                    pagination={false}
-                                    size="small"
-                                    rowKey={(p: any) => p.delegationId}
-                                    columns={[
-                                        {
-                                            title: 'Người nhận uỷ quyền',
-                                            key: 'proxyInfo',
-                                            render: (_: any, p: any) => {
-                                                const proxy = p.proxyParticipant;
-                                                return (
-                                                    <div>
-                                                        <div style={{ fontWeight: 600, fontSize: 14 }}>{proxy.fullName}</div>
-                                                        <div style={{ fontSize: 11, color: '#595959', marginTop: 2 }}>
-                                                            <span style={{ marginRight: 12 }}><BarcodeOutlined style={{ marginRight: 4 }} />Mã: <b>{proxy.investorCode || 'N/A'}</b></span>
-                                                            <span><IdcardOutlined style={{ marginRight: 4 }} />CCCD: <b>{proxy.cccd}</b></span>
+                            {isAttendanceSectionExpanded && (
+                                <div style={{ padding: 12 }}>
+                                    <Table
+                                        dataSource={currentBundle.outgoingProxies}
+                                        pagination={false}
+                                        size="small"
+                                        rowKey={(p: any) => p.delegationId}
+                                        columns={[
+                                            {
+                                                title: 'Người nhận uỷ quyền',
+                                                key: 'proxyInfo',
+                                                render: (_: any, p: any) => {
+                                                    const proxy = p.proxyParticipant;
+                                                    return (
+                                                        <div>
+                                                            <div style={{ fontWeight: 600, fontSize: 14 }}>{proxy.fullName}</div>
+                                                            <div style={{ fontSize: 11, color: '#595959', marginTop: 2 }}>
+                                                                <span style={{ marginRight: 12 }}><BarcodeOutlined style={{ marginRight: 4 }} />Mã: <b>{proxy.investorCode || 'N/A'}</b></span>
+                                                                <span><IdcardOutlined style={{ marginRight: 4 }} />CCCD: <b>{proxy.cccd}</b></span>
+                                                            </div>
+                                                            {(proxy.dateOfIssue || proxy.placeOfIssue) && (
+                                                                <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>
+                                                                    {proxy.dateOfIssue && <span style={{ marginRight: 12 }}><CalendarOutlined style={{ marginRight: 4 }} />Ngày cấp: {proxy.dateOfIssue}</span>}
+                                                                    {proxy.placeOfIssue && <span><BankOutlined style={{ marginRight: 4 }} />Nơi cấp: {proxy.placeOfIssue}</span>}
+                                                                </div>
+                                                            )}
+                                                            {(proxy.phoneNumber || proxy.email) && (
+                                                                <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>
+                                                                    {proxy.phoneNumber && <span style={{ marginRight: 12 }}><PhoneOutlined style={{ marginRight: 4 }} />{proxy.phoneNumber}</span>}
+                                                                    {proxy.email && <span><MailOutlined style={{ marginRight: 4 }} />{proxy.email}</span>}
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        {(proxy.dateOfIssue || proxy.placeOfIssue) && (
-                                                            <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>
-                                                                {proxy.dateOfIssue && <span style={{ marginRight: 12 }}><CalendarOutlined style={{ marginRight: 4 }} />Ngày cấp: {proxy.dateOfIssue}</span>}
-                                                                {proxy.placeOfIssue && <span><BankOutlined style={{ marginRight: 4 }} />Nơi cấp: {proxy.placeOfIssue}</span>}
-                                                            </div>
-                                                        )}
-                                                        {(proxy.phoneNumber || proxy.email) && (
-                                                            <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>
-                                                                {proxy.phoneNumber && <span style={{ marginRight: 12 }}><PhoneOutlined style={{ marginRight: 4 }} />{proxy.phoneNumber}</span>}
-                                                                {proxy.email && <span><MailOutlined style={{ marginRight: 4 }} />{proxy.email}</span>}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
+                                                    );
+                                                }
+                                            },
+                                            {
+                                                title: 'SL Uỷ quyền',
+                                                key: 'sharesDelegated',
+                                                width: 160,
+                                                render: (_: any, p: any) => {
+                                                    const currentVal = p.sharesDelegated || 0;
+                                                    return (
+                                                        <Input
+                                                            defaultValue={currentVal}
+                                                            suffix="cp"
+                                                            size="small"
+                                                            type="number"
+                                                            min={0}
+                                                            onChange={(e) => {
+                                                                const val = parseInt(e.target.value) || 0;
+                                                                (p as any)._tempDelegated = val;
+                                                            }}
+                                                        />
+                                                    );
+                                                }
+                                            },
+                                            {
+                                                title: 'Thao tác',
+                                                key: 'action',
+                                                align: 'center',
+                                                width: 130,
+                                                render: (_: any, p: any) => {
+                                                    const isProxyCheckedIn = p.proxyParticipant?.checkedInAt != null;
+                                                    return (
+                                                        <Button
+                                                            type={isProxyCheckedIn ? "default" : "primary"}
+                                                            size="small"
+                                                            onClick={() => handleConfirmProxyAttendance(
+                                                                p,
+                                                                (p as any)._tempDelegated ?? p.sharesDelegated
+                                                            )}
+                                                            style={isProxyCheckedIn ? {} : { backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                                                        >
+                                                            {isProxyCheckedIn ? <SyncOutlined /> : <CheckOutlined />}
+                                                            {isProxyCheckedIn ? ' Cập nhật' : ' Xác nhận tham dự'}
+                                                        </Button>
+                                                    );
+                                                }
                                             }
-                                        },
-                                        {
-                                            title: 'SL Uỷ quyền',
-                                            key: 'sharesDelegated',
-                                            width: 160,
-                                            render: (_: any, p: any) => {
-                                                const currentVal = p.sharesDelegated || 0;
-                                                return (
-                                                    <Input
-                                                        defaultValue={currentVal}
-                                                        suffix="cp"
-                                                        size="small"
-                                                        type="number"
-                                                        min={0}
-                                                        onChange={(e) => {
-                                                            const val = parseInt(e.target.value) || 0;
-                                                            (p as any)._tempDelegated = val;
-                                                        }}
-                                                    />
-                                                );
-                                            }
-                                        },
-                                        {
-                                            title: 'Thao tác',
-                                            key: 'action',
-                                            align: 'center',
-                                            width: 130,
-                                            render: (_: any, p: any) => {
-                                                const isProxyCheckedIn = p.proxyParticipant?.checkedInAt != null;
-                                                return (
-                                                    <Button
-                                                        type={isProxyCheckedIn ? "default" : "primary"}
-                                                        size="small"
-                                                        onClick={() => handleConfirmProxyAttendance(
-                                                            p,
-                                                            (p as any)._tempDelegated ?? p.sharesDelegated
-                                                        )}
-                                                        style={isProxyCheckedIn ? {} : { backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-                                                    >
-                                                        {isProxyCheckedIn ? <SyncOutlined /> : <CheckOutlined />}
-                                                        {isProxyCheckedIn ? ' Cập nhật' : ' Xác nhận tham dự'}
-                                                    </Button>
-                                                );
-                                            }
-                                        }
-                                    ]}
-                                />
-                            </div>
+                                        ]}
+                                    />
+                                </div>
+                            )}
                         </div>
                     )}
 
