@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
     Button,
@@ -11,17 +11,22 @@ import {
     Card,
     Statistic,
     Row,
-    Col
+    Col,
+    Badge,
+    Tooltip
 } from 'antd';
 import {
     PlusOutlined,
     TeamOutlined,
     TrophyOutlined,
-    FileTextOutlined
+    FileTextOutlined,
+    WifiOutlined
 } from '@ant-design/icons';
 import { Election } from '@/app/types/election';
 import { ElectionService } from '@/lib/api/election';
 import { MeetingService } from '@/lib/api/meetings';
+import { useWebSocket } from '@/hooks/useWebSocket';
+import { RealtimePayload, ElectionResult } from '@/app/types/realtime';
 import ElectionFormModal from './ElectionFormModal/ElectionFormModal';
 import ElectionStatistics from './ElectionStatistics/ElectionStatistics';
 import styles from './ElectionManagementAdmin.module.css';
@@ -36,6 +41,22 @@ export default function ElectionManagementAdmin() {
     const [showFormModal, setShowFormModal] = useState(false);
     const [editingElection, setEditingElection] = useState<Election | null>(null);
     const [formLoading, setFormLoading] = useState(false);
+    const [realtimeElectionResults, setRealtimeElectionResults] = useState<ElectionResult[]>([]);
+
+    // Xử lý message từ WebSocket
+    const handleWebSocketMessage = useCallback((payload: RealtimePayload) => {
+        const data = payload.data;
+        if (data && Array.isArray(data.electionResults) && data.electionResults.length > 0) {
+            setRealtimeElectionResults(data.electionResults);
+        }
+    }, []);
+
+    // Kết nối WebSocket cho meeting hiện tại
+    const { connected: wsConnected } = useWebSocket({
+        meetingId,
+        onMessage: handleWebSocketMessage,
+        enabled: !!meetingId,
+    });
 
     useEffect(() => {
         if (meetingId) {
@@ -113,9 +134,16 @@ export default function ElectionManagementAdmin() {
                 <div>
                     <h1 className={styles.title}>
                         <TrophyOutlined /> Quản lý Bầu cử
+                        <Tooltip title={wsConnected ? 'Đang nhận dữ liệu realtime' : 'Chưa kết nối realtime'}>
+                            <Badge
+                                status={wsConnected ? 'processing' : 'default'}
+                                style={{ marginLeft: 10 }}
+                            />
+                        </Tooltip>
                     </h1>
                     <p className={styles.subtitle}>
                         Quản lý các cuộc bầu cử, ứng viên và theo dõi kết quả
+                        {wsConnected && <span style={{ color: '#52c41a', fontSize: 12, marginLeft: 8 }}><WifiOutlined /> Realtime</span>}
                     </p>
                 </div>
                 <Button
@@ -166,6 +194,7 @@ export default function ElectionManagementAdmin() {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onManageCandidates={handleManageCandidates}
+                realtimeElectionResults={realtimeElectionResults}
             />
 
             <ElectionFormModal

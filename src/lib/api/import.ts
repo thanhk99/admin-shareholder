@@ -12,6 +12,7 @@ export class ImportService {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
+                timeout: 300000,
             });
         } catch (error) {
             throw error;
@@ -27,6 +28,7 @@ export class ImportService {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
+                timeout: 300000,
             });
         } catch (error) {
             throw error;

@@ -23,6 +23,7 @@ interface ShareholderSearchFormProps {
     onQRScan?: () => void;
     onPrintQR?: () => void;
     onConfirmAttendance: () => void;
+    onCancelAttendance?: () => void;
     onOpenAddProxy?: () => void;
 }
 
@@ -45,6 +46,7 @@ export default function ShareholderSearchForm({
     onQRScan = () => { },
     onPrintQR = () => { },
     onConfirmAttendance,
+    onCancelAttendance,
     onOpenAddProxy
 }: ShareholderSearchFormProps) {
     return (
@@ -177,6 +179,15 @@ export default function ShareholderSearchForm({
                                 >
                                     {isParticipated ? 'Cập nhật' : 'Xác nhận số lượng tham dự'}
                                 </Button>
+                                {isParticipated && (
+                                    <Button
+                                        danger
+                                        onClick={onCancelAttendance}
+                                        loading={loading}
+                                    >
+                                        Huỷ tham dự
+                                    </Button>
+                                )}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                     <Button
                                         type="default"

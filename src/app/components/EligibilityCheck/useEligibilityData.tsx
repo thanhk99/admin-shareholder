@@ -40,7 +40,9 @@ export function useEligibilityData(form: FormInstance) {
                     investorCode: a.investorCode,
                     cccd: a.cccd,
                     fullName: a.fullName,
+                    participationType: a.participationType,
                     attendingShares: a.attendingShares,
+                    sharesOwned: a.sharesOwned || 0,
                     delegatedShares: a.delegatedShares || 0,
                     receivedProxyShares: a.receivedProxyShares,
                     id: a.userId

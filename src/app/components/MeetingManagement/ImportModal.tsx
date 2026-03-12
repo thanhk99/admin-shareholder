@@ -66,6 +66,7 @@ export default function ImportModal({
 
         const file = fileList[0];
         setUploading(true);
+        const hideLoading = message.loading(`Đang xử lý nhập dữ liệu ${selectedImportType === 'shareholders' ? 'cổ đông' : 'uỷ quyền'}... Vui lòng không đóng trình duyệt.`, 0);
 
         try {
             if (selectedImportType === 'shareholders') {
@@ -73,11 +74,13 @@ export default function ImportModal({
             } else {
                 await ImportService.importProxies(selectedMeetingId, file as any);
             }
+            hideLoading();
             message.success(`Nhập dữ liệu ${selectedImportType === 'shareholders' ? 'cổ đông' : 'uỷ quyền'} thành công`);
             onClose();
             setFileList([]);
             if (onSuccess) onSuccess();
         } catch (error: any) {
+            hideLoading();
             console.error('Import error:', error);
 
             const errorData = error.response?.data;

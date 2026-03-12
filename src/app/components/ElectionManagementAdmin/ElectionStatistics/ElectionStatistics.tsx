@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Table, Card, Row, Col, Progress, Spin, Empty, Button, Space, Tag, Modal } from 'antd';
+import { useEffect, useState, useMemo } from 'react';
+import { Table, Card, Row, Col, Progress, Spin, Empty, Button, Space, Tag } from 'antd';
 import {
     TrophyOutlined,
     TeamOutlined,
@@ -9,6 +9,7 @@ import {
 } from '@ant-design/icons';
 import { Election } from '@/app/types/election';
 import { ElectionService } from '@/lib/api/election';
+import { ElectionResult } from '@/app/types/realtime';
 import styles from './ElectionStatistics.module.css';
 
 interface ElectionStatisticsProps {
@@ -16,6 +17,7 @@ interface ElectionStatisticsProps {
     onEdit: (election: Election) => void;
     onDelete: (election: Election) => void;
     onManageCandidates: (electionId: string) => void;
+    realtimeElectionResults?: ElectionResult[];
 }
 
 interface ResultItem {
@@ -36,14 +38,41 @@ export default function ElectionStatistics({
     elections,
     onEdit,
     onDelete,
-    onManageCandidates
+    onManageCandidates,
+    realtimeElectionResults = [],
 }: ElectionStatisticsProps) {
     const [loading, setLoading] = useState(false);
-    const [resultsMap, setResultsMap] = useState<ElectionResultMap>({});
+    const [apiResultsMap, setApiResultsMap] = useState<ElectionResultMap>({});
 
+    // Fetch từ API khi lần đầu load (fallback)
     useEffect(() => {
         fetchAllResults();
     }, [elections]);
+
+    // Chuyển đổi realtime data thành ElectionResultMap
+    const realtimeResultsMap = useMemo<ElectionResultMap>(() => {
+        const map: ElectionResultMap = {};
+        realtimeElectionResults.forEach((er) => {
+            map[er.electionId] = {
+                totalVoters: er.totalVoters,
+                results: er.results.map((r) => ({
+                    candidateId: r.votingOptionId,
+                    candidateName: r.votingOptionName,
+                    voteCount: r.voteCount,
+                    percentage: r.percentage,
+                })).sort((a, b) => b.voteCount - a.voteCount),
+            };
+        });
+        return map;
+    }, [realtimeElectionResults]);
+
+    // Ưu tiên dùng realtime data, fallback về API data
+    const resultsMap = useMemo<ElectionResultMap>(() => {
+        if (Object.keys(realtimeResultsMap).length > 0) {
+            return realtimeResultsMap;
+        }
+        return apiResultsMap;
+    }, [realtimeResultsMap, apiResultsMap]);
 
     const fetchAllResults = async () => {
         if (!elections.length) return;
@@ -73,7 +102,7 @@ export default function ElectionStatistics({
                 }
             }));
 
-            setResultsMap(results);
+            setApiResultsMap(results);
 
         } catch (error) {
             console.error('Error fetching statistics:', error);

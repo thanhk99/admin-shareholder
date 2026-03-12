@@ -77,4 +77,14 @@ export class AttendanceService {
             throw error;
         }
     }
+
+    static cancelAttendance = async (meetingId: string, investorCode: string): Promise<AttendanceResponse> => {
+        try {
+            return await apiClient.post('api/attend/cancel', null, {
+                params: { meetingId, investorCode }
+            });
+        } catch (error) {
+            throw error;
+        }
+    }
 }

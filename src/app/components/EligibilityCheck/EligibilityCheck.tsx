@@ -63,10 +63,14 @@ export default function EligibilityCheck() {
     const remainingToAllocate = maxAttendingShares - Number(attendingSharesWatch);
     const displayRemaining = Math.max(0, remainingToAllocate);
 
-    // Công thức yêu cầu: Cổ sở hữu - Cổ tham gia
-    // Lưu ý: Cổ tham gia (attendingSharesWatch) bao gồm cả phần tự có và phần nhận uỷ quyền. 
-    // Nếu tham gia bằng toàn bộ quyền biểu quyết (bao gồm proxy nhận được), thì phần sở hữu còn lại để uỷ quyền đi sẽ giảm tương ứng.
-    const remainingToProxy = Math.max(0, Number(sharesOwnedWatch) - Number(attendingSharesWatch) - Number(delegatedSharesWatch));
+    const isParticipated = !!currentBundle?.shareholder?.checkedInAt;
+
+    // Công thức uỷ quyền:
+    // Nếu chưa tham dự: uỷ quyền tối đa (số cổ phần có thể tham dự)
+    // Nếu đã tham dự: Cổ sở hữu - Cổ tham gia - Cổ đã uỷ quyền trước đó
+    const remainingToProxy = isParticipated 
+        ? Math.max(0, Number(sharesOwnedWatch) - Number(attendingSharesWatch) - Number(delegatedSharesWatch))
+        : maxAttendingShares;
 
     const totalShareholders = summary?.userStats?.totalShareholders || 0;
     const totalShares = summary?.userStats?.totalSharesRepresented || 0;
@@ -132,6 +136,7 @@ export default function EligibilityCheck() {
                     fullName: a.fullName,
                     participationType: a.participationType,
                     attendingShares: a.attendingShares,
+                    sharesOwned: a.sharesOwned || 0,
                     delegatedShares: a.delegatedShares || 0,
                     receivedProxyShares: a.receivedProxyShares || 0,
                     id: a.userId
@@ -141,6 +146,59 @@ export default function EligibilityCheck() {
             if (summaryRes) setSummary(summaryRes);
 
             form.resetFields();
+        } catch (error: any) {
+            message.error(`Lỗi: ${error.response?.data?.message || error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCancelAttendance = async () => {
+        if (!selectedMeetingId) {
+            message.warning('Vui lòng chọn đại hội');
+            return;
+        }
+
+        const investorCode = form.getFieldValue('investorCode');
+        if (!investorCode) {
+            message.warning('Vui lòng chọn cổ đông');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await AttendanceService.cancelAttendance(selectedMeetingId, investorCode);
+            message.success('Hủy tham dự thành công');
+
+            // Refresh data
+            const keyword = form.getFieldValue('keyword');
+            if (keyword) {
+                await handleBundleSearch(keyword);
+            }
+
+            const [responseAttended, summaryRes] = await Promise.all([
+                AttendanceService.getAttendedParticipants(selectedMeetingId).catch(() => []),
+                DashboardService.getSummary().catch(() => null)
+            ]);
+
+            const attended = (responseAttended as any)?.data || responseAttended;
+            if (Array.isArray(attended)) {
+                const mappedShareholders = attended.map((a: any) => ({
+                    shareholderCode: a.shareholderCode || a.userId || a.investorCode,
+                    investorCode: a.investorCode,
+                    cccd: a.cccd,
+                    fullName: a.fullName,
+                    participationType: a.participationType,
+                    attendingShares: a.attendingShares,
+                    sharesOwned: a.sharesOwned || 0,
+                    delegatedShares: a.delegatedShares || 0,
+                    receivedProxyShares: a.receivedProxyShares || 0,
+                    id: a.userId
+                }));
+                setShareholdersList(mappedShareholders as any[]);
+            }
+            if (summaryRes) setSummary(summaryRes);
+
         } catch (error: any) {
             message.error(`Lỗi: ${error.response?.data?.message || error.message}`);
         } finally {
@@ -187,6 +245,7 @@ export default function EligibilityCheck() {
                     fullName: a.fullName,
                     participationType: a.participationType,
                     attendingShares: a.attendingShares,
+                    sharesOwned: a.sharesOwned || 0,
                     delegatedShares: a.delegatedShares || 0,
                     receivedProxyShares: a.receivedProxyShares || 0,
                     id: a.userId
@@ -250,6 +309,7 @@ export default function EligibilityCheck() {
                         onSelectShareholder={(userId, option) => handleBundleSearch(option.data.cccd || option.data.investorCode)}
                         onBundleSearch={handleBundleSearch}
                         onConfirmAttendance={handleConfirmAttendance}
+                        onCancelAttendance={handleCancelAttendance}
                         onOpenAddProxy={handleOpenAddProxy}
                         onSearch={() => {
                             const keyword = form.getFieldValue('keyword');

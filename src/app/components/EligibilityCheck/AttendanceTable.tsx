@@ -17,8 +17,8 @@ const shareholderColumns = [
         title: 'Loại hình',
         dataIndex: 'participationType',
         key: 'participationType',
-        render: (type: string, record: any) => {
-            const isProxy = record.sharesOwned === 0;
+        render: (type: string) => {
+            const isProxy = type === 'PROXY';
             return (
                 <Tag color={isProxy ? 'orange' : 'blue'}>
                     {isProxy ? 'ỦY QUYỀN' : 'TRỰC TIẾP'}
@@ -30,7 +30,16 @@ const shareholderColumns = [
     { title: 'SL Tham dự', dataIndex: 'attendingShares', key: 'attendingShares', render: (val: number) => val?.toLocaleString() },
     { title: 'Đã ủy quyền', dataIndex: 'delegatedShares', key: 'delegatedShares', render: (val: number) => val?.toLocaleString() },
     { title: 'SPCP được UQ', dataIndex: 'receivedProxyShares', key: 'receivedProxyShares', render: (val: number) => val?.toLocaleString() },
-    { title: 'Quyền biểu quyết', dataIndex: 'attendingShares', key: 'attendingShares', render: (val: number) => val?.toLocaleString() },
+    {
+        title: 'Quyền biểu quyết',
+        key: 'votingRights',
+        render: (_: any, record: any) => {
+            const attending = record.attendingShares || 0;
+            const received = record.receivedProxyShares || 0;
+            const delegated = record.delegatedShares || 0;
+            return Math.max(0, attending + received - delegated).toLocaleString();
+        }
+    },
 ];
 
 export default function AttendanceTable({ shareholdersList, onRowClick }: AttendanceTableProps) {
