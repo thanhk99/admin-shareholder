@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { FormInstance, message, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+dayjs.extend(customParseFormat);
 import { Shareholder } from '@/app/types/shareholder';
 import { ProxyItem } from '@/app/types/proxy';
 import { Meeting } from '@/app/types/meeting';
@@ -24,6 +26,8 @@ export function useEligibilityData(form: FormInstance) {
 
     const mainSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const proxySearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastCleanCccdRef = useRef<string | null>(null);
+    const isScanningRef = useRef(false);
 
     const loadMeetingData = async (meetingId: string) => {
         setLoading(true);
@@ -125,7 +129,7 @@ export function useEligibilityData(form: FormInstance) {
             investorCode: identifier,   // Dùng investorCode/cccd thực tế, không phải userId
             cccd: shareholder.cccd,
             fullName: shareholder.fullName,
-            dateOfIssue: shareholder.dateOfIssue ? dayjs(shareholder.dateOfIssue) : null,
+            dateOfIssue: shareholder.dateOfIssue ? dayjs(shareholder.dateOfIssue, 'DD/MM/YYYY') : null,
             placeOfIssue: shareholder.placeOfIssue || shareholder.address,
             sharesOwned: shareholder.sharesOwned,
             delegatedShares: shareholder.delegatedShares || 0,
@@ -146,6 +150,17 @@ export function useEligibilityData(form: FormInstance) {
     };
 
     const handleBundleSearch = async (keyword: string) => {
+        // Tách lấy ID từ mã QR (Ưu tiên dấu || trước, sau đó mới đến dấu |)
+        if (keyword && (keyword.includes('||') || keyword.includes('|'))) {
+            const separator = keyword.includes('||') ? '||' : '|';
+            const parts = keyword.split(separator);
+            if (parts.length > 0 && parts[0].trim()) {
+                const cleanCccd = parts[0].trim();
+                form.setFieldsValue({ keyword: cleanCccd });
+                keyword = cleanCccd; // Sử dụng giá trị đã cắt để tìm kiếm
+            }
+        }
+
         if (!selectedMeetingId) {
             message.error('Vui lòng chọn đại hội trước');
             return;
@@ -162,9 +177,9 @@ export function useEligibilityData(form: FormInstance) {
             const receivedProxyShares = (bundle.incomingProxies || [])
                 .reduce((sum, p) => sum + (p.sharesDelegated || 0), 0);
 
-            // Tính attendingShares = sharesOwned - delegatedShares + receivedProxyShares
+            // Tính attendingShares = sharesOwned - delegatedShares
             const sharesOwned = bundle.shareholder.sharesOwned || 0;
-            const effectiveAttendingShares = Math.max(0, sharesOwned - delegatedShares + receivedProxyShares);
+            const effectiveAttendingShares = Math.max(0, sharesOwned - delegatedShares);
 
             fillShareholderData({
                 ...bundle.shareholder,
@@ -186,6 +201,38 @@ export function useEligibilityData(form: FormInstance) {
     };
 
     const handleQuickSearch = (keyword: string) => {
+        if (isScanningRef.current && lastCleanCccdRef.current) {
+            // Nếu đang trong quá trình quét, ép ô input luôn giữ giá trị sạch đã lưu
+            if (keyword !== lastCleanCccdRef.current) {
+                form.setFieldsValue({ keyword: lastCleanCccdRef.current });
+            }
+            return;
+        }
+
+        // Nhận diện mã QR CCCD (thường có dấu || hoặc ít nhất một dấu | sau chuỗi dài)
+        if (keyword && (keyword.includes('||') || (keyword.includes('|') && keyword.indexOf('|') > 8))) {
+            const separator = keyword.includes('||') ? '||' : '|';
+            const parts = keyword.split(separator);
+            
+            if (parts.length > 0 && parts[0].trim()) {
+                const cleanCccd = parts[0].trim();
+                
+                // Đánh dấu trạng thái quét và lưu giá trị sạch
+                isScanningRef.current = true;
+                lastCleanCccdRef.current = cleanCccd;
+
+                // Thực hiện tìm kiếm dữ liệu
+                handleBundleSearch(cleanCccd);
+                
+                // Giải phóng khóa sau 500ms (đủ để máy quét kết thúc)
+                setTimeout(() => {
+                    isScanningRef.current = false;
+                    lastCleanCccdRef.current = null;
+                }, 500);
+                return;
+            }
+        }
+
         if (mainSearchTimeoutRef.current) {
             clearTimeout(mainSearchTimeoutRef.current);
         }
@@ -202,22 +249,19 @@ export function useEligibilityData(form: FormInstance) {
                 const results = Array.isArray(data) ? data : (data ? [data] : []);
 
                 const filteredResults = results.filter((sh: Shareholder) =>
-                    sh.sharesOwned > 0 && (
-                        sh.cccd?.toLowerCase().startsWith(keyword.toLowerCase()) ||
-                        sh.investorCode?.toLowerCase().startsWith(keyword.toLowerCase()) ||
-                        sh.fullName?.toLowerCase().startsWith(keyword.toLowerCase())
-                    )
+                    sh.sharesOwned > 0 && 
+                    sh.cccd?.toLowerCase().startsWith(keyword.toLowerCase())
                 ).slice(0, 10);
 
                 const options = filteredResults.map((sh: Shareholder) => ({
-                    value: sh.id,
+                    value: sh.cccd,
                     label: (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                                 <Text strong style={{ fontSize: '15px' }}>{sh.cccd}</Text>
                                 <div style={{ fontSize: '12px', color: '#666' }}>{sh.fullName}</div>
                             </div>
-                            <Tag color="blue">{sh.id}</Tag>
+
                         </div>
                     ),
                     data: sh
@@ -271,6 +315,8 @@ export function useEligibilityData(form: FormInstance) {
         loadMeetingData,
         currentBundle,
         setCurrentBundle,
-        handleBundleSearch
+        handleBundleSearch,
+        isScanningRef,
+        lastCleanCccdRef
     };
 }

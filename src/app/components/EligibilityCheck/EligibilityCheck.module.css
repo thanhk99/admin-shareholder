@@ -1,5 +1,4 @@
 .container {
-  padding: 24px;
   background-color: #f0f2f5;
   min-height: 100vh;
 }
@@ -13,19 +12,19 @@
 
 .section {
   background: white;
-  padding: 20px;
+  padding: 12px 16px;
   border-radius: 8px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .sectionHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   border-bottom: 1px solid #f0f0f0;
-  padding-bottom: 12px;
+  padding-bottom: 8px;
 }
 
 .sectionTitle {
@@ -40,7 +39,7 @@
 .headerStats {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .headerStatLabel {
@@ -50,7 +49,7 @@
 }
 
 .headerStatValue {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 700;
   color: #2e7d32;
   /* Green */
@@ -68,7 +67,7 @@
   background: #fafafa;
   border: 1px solid #f0f0f0;
   border-radius: 8px;
-  padding: 16px;
+  padding: 8px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -82,15 +81,15 @@
 }
 
 .statLabel {
-  font-size: 13px;
+  font-size: 11px;
   color: #666;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .statValue {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   color: #1f1f1f;
 }
@@ -104,7 +103,11 @@
 .formGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 0px 16px;
+}
+
+.formGrid :global(.ant-form-item) {
+  margin-bottom: 4px !important;
 }
 
 .idInput {
@@ -135,6 +138,10 @@
 }
 
 /* Button Layout */
+:global(.ant-form-item) {
+  margin-bottom: 4px !important;
+}
+
 .footerContainer {
   margin-top: 20px;
   border-top: 1px solid #f0f0f0;

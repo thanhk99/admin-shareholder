@@ -73,63 +73,80 @@
 
 .reportsGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 }
 
 .statsCard {
   background: white;
-  padding: 30px;
-  border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border: 1px solid #edf2f7;
 }
 
 .cardTitle {
   margin-top: 0;
-  margin-bottom: 24px;
-  font-size: 20px;
+  margin-bottom: 16px;
+  font-size: 16px;
   color: #2d3748;
   border-bottom: 2px solid #edeff2;
-  padding-bottom: 12px;
+  padding-bottom: 8px;
+  text-align: center;
 }
 
-.statsGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+.statsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
 }
 
-.statItem {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 16px;
+.statsTable th {
+  text-align: left;
+  padding: 6px 4px;
+  background: #f7fafc;
+  border-bottom: 2px solid #edf2f7;
   color: #4a5568;
 }
 
-.statLabel {
-  width: 220px;
-  font-weight: 500;
+.statsTable td {
+  padding: 6px 4px;
+  border-bottom: 1px solid #edf2f7;
+  color: #2d3748;
 }
 
-.statValue {
-  font-weight: 800;
-  color: #1a202c;
-  font-size: 20px;
+.statsTable th:nth-child(2),
+.statsTable td:nth-child(2),
+.statsTable th:nth-child(3),
+.statsTable td:nth-child(3) {
+  text-align: right;
+}
+
+.num {
+  font-weight: 700;
   font-family: 'Courier New', Courier, monospace;
 }
 
-.statUnit {
-  font-size: 12px;
-  font-style: italic;
-  color: #718096;
+.percent {
+  display: block;
+  font-size: 10px;
+  color: #38a169;
 }
 
-.statPercent {
-  font-weight: 700;
-  color: #38a169;
-  margin-left: auto;
+.highlight {
+  background-color: #f0fff4;
+}
+
+.highlight td {
+  color: #2f855a !important;
+}
+
+.invalid {
+  background-color: #fff5f5;
+}
+
+.invalid td {
+  color: #c53030 !important;
 }
 
 .footer {

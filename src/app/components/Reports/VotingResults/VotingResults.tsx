@@ -12,6 +12,10 @@ interface Resolution {
   totalNotAgree: number;
   totalNotIdea: number;
   title: string;
+  totalIssued?: number;
+  totalCollected?: number;
+  totalValid?: number;
+  totalInvalid?: number;
 }
 
 interface VotingResultsProps {
@@ -131,6 +135,12 @@ export default function VotingResults({ resolutions, loading = false }: VotingRe
               <div className={styles.resolutionFooter}>
                 <div className={styles.totalShares}>
                   Tổng số cổ phần: <strong>{total.toLocaleString()}</strong>
+                </div>
+                <div className={styles.statsMiniGrid} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: '0.85em', color: '#666', marginTop: 8 }}>
+                  <div>Phát ra: <strong>{resolution.totalIssued ?? 0}</strong></div>
+                  <div>Thu về: <strong>{resolution.totalCollected ?? 0}</strong></div>
+                  <div>Hợp lệ: <strong>{resolution.totalValid ?? 0}</strong></div>
+                  <div>Không hợp lệ: <strong>{resolution.totalInvalid ?? 0}</strong></div>
                 </div>
                 <div className={styles.result}>
                   Kết quả: <strong>{isApproved ? 'Thông qua' : 'Không thông qua'}</strong>

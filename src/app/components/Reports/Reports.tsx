@@ -11,11 +11,17 @@ interface VoteStats {
   validShares: number;
   invalidShares: number;
   collectedShares: number;
+  issuedCount?: number;
+  collectedCount?: number;
+  validCount?: number;
+  invalidCount?: number;
 }
 
 interface VotingReportData {
   resolutionStats: VoteStats;
-  electionStats: VoteStats;
+  boardOfDirectorsStats: VoteStats;
+  supervisoryBoardStats: VoteStats;
+  electionStats?: VoteStats; 
 }
 
 export default function Reports() {
@@ -79,7 +85,12 @@ export default function Reports() {
   }, [selectedMeetingId]);
 
   const renderStatsCard = (title: string, stats: VoteStats | undefined) => {
-    if (!stats) return null;
+    if (!stats) return (
+      <div className={styles.statsCard}>
+        <h2 className={styles.cardTitle}>{title}</h2>
+        <div style={{ textAlign: 'center', color: '#ccc', padding: '20px' }}>Chưa có dữ liệu</div>
+      </div>
+    );
 
     const validPercent = stats.issuedShares > 0 ? ((stats.validShares / stats.issuedShares) * 100).toFixed(2) : '0.00';
     const invalidPercent = stats.issuedShares > 0 ? ((stats.invalidShares / stats.issuedShares) * 100).toFixed(2) : '0.00';
@@ -87,30 +98,43 @@ export default function Reports() {
     return (
       <div className={styles.statsCard}>
         <h2 className={styles.cardTitle}>{title}</h2>
-        <div className={styles.statsGrid}>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Số cổ phần phát ra:</span>
-            <span className={styles.statValue}>{stats.issuedShares.toLocaleString()}</span>
-            <span className={styles.statUnit}>(cp)</span>
-          </div>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Số cổ phần thu về:</span>
-            <span className={styles.statValue}>{stats.collectedShares.toLocaleString()}</span>
-            <span className={styles.statUnit}>(cp)</span>
-          </div>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Số cổ phần hợp lệ:</span>
-            <span className={styles.statValue}>{stats.validShares.toLocaleString()}</span>
-            <span className={styles.statUnit}>(cp)</span>
-            <span className={styles.statPercent}>({validPercent}%)</span>
-          </div>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Số cổ phần không hợp lệ:</span>
-            <span className={styles.statValue}>{stats.invalidShares.toLocaleString()}</span>
-            <span className={styles.statUnit}>(cp)</span>
-            <span className={styles.statPercent}>({invalidPercent}%)</span>
-          </div>
-        </div>
+        <table className={styles.statsTable}>
+          <thead>
+            <tr>
+              <th>Nội dung</th>
+              <th>Phiếu (Voters)</th>
+              <th>Cổ phần (Shares)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Phát ra</td>
+              <td className={styles.num}>{(stats.issuedCount ?? 0).toLocaleString()}</td>
+              <td className={styles.num}>{stats.issuedShares.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td>Thu về</td>
+              <td className={styles.num}>{(stats.collectedCount ?? 0).toLocaleString()}</td>
+              <td className={styles.num}>{stats.collectedShares.toLocaleString()}</td>
+            </tr>
+            <tr className={styles.highlight}>
+              <td>Hợp lệ</td>
+              <td className={styles.num}>{(stats.validCount ?? 0).toLocaleString()}</td>
+              <td className={styles.num}>
+                {stats.validShares.toLocaleString()}
+                <span className={styles.percent}>({validPercent}%)</span>
+              </td>
+            </tr>
+            <tr className={styles.invalid}>
+              <td>K.Hợp lệ</td>
+              <td className={styles.num}>{(stats.invalidCount ?? 0).toLocaleString()}</td>
+              <td className={styles.num}>
+                {stats.invalidShares.toLocaleString()}
+                <span className={styles.percent}>({invalidPercent}%)</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     );
   };
@@ -150,15 +174,10 @@ export default function Reports() {
         ) : (
           <div className={styles.reportsGrid}>
             {renderStatsCard("Thống kê Biểu quyết (Resolutions)", reportData?.resolutionStats)}
-            {renderStatsCard("Thống kê Bầu cử (Elections)", reportData?.electionStats)}
+            {renderStatsCard("Thống kê Bầu cử HĐQT", reportData?.boardOfDirectorsStats || reportData?.electionStats)}
+            {renderStatsCard("Thống kê Bầu cử BKS", reportData?.supervisoryBoardStats || reportData?.electionStats)}
           </div>
         )}
-      </div>
-
-      <div className={styles.footer}>
-        <p className={styles.note}>* Số liệu Hợp lệ của Bầu cử được tính theo công thức: Tổng phiếu bầu / Số lượng ứng viên.</p>
-        <p className={styles.note}>* Số liệu Phát ra được tính dựa trên Tổng số Cổ phần của cổ đông đã tham dự.</p>
-        <button className={styles.printBtn} onClick={() => window.print()}>In Báo Cáo</button>
       </div>
     </div>
   );

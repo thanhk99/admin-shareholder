@@ -57,6 +57,10 @@ export interface VotingResult {
   electionTitle?: string;
   totalVoters: number;
   totalWeight: number;
+  totalIssued?: number;
+  totalCollected?: number;
+  totalValid?: number;
+  totalInvalid?: number;
   results: {
     votingOptionId?: string;
     votingOptionName?: string;

@@ -10,7 +10,8 @@ import {
   BarChartOutlined,
   BankOutlined,
   CopyrightOutlined,
-  IdcardOutlined
+  IdcardOutlined,
+  UnorderedListOutlined
 } from '@ant-design/icons';
 import { MenuItem } from '@/app/types/types';
 import styles from './Sidebar.module.css';
@@ -59,6 +60,12 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
       label: 'Kiểm tra tư cách',
       icon: <IdcardOutlined />,
       href: '/eligibility-check',
+    },
+    {
+      id: 'attendance-list',
+      label: 'Danh sách tham dự',
+      icon: <UnorderedListOutlined />,
+      href: '/attendance-list',
     }
   ];
 

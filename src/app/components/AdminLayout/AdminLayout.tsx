@@ -30,7 +30,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       '/proxy': 'Quản lý uỷ  quyền',
       '/meetings': 'Quản lý Cuộc họp',
       '/reports': 'Báo cáo',
-      '/eligibility-check': 'Kiểm tra tư cách cổ đông'
+      '/eligibility-check': 'Kiểm tra tư cách cổ đông',
+      '/attendance-list': 'Danh sách người tham dự'
     };
 
     // Match dynamic routes
@@ -41,6 +42,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     if (pathname.startsWith('/reports')) return 'Báo cáo';
     if (pathname.startsWith('/proxy')) return 'Quản lý uỷ quyền';
     if (pathname.startsWith('/eligibility-check')) return 'Kiểm tra tư cách cổ đông';
+    if (pathname.startsWith('/attendance-list')) return 'Danh sách người tham dự';
 
     return routes[pathname] || 'Dashboard';
   };

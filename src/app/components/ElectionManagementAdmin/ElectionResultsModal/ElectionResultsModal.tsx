@@ -23,6 +23,10 @@ interface ResultItem {
 interface ElectionResultData {
     totalVoters: number;
     totalWeight: number;
+    totalIssued?: number;
+    totalCollected?: number;
+    totalValid?: number;
+    totalInvalid?: number;
     results: ResultItem[];
 }
 
@@ -131,6 +135,22 @@ export default function ElectionResultsModal({
                         <div className={styles.summaryItem}>
                             <span className={styles.summaryLabel}>Tổng cổ phần:</span>
                             <span className={styles.summaryValue}>{resultData.totalWeight?.toLocaleString()}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                            <span className={styles.summaryLabel}>Phát ra:</span>
+                            <span className={styles.summaryValue}>{resultData.totalIssued ?? 0}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                            <span className={styles.summaryLabel}>Thu về:</span>
+                            <span className={styles.summaryValue}>{resultData.totalCollected ?? 0}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                            <span className={styles.summaryLabel}>Hợp lệ:</span>
+                            <span className={styles.summaryValue}>{resultData.totalValid ?? 0}</span>
+                        </div>
+                        <div className={styles.summaryItem}>
+                            <span className={styles.summaryLabel}>Không hợp lệ:</span>
+                            <span className={styles.summaryValue}>{resultData.totalInvalid ?? 0}</span>
                         </div>
                     </div>
 

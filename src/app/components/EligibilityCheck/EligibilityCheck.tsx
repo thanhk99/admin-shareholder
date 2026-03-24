@@ -19,7 +19,6 @@ import styles from './EligibilityCheck.module.css';
 
 import MeetingStats from './MeetingStats';
 import ShareholderSearchForm from './ShareholderSearchForm';
-import AttendanceTable from './AttendanceTable';
 import { useEligibilityData } from './useEligibilityData';
 import { AttendanceService } from '@/lib/api/attendance';
 import { DashboardService } from '@/lib/api/dashboard';
@@ -47,7 +46,9 @@ export default function EligibilityCheck() {
         handleQuickSearch,
         loadMeetingData,
         currentBundle,
-        handleBundleSearch
+        handleBundleSearch,
+        isScanningRef,
+        lastCleanCccdRef
     } = useEligibilityData(form);
 
     const investorCodeWatch = Form.useWatch('investorCode', form);
@@ -57,7 +58,7 @@ export default function EligibilityCheck() {
     const attendingSharesWatch = Form.useWatch('attendingShares', form) || 0;
 
     // Tính số cổ phần tối đa có thể tham dự dựa trên công thức
-    const maxAttendingShares = Number(sharesOwnedWatch) - Number(delegatedSharesWatch) + Number(receivedProxySharesWatch);
+    const maxAttendingShares = Number(sharesOwnedWatch) - Number(delegatedSharesWatch);
 
     // Tính số cổ phần còn lại có thể xác nhận tham dự
     const remainingToAllocate = maxAttendingShares - Number(attendingSharesWatch);
@@ -68,7 +69,7 @@ export default function EligibilityCheck() {
     // Công thức uỷ quyền:
     // Nếu chưa tham dự: uỷ quyền tối đa (số cổ phần có thể tham dự)
     // Nếu đã tham dự: Cổ sở hữu - Cổ tham gia - Cổ đã uỷ quyền trước đó
-    const remainingToProxy = isParticipated 
+    const remainingToProxy = isParticipated
         ? Math.max(0, Number(sharesOwnedWatch) - Number(attendingSharesWatch) - Number(delegatedSharesWatch))
         : maxAttendingShares;
 
@@ -94,8 +95,7 @@ export default function EligibilityCheck() {
         const entering = Number(values.attendingShares) || 0;
         const owned = Number(values.sharesOwned) || 0;
         const delegated = Number(values.delegatedShares) || 0;
-        const received = Number(values.receivedProxyShares) || 0;
-        const maxAllowed = owned - delegated + received;
+        const maxAllowed = owned - delegated;
 
         if (entering <= 0) {
             message.error('Số lượng cổ phần tham dự phải lớn hơn 0');
@@ -216,6 +216,11 @@ export default function EligibilityCheck() {
             return;
         }
 
+        if (newDelegatedShares <= 0) {
+            message.error('Số lượng uỷ quyền phải lớn hơn 0');
+            return;
+        }
+
         setLoading(true);
         try {
             await ProxyService.updateProxyShares(
@@ -291,7 +296,7 @@ export default function EligibilityCheck() {
                 participationPercent={String(participationRate.toFixed ? participationRate.toFixed(2) : participationRate)}
             />
 
-            <Row gutter={24} style={{ marginTop: 24 }}>
+            <Row gutter={24} style={{ marginTop: 12 }}>
                 <Col span={24}>
                     <ShareholderSearchForm
                         form={form}
@@ -299,38 +304,56 @@ export default function EligibilityCheck() {
                         searchOptions={searchOptions}
                         remainingToAllocate={remainingToAllocate}
                         displayRemaining={displayRemaining}
-                        isParticipated={!!currentBundle?.shareholder?.checkedInAt}
+                        isParticipated={isParticipated}
                         checkedInAt={currentBundle?.shareholder?.checkedInAt}
                         remainingToProxy={remainingToProxy}
                         isAttendanceSectionExpanded={isAttendanceSectionExpanded}
                         onToggleAttendanceSection={() => setIsAttendanceSectionExpanded(!isAttendanceSectionExpanded)}
-                        shouldHideAttendance={isAddProxyModalOpen}
                         onQuickSearch={handleQuickSearch}
-                        onSelectShareholder={(userId, option) => handleBundleSearch(option.data.cccd || option.data.investorCode)}
+                        onSelectShareholder={(userId, option) => handleBundleSearch(option.data.cccd)}
                         onBundleSearch={handleBundleSearch}
                         onConfirmAttendance={handleConfirmAttendance}
                         onCancelAttendance={handleCancelAttendance}
-                        onOpenAddProxy={handleOpenAddProxy}
                         onSearch={() => {
                             const keyword = form.getFieldValue('keyword');
                             if (keyword) handleBundleSearch(keyword);
                         }}
+                        isScanningRef={isScanningRef}
+                        lastCleanCccdRef={lastCleanCccdRef}
+                        rightContent={
+                            form.getFieldValue('cccd') ? (
+                                <AddProxyModal
+                                    open={true}
+                                    onCancel={() => { }}
+                                    onSuccess={handleAddProxySuccess}
+                                    meetingId={selectedMeetingId || ""}
+                                    delegatorCccd={form.getFieldValue('cccd')}
+                                    delegatorName={form.getFieldValue('fullName')}
+                                    maxShares={remainingToProxy}
+                                    renderInline={true}
+                                />
+                            ) : (
+                                <div style={{
+                                    height: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    border: '1px dashed #d9d9d9',
+                                    borderRadius: 8,
+                                    color: '#8c8c8c',
+                                    backgroundColor: '#fafafa',
+                                    padding: '40px'
+                                }}>
+                                    Vui lòng chọn cổ đông để thực hiện uỷ quyền
+                                </div>
+                            )
+                        }
                     />
 
-                    <AddProxyModal
-                        open={isAddProxyModalOpen}
-                        onCancel={() => setIsAddProxyModalOpen(false)}
-                        onSuccess={handleAddProxySuccess}
-                        meetingId={selectedMeetingId || ""}
-                        delegatorCccd={form.getFieldValue('cccd')}
-                        delegatorName={form.getFieldValue('fullName')}
-                        maxShares={remainingToProxy}
-                        renderInline={true}
-                    />
 
                     {/* Bảng Danh sách những người mà cổ đông này uỷ quyền cho (Outgoing) */}
                     {currentBundle && currentBundle.outgoingProxies && currentBundle.outgoingProxies.length > 0 && (
-                        <div className={styles.section} style={{ marginTop: 24, border: '2px solid #ff4d4f', backgroundColor: '#fff', borderRadius: 12, padding: 0, overflow: 'hidden', boxShadow: '0 4px 12px rgba(255, 77, 79, 0.15)' }}>
+                        <div className={styles.section} style={{ marginTop: 16, border: '2px solid #ff4d4f', backgroundColor: '#fff', borderRadius: 12, padding: 0, overflow: 'hidden', boxShadow: '0 4px 12px rgba(255, 77, 79, 0.15)' }}>
                             <div
                                 style={{
                                     backgroundColor: '#ff4d4f',
@@ -437,7 +460,7 @@ export default function EligibilityCheck() {
 
                     {/* Bảng Danh sách những người uỷ quyền cho cổ đông này (Incoming) */}
                     {currentBundle && currentBundle.incomingProxies && currentBundle.incomingProxies.length > 0 && (
-                        <div className={styles.section} style={{ marginTop: 24, border: '2px solid #1890ff', backgroundColor: '#fff', borderRadius: 12, padding: 0, overflow: 'hidden', boxShadow: '0 4px 12px rgba(24, 144, 255, 0.15)' }}>
+                        <div className={styles.section} style={{ marginTop: 16, border: '2px solid #1890ff', backgroundColor: '#fff', borderRadius: 12, padding: 0, overflow: 'hidden', boxShadow: '0 4px 12px rgba(24, 144, 255, 0.15)' }}>
                             <div style={{ backgroundColor: '#1890ff', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <h2 style={{ color: '#fff', margin: 0, fontSize: 16, fontWeight: 600 }}>Cổ đông này nhận uỷ quyền từ:</h2>
                                 <span style={{ color: '#fff', fontSize: 12 }}>Tự động cộng dồn quyền biểu quyết</span>
@@ -477,20 +500,6 @@ export default function EligibilityCheck() {
                             </div>
                         </div>
                     )}
-                </Col>
-            </Row>
-
-            <Row gutter={24}>
-                <Col span={24}>
-                    <div className={styles.section}>
-                        <div className={styles.sectionHeader}>
-                            <h2 className={styles.sectionTitle}>Dữ liệu tham dự hiện tại</h2>
-                        </div>
-                        <AttendanceTable
-                            shareholdersList={shareholdersList}
-                            onRowClick={() => { }}
-                        />
-                    </div>
                 </Col>
             </Row>
         </div>

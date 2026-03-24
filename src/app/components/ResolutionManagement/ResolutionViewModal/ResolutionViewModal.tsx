@@ -241,6 +241,24 @@ export default function ResolutionViewModal({
               <span>Tổng số phiếu: <strong>{totalVotes}</strong></span>
               <span>Tỷ lệ đồng ý: <strong>{agreePercentage}%</strong></span>
             </div>
+            
+            {result && (
+              <div className={styles.statsSummaryGrid} style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div className={styles.statMiniItem}>
+                  <span style={{ fontSize: '0.85em', color: '#666' }}>Phát ra:</span> <strong>{result.totalIssued ?? 0}</strong>
+                </div>
+                <div className={styles.statMiniItem}>
+                  <span style={{ fontSize: '0.85em', color: '#666' }}>Thu về:</span> <strong>{result.totalCollected ?? 0}</strong>
+                </div>
+                <div className={styles.statMiniItem}>
+                  <span style={{ fontSize: '0.85em', color: '#666' }}>Hợp lệ:</span> <strong>{result.totalValid ?? 0}</strong>
+                </div>
+                <div className={styles.statMiniItem}>
+                  <span style={{ fontSize: '0.85em', color: '#666' }}>Không hợp lệ:</span> <strong>{result.totalInvalid ?? 0}</strong>
+                </div>
+              </div>
+            )}
+
             <div className={styles.progressBar}>
               <div
                 className={styles.progressFill}

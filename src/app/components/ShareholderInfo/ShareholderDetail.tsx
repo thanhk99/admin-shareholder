@@ -25,6 +25,7 @@ import ShareholderLogs from '../UserManagement/ShareholderLogs/ShareholderLogs';
 import EditShareholderModal from '../UserManagement/EditShareholderModal/EditShareholderModal';
 import ProxyService from '@/lib/api/proxy';
 import { MeetingService } from '@/lib/api/meetings';
+import { AttendanceService } from '@/lib/api/attendance';
 import { ProxyItem } from '@/app/types/proxy';
 import { formatDate } from '@/utils/format';
 import MagicQrModal from '../UserManagement/MagicQrModal/MagicQrModal';
@@ -46,6 +47,7 @@ export default function ShareholderDetail() {
   const [voteHistory, setVoteHistory] = useState<any[]>([]);
   const [loginHistory, setLoginHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [attendanceInfo, setAttendanceInfo] = useState<any>(null);
 
   // Magic QR State
   const [showQrModal, setShowQrModal] = useState(false);
@@ -110,6 +112,20 @@ export default function ShareholderDetail() {
       console.error('Error fetching proxy info:', err);
     } finally {
       setLoadingProxy(false);
+    }
+  };
+
+  const fetchAttendanceInfo = async (investorCode: string) => {
+    try {
+      const ongoingRes = await MeetingService.getOngoingMeeting().catch(() => null);
+      if (ongoingRes && (ongoingRes as any).id) {
+        const bundle = await AttendanceService.getCheckInBundle((ongoingRes as any).id, investorCode).catch(() => null);
+        if (bundle && bundle.shareholder) {
+          setAttendanceInfo(bundle.shareholder);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching attendance info:', err);
     }
   };
 
@@ -188,6 +204,7 @@ export default function ShareholderDetail() {
   useEffect(() => {
     if (shareholder?.id && shareholder?.investorCode) {
       fetchProxyInfo(shareholder.id, shareholder.investorCode);
+      fetchAttendanceInfo(shareholder.investorCode);
     }
   }, [shareholder?.id, shareholder?.investorCode]);
 
@@ -400,6 +417,20 @@ export default function ShareholderDetail() {
                       </div>
                     </div>
                   </div>
+                  {attendanceInfo && attendanceInfo.checkedInAt && (
+                    <div className={styles.attendanceAdminInfo} style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed #e8e8e8' }}>
+                      <div className={styles.infoItem}>
+                        <label>Thời gian điểm danh</label>
+                        <span><CalendarOutlined style={{ marginRight: 8 }} />{formatDate(attendanceInfo.checkedInAt)}</span>
+                      </div>
+                      <div className={styles.infoItem}>
+                        <label>Xác nhận bởi Admin</label>
+                        <Tag color="cyan" icon={<CheckCircleOutlined />}>
+                          {attendanceInfo.checkedInByName || attendanceInfo.checkedInBy || 'Hệ thống'}
+                        </Tag>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Thông tin uỷ quyền */}

@@ -14,6 +14,10 @@ interface Candidate {
 
 interface ElectionResultsProps {
   candidates: Candidate[];
+  totalIssued?: number;
+  totalCollected?: number;
+  totalValid?: number;
+  totalInvalid?: number;
   loading?: boolean;
 }
 
@@ -28,7 +32,14 @@ const getStatusBadge = (status: string) => {
   }
 };
 
-export default function ElectionResults({ candidates, loading = false }: ElectionResultsProps) {
+export default function ElectionResults({ 
+  candidates, 
+  totalIssued = 0,
+  totalCollected = 0,
+  totalValid = 0,
+  totalInvalid = 0,
+  loading = false 
+}: ElectionResultsProps) {
 
   if (loading) {
     return (
@@ -146,6 +157,22 @@ export default function ElectionResults({ candidates, loading = false }: Electio
           <div className={styles.statItem}>
             <span className={styles.statLabel}>Tổng số phiếu bầu:</span>
             <span className={styles.statValue}>{totalVotes.toLocaleString()}</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Phát ra:</span>
+            <span className={styles.statValue}>{totalIssued}</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Thu về:</span>
+            <span className={styles.statValue}>{totalCollected}</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Hợp lệ:</span>
+            <span className={styles.statValue}>{totalValid}</span>
+          </div>
+          <div className={styles.statItem}>
+            <span className={styles.statLabel}>Không hợp lệ:</span>
+            <span className={styles.statValue}>{totalInvalid}</span>
           </div>
         </div>
       </div>

@@ -48,7 +48,8 @@ export class ElectionService {
                 title: data.title,
                 description: data.description,
                 electionType: data.electionType,
-                displayOrder: data.displayOrder
+                displayOrder: data.displayOrder,
+                numSeats: data.numSeats
             };
             return apiClient.post(`/api/elections/${electionId}/edit`, payload);
         } catch (error) {

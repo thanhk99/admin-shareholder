@@ -2,6 +2,7 @@ export interface UserStats {
     totalShareholders: number;
     totalSharesRepresented: number;
     attendedCount: number;
+    totalShareholderCount: number;
     attendedShares: number;
     participationRate: number;
 }

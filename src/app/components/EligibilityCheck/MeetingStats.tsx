@@ -27,65 +27,17 @@ export default function MeetingStats({
     participationPercent
 }: MeetingStatsProps) {
     return (
-        <div className={styles.section}>
-            <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>Thông tin chung</h2>
-            </div>
+        <div className={styles.section} style={{ marginBottom: 12 }}>
             <Form layout="vertical">
-                <Row gutter={24}>
-                    <Col span={16}>
-                        <Form.Item label="Đại hội cổ đông">
-                            <Select
-                                value={selectedMeetingId}
-                                onChange={onMeetingChange}
-                                className={styles.meetingSelect}
-                                options={meetings.map(m => ({ label: m.title, value: m.id }))}
-                            />
-                        </Form.Item>
-                    </Col>
-                    <Col span={8} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: '30px' }}>
-                        <div className={styles.headerStats}>
-                            <span className={styles.headerStatLabel}>Tỷ lệ tham dự:</span>
-                            <span className={styles.headerStatValue}>{participationPercent}%</span>
-                            {Number(participationPercent) >= 50 && (
-                                <Tag color="success" icon={<CheckCircleOutlined />}>Đủ điều kiện</Tag>
-                            )}
-                        </div>
-                    </Col>
-                </Row>
-
-                <div className={styles.statsGrid}>
-                    <div className={styles.statCard}>
-                        <span className={styles.statLabel}>Tổng số cổ đông</span>
-                        <span className={styles.statValue}>
-                            {totalShareholders.toLocaleString()}
-                        </span>
-                    </div>
-                    <div className={styles.statCard}>
-                        <span className={styles.statLabel}>Tổng số cổ phần</span>
-                        <span className={styles.statValue}>
-                            {totalShares.toLocaleString()}
-                        </span>
-                    </div>
-                    <div className={styles.statCard}>
-                        <span className={styles.statLabel}>Số người tham dự</span>
-                        <span className={`${styles.statValue} ${styles.statValueGreen}`}>
-                            {totalAttendees.toLocaleString()}
-                        </span>
-                    </div>
-                    <div className={styles.statCard}>
-                        <span className={styles.statLabel}>Số cổ đông</span>
-                        <span className={`${styles.statValue} ${styles.statValueGreen}`}>
-                            {totalShareholderCount.toLocaleString()}
-                        </span>
-                    </div>
-                    <div className={styles.statCard}>
-                        <span className={styles.statLabel}>Số cổ phần</span>
-                        <span className={`${styles.statValue} ${styles.statValueGreen}`}>
-                            {totalAttendingShares.toLocaleString()}
-                        </span>
-                    </div>
-                </div>
+                <Form.Item label="Đại hội cổ đông" style={{ marginBottom: 0 }}>
+                    <Select
+                        size="small"
+                        value={selectedMeetingId}
+                        onChange={onMeetingChange}
+                        className={styles.meetingSelect}
+                        options={meetings.map(m => ({ label: m.title, value: m.id }))}
+                    />
+                </Form.Item>
             </Form>
         </div>
     );

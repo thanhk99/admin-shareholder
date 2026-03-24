@@ -26,6 +26,8 @@ export interface AttendanceResponse {
     totalShares: number;
     participationType: 'DIRECT' | 'PROXY';
     checkedInAt: string;
+    checkedInBy?: string;
+    checkedInByName?: string;
 }
 
 export interface ProxyAttendeeDTO {

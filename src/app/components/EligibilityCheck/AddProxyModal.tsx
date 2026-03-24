@@ -45,6 +45,16 @@ export default function AddProxyModal({
     // nhưng giá trị maxShares bên ngoài thay đổi do gõ phím ở form khác.
 
     const handleSearchCCCD = async (cccd: string) => {
+        // Nếu chuỗi chứa ký tự |, tự động cắt lấy phần đầu tiên (thanh CCCD)
+        if (cccd && cccd.includes('|')) {
+            const parts = cccd.split('|');
+            if (parts.length > 0) {
+                const cleanCccd = parts[0].trim();
+                form.setFieldsValue({ cccd: cleanCccd });
+                cccd = cleanCccd; // Sử dụng giá trị đã cắt để tìm kiếm
+            }
+        }
+
         if (!cccd || cccd.length < 9) {
             // Xoá trắng các trường nếu CCCD quá ngắn hoặc bị xoá
             form.setFieldsValue({
@@ -102,6 +112,11 @@ export default function AddProxyModal({
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
+
+            if (values.sharesDelegated <= 0) {
+                message.error('Số lượng uỷ quyền phải lớn hơn 0');
+                return;
+            }
 
             if (values.sharesDelegated > maxShares) {
                 message.error(`Số lượng uỷ quyền (${values.sharesDelegated.toLocaleString()} cp) vượt quá số cổ phần khả dụng (${maxShares.toLocaleString()} cp)`);

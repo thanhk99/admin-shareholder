@@ -36,12 +36,14 @@ export default function ElectionFormModal({
                     description: election.description,
                     electionType: election.electionType,
                     displayOrder: election.displayOrder,
+                    numSeats: election.numSeats,
                 });
             } else {
                 // Create mode
                 form.resetFields();
                 form.setFieldsValue({
                     displayOrder: 1,
+                    numSeats: 1,
                 });
             }
         }
@@ -55,6 +57,7 @@ export default function ElectionFormModal({
                 description: values.description,
                 electionType: values.electionType,
                 displayOrder: values.displayOrder,
+                numSeats: values.numSeats,
             };
 
             if (election) {
@@ -155,6 +158,24 @@ export default function ElectionFormModal({
                         style={{ width: '100%' }}
                         size="large"
                         placeholder="1"
+                    />
+                </Form.Item>
+
+                <Form.Item
+                    name="numSeats"
+                    label="Số lượng cần bầu"
+                    rules={[
+                        { required: true, message: 'Vui lòng nhập số lượng cần bầu' },
+                        { type: 'number', min: 1, message: 'Số lượng phải lớn hơn 0' },
+                    ]}
+                    tooltip="Số lượng ứng viên tối đa được bầu chọn trong cuộc bầu cử này"
+                >
+                    <InputNumber
+                        min={1}
+                        max={100}
+                        style={{ width: '100%' }}
+                        size="large"
+                        placeholder="3"
                     />
                 </Form.Item>
             </Form>

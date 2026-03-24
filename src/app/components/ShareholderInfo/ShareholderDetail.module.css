@@ -241,6 +241,22 @@
   color: #666;
 }
 
+.attendanceAdminInfo {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px dashed #eee;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+/* Biểu đồ tròn nếu cần */
+.chartContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
 /* Proxy Styles */
 .proxyContent {
   display: flex;

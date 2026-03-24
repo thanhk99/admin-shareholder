@@ -1,4 +1,4 @@
-import { Form, Input, Button, AutoComplete, DatePicker, FormInstance, message, Typography, InputNumber } from 'antd';
+import { Form, Input, Button, AutoComplete, DatePicker, FormInstance, message, Typography, InputNumber, Row, Col } from 'antd';
 import { ClockCircleOutlined, DownOutlined, UpOutlined, SearchOutlined, QrcodeOutlined, PrinterOutlined, CheckOutlined, UserAddOutlined, EditOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Shareholder } from '@/app/types/shareholder';
@@ -25,6 +25,9 @@ interface ShareholderSearchFormProps {
     onConfirmAttendance: () => void;
     onCancelAttendance?: () => void;
     onOpenAddProxy?: () => void;
+    isScanningRef?: React.RefObject<boolean>;
+    lastCleanCccdRef?: React.RefObject<string | null>;
+    rightContent?: React.ReactNode;
 }
 
 export default function ShareholderSearchForm({
@@ -47,7 +50,10 @@ export default function ShareholderSearchForm({
     onPrintQR = () => { },
     onConfirmAttendance,
     onCancelAttendance,
-    onOpenAddProxy
+    onOpenAddProxy,
+    isScanningRef,
+    lastCleanCccdRef,
+    rightContent
 }: ShareholderSearchFormProps) {
     return (
         <div className={styles.section}>
@@ -56,163 +62,169 @@ export default function ShareholderSearchForm({
                 <Button
                     icon={<PrinterOutlined />}
                     onClick={onPrintQR}
+                    size="small"
                     style={{ marginLeft: 'auto' }}
                 >
                     In mã QR đăng nhập
                 </Button>
             </div>
-            <Form form={form} layout="vertical">
-                <Form.Item name="id" noStyle>
-                    <Input type="hidden" />
-                </Form.Item>
-                <Form.Item name="proxyUserId" noStyle>
-                    <Input type="hidden" />
-                </Form.Item>
-                <Form.Item name="delegatedShares" noStyle>
-                    <Input type="hidden" />
-                </Form.Item>
-                <Form.Item name="receivedProxyShares" noStyle>
-                    <Input type="hidden" />
-                </Form.Item>
-                <div className={styles.formGrid}>
-                    <Form.Item label="Tra cứu (Mã CĐ/CCCD)" name="keyword">
-                        <div className={styles.idInput}>
-                            <AutoComplete
-                                options={searchOptions}
-                                onSearch={onQuickSearch}
-                                onSelect={onSelectShareholder}
-                                style={{ width: '100%' }}
-                                filterOption={false}
-                            >
-                                <Input
-                                    placeholder="Nhập mã hoặc CCCD..."
-                                    onPressEnter={onSearch}
-                                />
-                            </AutoComplete>
-                            <Button
-                                type="primary"
-                                icon={<SearchOutlined />}
-                                onClick={onSearch}
-                                loading={loading}
-                            />
-                            <Button
-                                icon={<QrcodeOutlined />}
-                                onClick={onQRScan}
-                                title="Quét QR Code"
-                            />
-                        </div>
-                    </Form.Item>
-                    <Form.Item label="Mã cổ đông" name="investorCode">
-                        <Input readOnly />
-                    </Form.Item>
-                    <Form.Item label="Số CMND/CCCD" name="cccd">
-                        <Input readOnly />
-                    </Form.Item>
-                    <Form.Item label="Họ tên" name="fullName">
-                        <Input readOnly />
-                    </Form.Item>
-                    <Form.Item label="Ngày cấp" name="dateOfIssue">
-                        <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày" disabled />
-                    </Form.Item>
-                    <Form.Item label="Nơi cấp/Địa chỉ" name="placeOfIssue">
-                        <Input readOnly />
-                    </Form.Item>
-                    <Form.Item label="Số lượng CP" name="sharesOwned">
-                        <Input readOnly suffix="(cp)" />
-                    </Form.Item>
-                </div>
+                <Row gutter={24}>
+                    {/* Cột trái: Thông tin cổ đông + Xác nhận tham dự */}
+                    <Col span={12}>
+                        <Form form={form} layout="vertical">
+                            <Form.Item name="id" noStyle><Input type="hidden" /></Form.Item>
+                            <Form.Item name="investorCode" noStyle><Input type="hidden" /></Form.Item>
+                            <Form.Item name="proxyUserId" noStyle><Input type="hidden" /></Form.Item>
+                            <Form.Item name="delegatedShares" noStyle><Input type="hidden" /></Form.Item>
+                            <Form.Item name="receivedProxyShares" noStyle><Input type="hidden" /></Form.Item>
+                            <Form.Item name="cccd" noStyle><Input type="hidden" /></Form.Item>
 
-                <div style={{
-                    marginTop: 24,
-                    border: '1px solid #d9d9d9',
-                    borderRadius: 8,
-                    overflow: 'hidden',
-                    display: shouldHideAttendance ? 'none' : 'block'
-                }}>
-                    <div
-                        style={{
-                            padding: '12px 16px',
-                            backgroundColor: '#f5f5f5',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            cursor: 'pointer',
-                            borderBottom: isAttendanceSectionExpanded ? '1px solid #d9d9d9' : 'none'
-                        }}
-                        onClick={onToggleAttendanceSection}
-                    >
-                        <h3 style={{ margin: 0, fontSize: 16 }}>Xác nhận tham dự</h3>
-                        {isAttendanceSectionExpanded ? <UpOutlined /> : <DownOutlined />}
-                    </div>
+                            <div className={styles.formGrid}>
+                                <Form.Item label="Tra cứu CCCD" name="keyword">
+                                    <div className={styles.idInput}>
+                                        <AutoComplete
+                                            options={searchOptions}
+                                            onSearch={onQuickSearch}
+                                            onSelect={onSelectShareholder}
+                                            style={{ width: '100%' }}
+                                            filterOption={false}
+                                        >
+                                            <Input
+                                                size="small"
+                                                placeholder="Nhập CCCD..."
+                                                onPressEnter={onSearch}
+                                                onInput={(e: React.FormEvent<HTMLInputElement>) => {
+                                                    const target = e.target as HTMLInputElement;
+                                                    const val = target.value;
 
-                    {isAttendanceSectionExpanded && (
-                        <div style={{ padding: 16 }}>
-                            {isParticipated && checkedInAt && (
-                                <div style={{ marginBottom: 16, padding: '8px 12px', backgroundColor: '#e6f7ff', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid #91d5ff' }}>
-                                    <ClockCircleOutlined style={{ color: '#1890ff' }} />
-                                    <span>Thời gian tham dự: <b style={{ color: '#1890ff' }}>{dayjs(checkedInAt).format('HH:mm DD/MM/YYYY')}</b></span>
-                                </div>
-                            )}
-                            <div className={styles.formGrid} style={{ marginBottom: 16 }}>
-                                <Form.Item
-                                    label="Số lượng tham dự"
-                                    name="attendingShares"
-                                    style={{ marginBottom: 0 }}
-                                    help={remainingToAllocate < 0 ? <span style={{ color: 'red' }}>Vượt quá số lượng có thể tham dự</span> : `Còn lại: ${displayRemaining.toLocaleString()} cp`}
-                                >
-                                    <InputNumber
-                                        style={{ width: '100%' }}
-                                        min={0}
-                                        formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                        parser={(value) => value!.replace(/\$\s?|(,*)/g, '') as any}
-                                        placeholder="Nhập số lượng CP tham dự"
-                                    />
+                                                    if (isScanningRef?.current && lastCleanCccdRef?.current) {
+                                                        if (val.length > lastCleanCccdRef.current.length) {
+                                                            target.value = lastCleanCccdRef.current;
+                                                        } else {
+                                                            (lastCleanCccdRef as any).current = val;
+                                                        }
+                                                        return;
+                                                    }
+
+                                                    if (val && val.includes('|')) {
+                                                        const parts = val.split('|');
+                                                        if (parts.length > 0 && parts[0].trim()) {
+                                                            const cleanCccd = parts[0].trim();
+                                                            target.value = cleanCccd;
+                                                            if (lastCleanCccdRef) (lastCleanCccdRef as any).current = cleanCccd;
+                                                            if (isScanningRef) (isScanningRef as any).current = true;
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        </AutoComplete>
+                                        <Button
+                                            size="small"
+                                            type="primary"
+                                            icon={<SearchOutlined />}
+                                            onClick={onSearch}
+                                            loading={loading}
+                                        />
+                                    </div>
+                                </Form.Item>
+
+                                <Form.Item label="Họ tên" name="fullName">
+                                    <Input size="small" readOnly style={{ backgroundColor: '#f5f5f5' }} />
+                                </Form.Item>
+                                <Form.Item label="Ngày cấp" name="dateOfIssue">
+                                    <DatePicker size="small" style={{ width: '100%', backgroundColor: '#f5f5f5' }} format="DD/MM/YYYY" placeholder="Chọn ngày" disabled />
+                                </Form.Item>
+                                <Form.Item label="Nơi cấp/Địa chỉ" name="placeOfIssue">
+                                    <Input size="small" readOnly style={{ backgroundColor: '#f5f5f5' }} />
+                                </Form.Item>
+                                <Form.Item label="Số lượng CP" name="sharesOwned">
+                                    <Input size="small" readOnly suffix="(cp)" style={{ backgroundColor: '#f5f5f5' }} />
                                 </Form.Item>
                             </div>
-                            <div className={styles.actionRow} style={{ gap: '12px' }}>
-                                <Button
-                                    type="primary"
-                                    className={styles.confirmButton}
-                                    onClick={onConfirmAttendance}
-                                    loading={loading}
-                                    icon={isParticipated ? <EditOutlined /> : <CheckOutlined />}
+
+                            {/* Phần xác nhận tham dự dời sang bên trái */}
+                            <div style={{
+                                marginTop: 24,
+                                border: '1px solid #d9d9d9',
+                                borderRadius: 8,
+                                overflow: 'hidden',
+                                display: shouldHideAttendance ? 'none' : 'block',
+                                backgroundColor: '#fff'
+                            }}>
+                                <div
+                                    style={{
+                                        padding: '12px 16px',
+                                        backgroundColor: '#f5f5f5',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        cursor: 'pointer',
+                                        borderBottom: isAttendanceSectionExpanded ? '1px solid #d9d9d9' : 'none'
+                                    }}
+                                    onClick={onToggleAttendanceSection}
                                 >
-                                    {isParticipated ? 'Cập nhật' : 'Xác nhận số lượng tham dự'}
-                                </Button>
-                                {isParticipated && (
-                                    <Button
-                                        danger
-                                        onClick={onCancelAttendance}
-                                        loading={loading}
-                                    >
-                                        Huỷ tham dự
-                                    </Button>
-                                )}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    <Button
-                                        type="default"
-                                        style={{ backgroundColor: '#1890ff', color: '#fff', borderColor: '#1890ff' }}
-                                        icon={<UserAddOutlined />}
-                                        onClick={() => {
-                                            const values = form.getFieldsValue();
-                                            if (values.investorCode) {
-                                                onOpenAddProxy?.();
-                                            } else {
-                                                message.warning('Vui lòng chọn cổ đông uỷ quyền');
-                                            }
-                                        }}
-                                    >
-                                        Uỷ quyền cho người khác
-                                    </Button>
-                                    <div style={{ fontSize: '11px', color: '#8c8c8c', textAlign: 'center' }}>
-                                        Có thể uỷ quyền thêm: <b>{remainingToProxy.toLocaleString()}</b> cp
-                                    </div>
+                                    <h3 style={{ margin: 0, fontSize: 16 }}>Xác nhận tham dự</h3>
+                                    {isAttendanceSectionExpanded ? <UpOutlined /> : <DownOutlined />}
                                 </div>
+
+                                {isAttendanceSectionExpanded && (
+                                    <div style={{ padding: 16 }}>
+                                        {isParticipated && checkedInAt && (
+                                            <div style={{ marginBottom: 16, padding: '8px 12px', backgroundColor: '#e6f7ff', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid #91d5ff' }}>
+                                                <ClockCircleOutlined style={{ color: '#1890ff' }} />
+                                                <span>Thời gian: <b style={{ color: '#1890ff' }}>{dayjs(checkedInAt).format('HH:mm DD/MM/YYYY')}</b></span>
+                                            </div>
+                                        )}
+                                        
+                                        <Form.Item
+                                            label="Số lượng tham dự"
+                                            name="attendingShares"
+                                            style={{ marginBottom: 16 }}
+                                            help={remainingToAllocate < 0 ? <span style={{ color: 'red' }}>Vượt quá số lượng có thể tham dự</span> : `Còn lại: ${displayRemaining.toLocaleString()} cp`}
+                                        >
+                                            <InputNumber
+                                                size="small"
+                                                style={{ width: '100%' }}
+                                                min={0}
+                                                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                                parser={(value) => value!.replace(/\$\s?|(,*)/g, '') as any}
+                                                placeholder="Nhập số lượng CP tham dự"
+                                            />
+                                        </Form.Item>
+
+                                        <div className={styles.actionRow} style={{ display: 'flex', gap: '12px' }}>
+                                            <Button
+                                                size="small"
+                                                type="primary"
+                                                className={styles.confirmButton}
+                                                onClick={onConfirmAttendance}
+                                                loading={loading}
+                                                icon={isParticipated ? <EditOutlined /> : <CheckOutlined />}
+                                            >
+                                                {isParticipated ? 'Cập nhật' : 'Xác nhận tham dự'}
+                                            </Button>
+                                            {isParticipated && (
+                                                <Button
+                                                    size="small"
+                                                    danger
+                                                    onClick={onCancelAttendance}
+                                                    loading={loading}
+                                                >
+                                                    Huỷ tham dự
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    )}
-                </div>
-            </Form>
+                        </Form>
+                    </Col>
+
+                    {/* Cột phải: Dành cho form uỷ quyền (Children) */}
+                    <Col span={12}>
+                        {rightContent}
+                    </Col>
+                </Row>
         </div>
     );
 }

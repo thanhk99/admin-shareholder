@@ -6,6 +6,7 @@ export interface Election {
     description: string;
     electionType: ElectionType;
     displayOrder: number;
+    numSeats: number;
     votingOptions: ElectionCandidate[];
 }
 
@@ -23,6 +24,7 @@ export interface ElectionRequest {
     description: string;
     electionType: ElectionType;
     displayOrder: number;
+    numSeats: number;
 }
 
 export interface ElectionCandidateRequest {
