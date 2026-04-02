@@ -42,20 +42,29 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         setForceReconnectCounter(c => c + 1);
     }, []);
 
+    // Fetch snapshot ban đầu 1 lần khi vào meeting, sau đó dùng WebSocket cho realtime
     React.useEffect(() => {
+        if (!activeMeetingId) return;
+
+        let isMounted = true;
+
         const fetchInitialStatus = async () => {
-            if (activeMeetingId) {
-                try {
-                    const response = await MeetingService.getRealtimeStatus(activeMeetingId);
-                    const status = (response as any).data || response;
+            try {
+                const response = await MeetingService.getRealtimeStatus(activeMeetingId);
+                const status = (response as any).data || response;
+                if (isMounted && status) {
                     setRealtimeStatus(status);
-                } catch (err) {
-                    console.error('Failed to fetch initial realtime status:', err);
                 }
+            } catch (err) {
+                console.error('Failed to fetch initial realtime status:', err);
             }
         };
 
         fetchInitialStatus();
+
+        return () => {
+            isMounted = false;
+        };
     }, [activeMeetingId, forceReconnectCounter]);
 
     return (

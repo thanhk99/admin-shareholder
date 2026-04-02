@@ -6,7 +6,8 @@ import {
   CalendarOutlined,
   CheckOutlined,
   CloseOutlined,
-  QuestionOutlined
+  QuestionOutlined,
+  DeleteOutlined
 } from '@ant-design/icons';
 import styles from './ResolutionCard.module.css';
 import { VotingItem, VotingResult } from '@/app/types/resolution';
@@ -16,6 +17,7 @@ interface ResolutionCardProps {
   result?: VotingResult;
   onViewDetail: (item: VotingItem) => void;
   onEdit: (item: VotingItem) => void;
+  onDelete: (item: VotingItem) => void;
   onToggleActive: (itemId: string, currentStatus: boolean) => void;
   onVote?: (item: VotingItem) => void;
   meetingStatus?: string;
@@ -26,6 +28,7 @@ export default function ResolutionCard({
   result,
   onViewDetail,
   onEdit,
+  onDelete,
   onToggleActive,
   onVote,
   meetingStatus
@@ -66,11 +69,7 @@ export default function ResolutionCard({
     const totalVotes = (stats.total > currentTotal) ? stats.total : currentTotal;
     const agreePercentage = totalVotes > 0 ? Math.round((stats.agree / totalVotes) * 100) : 0;
 
-    // Logic mới:
-    // 1. Nếu bị khoá (isActive = false)
-    if (!votingItem.isActive) {
-      return { totalVotes, agreePercentage, isApproved: false, statusLabel: 'ĐÃ KHOÁ', statusClass: styles.locked };
-    }
+    // 1. Logic cũ hiển thị 'ĐÃ KHOÁ' đã bị loại bỏ theo yêu cầu người dùng
 
     // 2. Nếu đang biểu quyết (Meeting ONGOING)
     const isOngoing = meetingStatus === 'STARTED' || meetingStatus === 'ONGOING';
@@ -106,7 +105,9 @@ export default function ResolutionCard({
       {/* Header */}
       <div className={styles.resolutionHeader}>
         <div>
-          <h3 className={styles.resolutionTitle}>{votingItem.title || 'Không có tiêu đề'}</h3>
+          <h3 className={styles.resolutionTitle}>
+            <span className={styles.orderBadge}>{votingItem.displayOrder}.</span> {votingItem.title || 'Không có tiêu đề'}
+          </h3>
         </div>
         <div className={styles.headerRight}>
           <span className={`${styles.status} ${statusInfo.statusClass}`}>
@@ -214,13 +215,24 @@ export default function ResolutionCard({
             Bỏ phiếu
           </button>
         )}
-        <button
-          className={styles.editButton}
-          onClick={() => onEdit(votingItem)}
-        >
-          <EditOutlined />
-          Sửa
-        </button>
+        {meetingStatus === 'SCHEDULED' && (
+          <>
+            <button
+              className={styles.editButton}
+              onClick={() => onEdit(votingItem)}
+            >
+              <EditOutlined />
+              Sửa
+            </button>
+            <button
+              className={styles.deleteButton}
+              onClick={() => onDelete(votingItem)}
+            >
+              <DeleteOutlined />
+              Xóa
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

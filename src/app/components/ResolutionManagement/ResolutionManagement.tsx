@@ -1,7 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { 
+  ArrowLeftOutlined, 
+  ExclamationCircleOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  BarChartOutlined,
+  CheckCircleOutlined,
+  LockOutlined
+} from '@ant-design/icons';
+import { Modal, message, Spin, Input, Badge, Alert } from 'antd';
 import styles from './ResolutionManagement.module.css';
 import ResolutionCard from './ResolutionCard/ResolutionCard';
 import ResolutionViewModal from './ResolutionViewModal/ResolutionViewModal';
@@ -17,6 +27,7 @@ import { Election } from '@/app/types/election';
 
 export default function ResolutionManagement() {
   const params = useParams();
+  const router = useRouter();
   const meetingId = params.meeting as string;
 
   const [votingItems, setVotingItems] = useState<VotingItem[]>([]);
@@ -33,6 +44,8 @@ export default function ResolutionManagement() {
   const [selectedItem, setSelectedItem] = useState<VotingItem | null>(null);
   const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const canEdit = meetingInfo?.status === 'SCHEDULED';
 
   const fetchData = async () => {
     try {
@@ -96,6 +109,10 @@ export default function ResolutionManagement() {
   }, [meetingId]);
 
   const handleAddVotingItem = async (data: VotingItemRequest) => {
+    if (!canEdit) {
+      message.warning('Chỉ được phép thêm nội dung khi đại hội ở trạng thái sắp diễn ra');
+      return;
+    }
     setSaveLoading(true);
     try {
       const response = await ResolutionService.createResolution(meetingId, data);
@@ -113,6 +130,10 @@ export default function ResolutionManagement() {
 
   const handleSaveEdit = async (data: VotingItemRequest) => {
     if (!selectedItem) return;
+    if (!canEdit) {
+      message.warning('Chỉ được phép chỉnh sửa khi đại hội ở trạng thái sắp diễn ra');
+      return;
+    }
     setSaveLoading(true);
     try {
       const response = await ResolutionService.updateResolution(selectedItem.id, data);
@@ -130,16 +151,52 @@ export default function ResolutionManagement() {
   };
 
   const handleToggleActive = async (itemId: string, currentStatus: boolean) => {
-    if (confirm(`Bạn có chắc muốn ${currentStatus ? 'khoá' : 'mở khoá'} mục này?`)) {
-      try {
-        await ResolutionService.updateStatus(itemId, !currentStatus);
-        // Optimistic update or fetch
-        fetchData();
-      } catch (error) {
-        console.error('Error toggling status:', error);
-        alert('Có lỗi xảy ra khi thay đổi trạng thái');
-      }
+    if (!canEdit) {
+      message.warning('Chính sách: Chỉ được phép thay đổi khi đại hội ở trạng thái sắp diễn ra');
+      return;
     }
+    Modal.confirm({
+      title: currentStatus ? 'Khoá biểu quyết' : 'Mở khoá biểu quyết',
+      icon: <ExclamationCircleOutlined />,
+      content: `Bạn có chắc muốn ${currentStatus ? 'khoá' : 'mở khoá'} nội dung này?`,
+      okText: 'Xác nhận',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await ResolutionService.updateStatus(itemId, !currentStatus);
+          message.success('Cập nhật trạng thái thành công');
+          fetchData();
+        } catch (error) {
+          console.error('Error toggling status:', error);
+          message.error('Có lỗi xảy ra khi thay đổi trạng thái');
+        }
+      }
+    });
+  };
+
+  const handleDeleteResolution = async (item: VotingItem) => {
+    if (!canEdit) {
+      message.warning('Chính sách: Chỉ được phép xóa khi đại hội ở trạng thái sắp diễn ra');
+      return;
+    }
+    Modal.confirm({
+      title: 'Xác nhận xóa nội dung',
+      icon: <ExclamationCircleOutlined />,
+      content: `Bạn có chắc chắn muốn xóa "${item.title}"? Hành động này không thể hoàn tác và sẽ xóa tất cả kết quả biểu quyết liên quan.`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await ResolutionService.deleteResolution(item.id);
+          message.success('Đã xóa nội dung thành công');
+          fetchData();
+        } catch (error) {
+          console.error('Error deleting resolution:', error);
+          message.error('Không thể xóa nội dung. Vui lòng thử lại sau.');
+        }
+      }
+    });
   };
 
   const filteredItems = votingItems.filter(item =>
@@ -190,6 +247,21 @@ export default function ResolutionManagement() {
 
   return (
     <div className={styles.management}>
+      <button className={styles.backButton} onClick={() => router.push('/meetings')}>
+        <ArrowLeftOutlined /> Quay lại danh sách cuộc họp
+      </button>
+
+      {meetingInfo && meetingInfo.status !== 'SCHEDULED' && (
+        <Alert
+          message="Chế độ Read-only"
+          description={`Đại hội đang ở trạng thái "${meetingInfo.status}". Bạn chỉ có thể xem dữ liệu và kết quả, không thể thêm mới, sửa hoặc xóa nội dung biểu quyết.`}
+          type="info"
+          showIcon
+          icon={<LockOutlined />}
+          style={{ marginBottom: '20px' }}
+        />
+      )}
+
       <div className={styles.header}>
         <div className={styles.headerInfo}>
           <div className={styles.headerIcon}>📋</div>
@@ -211,9 +283,11 @@ export default function ResolutionManagement() {
             )}
           </div>
         </div>
-        <button className={styles.addButton} onClick={() => setAddModalOpen(true)}>
-          <span>+</span> Thêm Nội dung
-        </button>
+        {canEdit && (
+          <button className={styles.addButton} onClick={() => setAddModalOpen(true)}>
+            <span>+</span> Thêm Nội dung
+          </button>
+        )}
       </div>
 
       <div className={styles.stats}>
@@ -256,6 +330,7 @@ export default function ResolutionManagement() {
             meetingStatus={meetingInfo?.status}
             onViewDetail={(i) => { setSelectedItem(i); setViewModalOpen(true); }}
             onEdit={(i) => { setSelectedItem(i); setEditModalOpen(true); }}
+            onDelete={handleDeleteResolution}
             onToggleActive={handleToggleActive}
             onVote={(i: VotingItem) => { setSelectedItem(i); setVoteModalOpen(true); }}
           />
@@ -266,9 +341,11 @@ export default function ResolutionManagement() {
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>📄</div>
           <h3 className={styles.emptyTitle}>Chưa có nội dung nào</h3>
-          <button className={styles.addButton} onClick={() => setAddModalOpen(true)}>
-            + Thêm mục đầu tiên
-          </button>
+          {canEdit && (
+            <button className={styles.addButton} onClick={() => setAddModalOpen(true)}>
+              + Thêm mục đầu tiên
+            </button>
+          )}
         </div>
       )}
 

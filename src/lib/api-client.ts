@@ -73,13 +73,16 @@ apiClient.interceptors.response.use(
             isRefreshing = true;
 
             try {
+                const refreshToken = tokenManager.getRefreshToken();
+                if (!refreshToken) throw new Error('No refresh token available');
+
                 const response = await axios.post(
                     `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.REFRESH}`,
-                    {},
+                    { refreshToken },
                     { withCredentials: true }
                 );
 
-                const { accessToken } = response.data;
+                const { accessToken } = (response.data as any);
                 tokenManager.setAccessToken(accessToken);
 
                 apiClient.defaults.headers.common['Authorization'] = 'Bearer ' + accessToken;

@@ -16,6 +16,28 @@
     border-bottom: 1px solid #e5e7eb;
 }
 
+.backButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 16px;
+}
+
+.backButton:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+    color: #111827;
+}
+
 .headerInfo {
     display: flex;
     align-items: center;
@@ -101,11 +123,11 @@
     font-weight: 500;
 }
 
-/* Grid */
+/* Grid -> Rows */
 .resolutionGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-    gap: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 /* Loading */

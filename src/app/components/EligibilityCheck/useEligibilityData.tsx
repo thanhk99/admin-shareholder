@@ -120,22 +120,18 @@ export function useEligibilityData(form: FormInstance) {
 
     const fillShareholderData = (shareholder: any) => {
         const userId = shareholder.userId || shareholder.id || shareholder.shareholderCode;
-        // Định danh để gửi lên backend khi xác nhận tham dự (investorCode ưu tiên, fallback sang cccd)
-        const identifier = shareholder.investorCode || shareholder.cccd;
+        const identifier = shareholder.cccd || shareholder.investorCode;
 
         form.setFieldsValue({
             id: userId,
-            keyword: shareholder.cccd || identifier,
-            investorCode: identifier,   // Dùng investorCode/cccd thực tế, không phải userId
+            keyword: shareholder.cccd || shareholder.investorCode,
+            investorCode: identifier,
             cccd: shareholder.cccd,
             fullName: shareholder.fullName,
             dateOfIssue: shareholder.dateOfIssue ? dayjs(shareholder.dateOfIssue, 'DD/MM/YYYY') : null,
-            placeOfIssue: shareholder.placeOfIssue || shareholder.address,
             sharesOwned: shareholder.sharesOwned,
             delegatedShares: shareholder.delegatedShares || 0,
             receivedProxyShares: shareholder.receivedProxyShares || 0,
-            // Sử dụng giá trị attendingShares đã được tính toán từ handleBundleSearch
-            // hoặc fallback về công thức nếu dùng trực tiếp
             attendingShares: shareholder.attendingShares > 0
                 ? shareholder.attendingShares
                 : 0,
@@ -209,28 +205,45 @@ export function useEligibilityData(form: FormInstance) {
             return;
         }
 
-        // Nhận diện mã QR CCCD (thường có dấu || hoặc ít nhất một dấu | sau chuỗi dài)
-        if (keyword && (keyword.includes('||') || (keyword.includes('|') && keyword.indexOf('|') > 8))) {
-            const separator = keyword.includes('||') ? '||' : '|';
-            const parts = keyword.split(separator);
-            
-            if (parts.length > 0 && parts[0].trim()) {
-                const cleanCccd = parts[0].trim();
-                
-                // Đánh dấu trạng thái quét và lưu giá trị sạch
-                isScanningRef.current = true;
-                lastCleanCccdRef.current = cleanCccd;
+        // Nhận diện mã QR CCCD
+        let cleanCccd = '';
+        let isQR = false;
 
-                // Thực hiện tìm kiếm dữ liệu
-                handleBundleSearch(cleanCccd);
-                
-                // Giải phóng khóa sau 500ms (đủ để máy quét kết thúc)
-                setTimeout(() => {
-                    isScanningRef.current = false;
-                    lastCleanCccdRef.current = null;
-                }, 500);
-                return;
+        if (keyword && keyword.includes('||')) {
+            const parts = keyword.split('||');
+            if (parts.length > 0 && parts[0].trim()) {
+                cleanCccd = parts[0].trim();
+                isQR = true;
             }
+        } else if (keyword && keyword.includes('|') && keyword.indexOf('|') > 8) {
+            const parts = keyword.split('|');
+            if (parts.length > 0 && parts[0].trim()) {
+                cleanCccd = parts[0].trim();
+                isQR = true;
+            }
+        } else if (keyword && keyword.length > 25 && /^\d{12}/.test(keyword)) {
+            // Trường hợp chuỗi thô (Ví dụ từ máy quét: 014304000044Đỗ Mai Duyên...)
+            cleanCccd = keyword.substring(0, 12);
+            isQR = true;
+        }
+
+        if (isQR && cleanCccd) {
+            // Đánh dấu trạng thái quét và lưu giá trị sạch
+            isScanningRef.current = true;
+            lastCleanCccdRef.current = cleanCccd;
+
+            // Cập nhật form ngay lập tức với mã sạch
+            form.setFieldsValue({ keyword: cleanCccd });
+
+            // Thực hiện tìm kiếm dữ liệu bundle
+            handleBundleSearch(cleanCccd);
+
+            // Giải phóng khóa sau 500ms
+            setTimeout(() => {
+                isScanningRef.current = false;
+                lastCleanCccdRef.current = null;
+            }, 500);
+            return;
         }
 
         if (mainSearchTimeoutRef.current) {
@@ -249,7 +262,7 @@ export function useEligibilityData(form: FormInstance) {
                 const results = Array.isArray(data) ? data : (data ? [data] : []);
 
                 const filteredResults = results.filter((sh: Shareholder) =>
-                    sh.sharesOwned > 0 && 
+                    sh.sharesOwned > 0 &&
                     sh.cccd?.toLowerCase().startsWith(keyword.toLowerCase())
                 ).slice(0, 10);
 

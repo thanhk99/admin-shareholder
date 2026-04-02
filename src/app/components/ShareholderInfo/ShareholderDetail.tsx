@@ -398,7 +398,7 @@ export default function ShareholderDetail() {
                   <div className={styles.sharesSection}>
                     <div className={styles.shareCard}>
                       <div className={styles.shareNumber}>
-                        {(shareholder.sharesOwned || 0) + (shareholder.receivedProxyShares || 0)}
+                        {(shareholder.attendingShares || 0) + (shareholder.receivedProxyShares || 0)}
                       </div>
                       <div className={styles.shareLabel}>Tổng số cổ phần biểu quyết</div>
                     </div>

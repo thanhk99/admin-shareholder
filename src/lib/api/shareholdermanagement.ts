@@ -12,11 +12,21 @@ export default class ShareholderManage {
     static api_add_shareholder: string = API_CONFIG.ENDPOINTS.SHAREHOLDER.ADDSHAREHOLDER;
     static api_update_shareholde: string = API_CONFIG.ENDPOINTS.SHAREHOLDER.UPDATESHAREHOLDER;
 
-    static async getList() {
+    static async getList(page: number = 0, size: number = 10, keyword?: string) {
         try {
-            return apiClient.get(this.api_get_list_shareholder);
+            const params: any = { page, size };
+            if (keyword) params.keyword = keyword;
+            return apiClient.get(this.api_get_list_shareholder, { params });
         } catch (error) {
             throw error
+        }
+    }
+
+    static async getByMeetingId(meetingId: string) {
+        try {
+            return apiClient.get(`${API_CONFIG.ENDPOINTS.MEETING.SHAREHOLDERS}/${meetingId}/shareholders`);
+        } catch (error) {
+            throw error;
         }
     }
 

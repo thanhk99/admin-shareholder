@@ -106,14 +106,18 @@ export default function ShareholderSearchForm({
                                                         return;
                                                     }
 
-                                                    if (val && val.includes('|')) {
-                                                        const parts = val.split('|');
-                                                        if (parts.length > 0 && parts[0].trim()) {
-                                                            const cleanCccd = parts[0].trim();
-                                                            target.value = cleanCccd;
-                                                            if (lastCleanCccdRef) (lastCleanCccdRef as any).current = cleanCccd;
-                                                            if (isScanningRef) (isScanningRef as any).current = true;
-                                                        }
+                                                    if (val && (val.includes('|') || (val.length > 12 && /^\d{12}/.test(val)))) {
+                                                        // Tách mã CCCD sạch (luôn là 12 số đầu hoặc phần trước dấu |)
+                                                        const cleanCccd = val.includes('|') ? val.split('|')[0].replace('||', '').trim() : val.substring(0, 12);
+                                                        
+                                                        // Gán ngay lập tức vào DOM để không bị hiển thị chuỗi rác
+                                                        target.value = cleanCccd;
+                                                        
+                                                        if (lastCleanCccdRef) (lastCleanCccdRef as any).current = cleanCccd;
+                                                        if (isScanningRef) (isScanningRef as any).current = true;
+                                                        
+                                                        // Gọi hàm search với mã sạch
+                                                        onQuickSearch(cleanCccd);
                                                     }
                                                 }}
                                             />
@@ -129,16 +133,13 @@ export default function ShareholderSearchForm({
                                 </Form.Item>
 
                                 <Form.Item label="Họ tên" name="fullName">
-                                    <Input size="small" readOnly style={{ backgroundColor: '#f5f5f5' }} />
+                                    <Input size="small" readOnly className={styles.readOnlyField} />
                                 </Form.Item>
                                 <Form.Item label="Ngày cấp" name="dateOfIssue">
-                                    <DatePicker size="small" style={{ width: '100%', backgroundColor: '#f5f5f5' }} format="DD/MM/YYYY" placeholder="Chọn ngày" disabled />
-                                </Form.Item>
-                                <Form.Item label="Nơi cấp/Địa chỉ" name="placeOfIssue">
-                                    <Input size="small" readOnly style={{ backgroundColor: '#f5f5f5' }} />
+                                    <DatePicker size="small" className={styles.readOnlyField} style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày" disabled />
                                 </Form.Item>
                                 <Form.Item label="Số lượng CP" name="sharesOwned">
-                                    <Input size="small" readOnly suffix="(cp)" style={{ backgroundColor: '#f5f5f5' }} />
+                                    <Input size="small" readOnly suffix="(cp)" className={styles.readOnlyField} />
                                 </Form.Item>
                             </div>
 

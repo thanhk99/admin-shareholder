@@ -114,7 +114,7 @@ export default function EligibilityCheck() {
         try {
             await AttendanceService.registerAttendance({
                 meetingId: selectedMeetingId,
-                investorCode: values.investorCode,
+                cccd: values.cccd,
                 attendingShares: values.attendingShares,
                 participationType: participationType
             });
@@ -159,15 +159,15 @@ export default function EligibilityCheck() {
             return;
         }
 
-        const investorCode = form.getFieldValue('investorCode');
-        if (!investorCode) {
+        const cccd = form.getFieldValue('cccd');
+        if (!cccd) {
             message.warning('Vui lòng chọn cổ đông');
             return;
         }
 
         setLoading(true);
         try {
-            await AttendanceService.cancelAttendance(selectedMeetingId, investorCode);
+            await AttendanceService.cancelAttendance(selectedMeetingId, cccd);
             message.success('Hủy tham dự thành công');
 
             // Refresh data
@@ -209,9 +209,9 @@ export default function EligibilityCheck() {
     const [isAddProxyModalOpen, setIsAddProxyModalOpen] = useState(false);
 
     const handleConfirmProxyAttendance = async (proxyAttendee: any, newDelegatedShares: number) => {
-        const identifier = proxyAttendee.proxyParticipant.investorCode || proxyAttendee.proxyParticipant.cccd;
+        const proxyCccd = proxyAttendee.proxyParticipant.cccd;
 
-        if (!selectedMeetingId || !identifier || !proxyAttendee.delegationId) {
+        if (!selectedMeetingId || !proxyCccd || !proxyAttendee.delegationId) {
             message.warning('Dữ liệu không hợp lệ');
             return;
         }
@@ -223,13 +223,25 @@ export default function EligibilityCheck() {
 
         setLoading(true);
         try {
+            // Bước 1: Cập nhật số cổ phần uỷ quyền
             await ProxyService.updateProxyShares(
                 selectedMeetingId,
                 proxyAttendee.delegationId,
                 newDelegatedShares
             );
 
-            message.success(`Cập nhật số lượng phiếu uỷ quyền cho ${proxyAttendee.proxyParticipant.fullName} thành công`);
+            // Bước 2: Xác nhận tham dự cho người đại diện (điểm danh)
+            const isAlreadyCheckedIn = proxyAttendee.proxyParticipant?.checkedInAt != null;
+            if (!isAlreadyCheckedIn) {
+                await AttendanceService.registerAttendance({
+                    meetingId: selectedMeetingId,
+                    cccd: proxyCccd,
+                    attendingShares: newDelegatedShares,
+                    participationType: 'PROXY'
+                });
+            }
+
+            message.success(`${isAlreadyCheckedIn ? 'Cập nhật' : 'Xác nhận tham dự'} cho ${proxyAttendee.proxyParticipant.fullName} thành công`);
 
             const keyword = form.getFieldValue('keyword');
             if (keyword) {
@@ -353,10 +365,11 @@ export default function EligibilityCheck() {
 
                     {/* Bảng Danh sách những người mà cổ đông này uỷ quyền cho (Outgoing) */}
                     {currentBundle && currentBundle.outgoingProxies && currentBundle.outgoingProxies.length > 0 && (
-                        <div className={styles.section} style={{ marginTop: 16, border: '2px solid #ff4d4f', backgroundColor: '#fff', borderRadius: 12, padding: 0, overflow: 'hidden', boxShadow: '0 4px 12px rgba(255, 77, 79, 0.15)' }}>
+                        <div className={styles.section} style={{ marginTop: 16, border: '1px solid #d9d9d9', backgroundColor: '#fff', borderRadius: 8, padding: 0, overflow: 'hidden' }}>
                             <div
                                 style={{
-                                    backgroundColor: '#ff4d4f',
+                                    backgroundColor: '#fafafa',
+                                    borderBottom: '1px solid #f0f0f0',
                                     padding: '12px 20px',
                                     display: 'flex',
                                     justifyContent: 'space-between',
@@ -366,10 +379,10 @@ export default function EligibilityCheck() {
                                 onClick={() => setIsAttendanceSectionExpanded(!isAttendanceSectionExpanded)}
                             >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <h2 style={{ color: '#fff', margin: 0, fontSize: 16, fontWeight: 600 }}>Cổ đông này uỷ quyền cho những người sau:</h2>
-                                    {isAttendanceSectionExpanded ? <UpOutlined style={{ color: '#fff' }} /> : <DownOutlined style={{ color: '#fff' }} />}
+                                    <h2 style={{ color: '#262626', margin: 0, fontSize: 16, fontWeight: 600 }}>Cổ đông này uỷ quyền cho những người sau:</h2>
+                                    {isAttendanceSectionExpanded ? <UpOutlined style={{ color: '#8c8c8c' }} /> : <DownOutlined style={{ color: '#8c8c8c' }} />}
                                 </div>
-                                <span style={{ color: '#fff', fontSize: 12 }}>Xác nhận từng đại diện tham dự</span>
+                                <span style={{ color: '#595959', fontSize: 12 }}>Xác nhận từng đại diện tham dự</span>
                             </div>
                             {isAttendanceSectionExpanded && (
                                 <div style={{ padding: 12 }}>
@@ -460,10 +473,10 @@ export default function EligibilityCheck() {
 
                     {/* Bảng Danh sách những người uỷ quyền cho cổ đông này (Incoming) */}
                     {currentBundle && currentBundle.incomingProxies && currentBundle.incomingProxies.length > 0 && (
-                        <div className={styles.section} style={{ marginTop: 16, border: '2px solid #1890ff', backgroundColor: '#fff', borderRadius: 12, padding: 0, overflow: 'hidden', boxShadow: '0 4px 12px rgba(24, 144, 255, 0.15)' }}>
-                            <div style={{ backgroundColor: '#1890ff', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h2 style={{ color: '#fff', margin: 0, fontSize: 16, fontWeight: 600 }}>Cổ đông này nhận uỷ quyền từ:</h2>
-                                <span style={{ color: '#fff', fontSize: 12 }}>Tự động cộng dồn quyền biểu quyết</span>
+                        <div className={styles.section} style={{ marginTop: 16, border: '1px solid #d9d9d9', backgroundColor: '#fff', borderRadius: 8, padding: 0, overflow: 'hidden' }}>
+                            <div style={{ backgroundColor: '#fafafa', borderBottom: '1px solid #f0f0f0', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h2 style={{ color: '#262626', margin: 0, fontSize: 16, fontWeight: 600 }}>Cổ đông này nhận uỷ quyền từ:</h2>
+                                <span style={{ color: '#595959', fontSize: 12 }}>Tự động cộng dồn quyền biểu quyết</span>
                             </div>
                             <div style={{ padding: 12 }}>
                                 <Table

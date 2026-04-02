@@ -16,7 +16,6 @@ interface ResolutionAddModalProps {
 interface FormData {
   title: string;
   description: string;
-  displayOrder: number;
 }
 
 interface FormErrors {
@@ -32,7 +31,6 @@ export default function ResolutionAddModal({
   const [formData, setFormData] = useState<FormData>({
     title: '',
     description: '',
-    displayOrder: 1,
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -45,10 +43,6 @@ export default function ResolutionAddModal({
 
     if (!formData.description.trim()) {
       newErrors.description = 'Vui lòng nhập mô tả';
-    }
-
-    if (formData.displayOrder < 0) {
-      newErrors.displayOrder = 'Thứ tự hiển thị không được âm';
     }
 
     setErrors(newErrors);
@@ -73,7 +67,10 @@ export default function ResolutionAddModal({
     e.preventDefault();
     if (!validateForm()) return;
     try {
-      await onSave(formData);
+      await onSave({
+        ...formData,
+        displayOrder: 1
+      });
       handleClose();
     } catch (error) {
       console.error('Error saving item:', error);
@@ -84,7 +81,6 @@ export default function ResolutionAddModal({
     setFormData({
       title: '',
       description: '',
-      displayOrder: 1,
     });
     setErrors({});
     onClose();
@@ -139,19 +135,6 @@ export default function ResolutionAddModal({
                 rows={4}
               />
               {errors.description && <div className={styles.errorMessage}>{errors.description}</div>}
-            </div>
-
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>
-                Thứ tự hiển thị
-              </label>
-              <InputNumber
-                min={0}
-                value={formData.displayOrder}
-                onChange={(value) => handleInputChange('displayOrder', value || 1)}
-                style={{ width: '100%' }}
-              />
-              {errors.displayOrder && <div className={styles.errorMessage}>{errors.displayOrder}</div>}
             </div>
 
             <div className={styles.infoBox}>

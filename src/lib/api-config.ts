@@ -25,7 +25,8 @@ export const API_CONFIG = {
         },
         MEETING: {
             BASE: '/api/meetings',
-            BY_ID: '/api/meetings'
+            BY_ID: '/api/meetings',
+            SHAREHOLDERS: '/api/meetings'
         },
         ATTENED: {
             REGISTER: '/api/attend/regis',

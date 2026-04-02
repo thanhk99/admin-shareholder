@@ -18,6 +18,39 @@
   margin-bottom: 16px;
 }
 
+.readOnlyField {
+  background-color: #f5f5f5 !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
+}
+
+.readOnlyField input {
+  cursor: not-allowed !important;
+}
+
+.clickableRow {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.clickableRow:hover > td {
+  background-color: #fafafa !important;
+}
+
+.clickableName {
+  cursor: pointer;
+}
+
+.nameLink {
+  color: #1890ff;
+  transition: color 0.2s;
+}
+
+.clickableName:hover .nameLink {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+
 .sectionHeader {
   display: flex;
   justify-content: space-between;

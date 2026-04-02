@@ -5,14 +5,8 @@ import { cookies } from 'next/headers';
 export async function loginAction(data: { accessToken: string; refreshToken: string }) {
     const cookieStore = await cookies();
 
-    // Set refreshToken as HttpOnly cookie
-    cookieStore.set('refreshToken', data.refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 7 * 24 * 60 * 60, // 7 days
-    });
+    // No longer setting refreshToken as HttpOnly cookie as per requirement
+    // Refresh token will be stored in localStorage on client
 
     // We can also set accessToken in a non-httpOnly cookie if needed for SSR
     // But as per plan, it's primarily in-memory on client

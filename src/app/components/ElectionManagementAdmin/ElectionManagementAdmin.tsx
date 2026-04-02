@@ -20,7 +20,8 @@ import {
     TeamOutlined,
     TrophyOutlined,
     FileTextOutlined,
-    WifiOutlined
+    WifiOutlined,
+    ArrowLeftOutlined
 } from '@ant-design/icons';
 import { Election } from '@/app/types/election';
 import { ElectionService } from '@/lib/api/election';
@@ -130,6 +131,13 @@ export default function ElectionManagementAdmin() {
 
     return (
         <div className={styles.container}>
+            <Button
+                icon={<ArrowLeftOutlined />}
+                onClick={() => router.push('/meetings')}
+                className={styles.backButton}
+            >
+                Quay lại danh sách cuộc họp
+            </Button>
             <div className={styles.header}>
                 <div>
                     <h1 className={styles.title}>

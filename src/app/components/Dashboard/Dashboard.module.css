@@ -25,6 +25,75 @@
   border: none;
 }
 
+.statsCard :global(.ant-card-body) {
+  padding: 16px !important;
+}
+
+.statsCard :global(.ant-card-head) {
+  min-height: 48px;
+  padding: 0 16px;
+}
+
+.compactInnerCard {
+  border-radius: 8px !important;
+  margin-bottom: 8px !important;
+}
+
+.compactInnerCard :global(.ant-card-head) {
+  background-color: #f8fafc;
+  min-height: 36px !important;
+  padding: 0 12px !important;
+}
+
+.compactInnerCard :global(.ant-card-head-title) {
+  font-size: 14px !important;
+  padding: 8px 0 !important;
+}
+
+.compactInnerCard :global(.ant-card-body) {
+  padding: 12px !important;
+}
+
+/* Stacked Progress Bar */
+.stackedBarContainer {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.stackedBar {
+  display: flex;
+  height: 8px;
+  width: 100%;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.barSegment {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.legendContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.legendColor {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
 .header h1 {
   color: #2c3e50;
   margin: 0 0 5px 0;

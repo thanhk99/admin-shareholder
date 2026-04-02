@@ -3,7 +3,7 @@ import apiClient from "../api-client";
 
 export interface AttendanceRequest {
     meetingId: string;
-    investorCode: string;
+    cccd: string;
     attendingShares: number;
     participationType: 'DIRECT' | 'PROXY';
 }
@@ -80,10 +80,10 @@ export class AttendanceService {
         }
     }
 
-    static cancelAttendance = async (meetingId: string, investorCode: string): Promise<AttendanceResponse> => {
+    static cancelAttendance = async (meetingId: string, cccd: string): Promise<AttendanceResponse> => {
         try {
             return await apiClient.post('api/attend/cancel', null, {
-                params: { meetingId, investorCode }
+                params: { meetingId, cccd }
             });
         } catch (error) {
             throw error;

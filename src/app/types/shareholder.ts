@@ -67,4 +67,5 @@ export interface Shareholder {
   enabled: boolean;
   createdAt: string;
   updatedAt: string;
+  attendingShares: number;
 }

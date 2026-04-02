@@ -29,6 +29,11 @@ export const useWebSocket = ({
     });
     const clientRef = useRef<Client | null>(null);
     const subscriptionRef = useRef<any>(null); // Keep track of subscription to unsubscribe specifically
+    // Giữ tham chiếu mới nhất của onMessage để tránh stale closure
+    const onMessageRef = useRef(onMessage);
+    useEffect(() => {
+        onMessageRef.current = onMessage;
+    }, [onMessage]);
 
     // Helper to get token (from prop or default manager)
     const fetchToken = useCallback(async () => {
@@ -129,8 +134,9 @@ export const useWebSocket = ({
                             try {
                                 const body = JSON.parse(message.body);
                                 const normalized = normalizeMessage(body);
-                                if (onMessage) {
-                                    onMessage(normalized);
+                                // Đọc từ ref để luôn dùng callback mới nhất
+                                if (onMessageRef.current) {
+                                    onMessageRef.current(normalized);
                                 }
                             } catch (e) {
                                 console.error('Error parsing message:', e);

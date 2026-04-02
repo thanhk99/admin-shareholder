@@ -34,17 +34,11 @@ export default function ElectionFormModal({
                 form.setFieldsValue({
                     title: election.title,
                     description: election.description,
-                    electionType: election.electionType,
-                    displayOrder: election.displayOrder,
-                    numSeats: election.numSeats,
+                    electionType: election.electionType || (election as any).votingType,
                 });
             } else {
                 // Create mode
                 form.resetFields();
-                form.setFieldsValue({
-                    displayOrder: 1,
-                    numSeats: 1,
-                });
             }
         }
     }, [visible, election, form]);
@@ -56,8 +50,8 @@ export default function ElectionFormModal({
                 title: values.title,
                 description: values.description,
                 electionType: values.electionType,
-                displayOrder: values.displayOrder,
-                numSeats: values.numSeats,
+                displayOrder: election?.displayOrder || 1,
+                numSeats: election?.numSeats || 0,
             };
 
             if (election) {
@@ -92,7 +86,7 @@ export default function ElectionFormModal({
             okText={election ? 'Cập nhật' : 'Tạo mới'}
             cancelText="Hủy"
             width={600}
-            destroyOnClose
+            forceRender
         >
             <Form
                 form={form}
@@ -143,41 +137,6 @@ export default function ElectionFormModal({
                     </Select>
                 </Form.Item>
 
-                <Form.Item
-                    name="displayOrder"
-                    label="Thứ tự hiển thị"
-                    rules={[
-                        { required: true, message: 'Vui lòng nhập thứ tự hiển thị' },
-                        { type: 'number', min: 1, message: 'Thứ tự phải lớn hơn 0' },
-                    ]}
-                    tooltip="Thứ tự hiển thị của bầu cử trong danh sách (số nhỏ hơn sẽ hiển thị trước)"
-                >
-                    <InputNumber
-                        min={1}
-                        max={100}
-                        style={{ width: '100%' }}
-                        size="large"
-                        placeholder="1"
-                    />
-                </Form.Item>
-
-                <Form.Item
-                    name="numSeats"
-                    label="Số lượng cần bầu"
-                    rules={[
-                        { required: true, message: 'Vui lòng nhập số lượng cần bầu' },
-                        { type: 'number', min: 1, message: 'Số lượng phải lớn hơn 0' },
-                    ]}
-                    tooltip="Số lượng ứng viên tối đa được bầu chọn trong cuộc bầu cử này"
-                >
-                    <InputNumber
-                        min={1}
-                        max={100}
-                        style={{ width: '100%' }}
-                        size="large"
-                        placeholder="3"
-                    />
-                </Form.Item>
             </Form>
         </Modal>
     );

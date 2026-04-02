@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import { Table, Input, Button, Card, Typography, Tag, Space, message } from 'antd';
+import { Table, Input, Button, Card, Typography, Tag, Space, message, Select } from 'antd';
 import { SearchOutlined, UserOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { AttendanceService } from '@/lib/api/attendance';
 import { MeetingService } from '@/lib/api/meetings';
@@ -9,6 +9,7 @@ import { DashboardService } from '@/lib/api/dashboard';
 import { DashboardStatsResponse } from '@/app/types/dashboard';
 import { useRouter } from 'next/navigation';
 import styles from './EligibilityCheck.module.css';
+import { Shareholder } from '@/app/types/shareholder';
 
 const { Title, Text } = Typography;
 
@@ -19,6 +20,7 @@ export default function AttendeeList() {
     const [searchText, setSearchText] = useState('');
     const [selectedMeetingId, setSelectedMeetingId] = useState<string>('');
     const [meetingTitle, setMeetingTitle] = useState('');
+    const [meetings, setMeetings] = useState<any[]>([]);
     const [summary, setSummary] = useState<DashboardStatsResponse | null>(null);
 
     const loadAttendees = async (meetingId: string) => {
@@ -28,12 +30,12 @@ export default function AttendeeList() {
                 AttendanceService.getAttendedParticipants(meetingId),
                 DashboardService.getSummary().catch(() => null)
             ]);
-            
+
             const data = (attendanceRes as any)?.data || attendanceRes;
             if (Array.isArray(data)) {
                 setAttendees(data);
             }
-            
+
             if (dashboardRes) {
                 setSummary(dashboardRes);
             }
@@ -44,33 +46,42 @@ export default function AttendeeList() {
         }
     };
 
-    const fetchMeeting = async () => {
+    const fetchMeetings = async () => {
         try {
+            const meetingsRes = await MeetingService.getAllMeetings();
+            const list = (meetingsRes as any).data || meetingsRes;
+            if (Array.isArray(list)) {
+                setMeetings(list);
+            }
+
             const ongoing = await MeetingService.getOngoingMeeting().catch(() => null);
             if (ongoing && (ongoing as any).id) {
                 setSelectedMeetingId((ongoing as any).id);
                 setMeetingTitle((ongoing as any).title);
                 loadAttendees((ongoing as any).id);
-            } else {
-                const meetingsRes = await MeetingService.getAllMeetings();
-                const list = (meetingsRes as any).data || meetingsRes;
-                if (Array.isArray(list) && list.length > 0) {
-                    const latest = list[0];
-                    setSelectedMeetingId(latest.id);
-                    setMeetingTitle(latest.title);
-                    loadAttendees(latest.id);
-                }
+            } else if (Array.isArray(list) && list.length > 0) {
+                const latest = list[0];
+                setSelectedMeetingId(latest.id);
+                setMeetingTitle(latest.title);
+                loadAttendees(latest.id);
             }
         } catch (error) {
-            message.error('Lỗi khi tải thông tin đại hội');
+            message.error('Lỗi khi tải danh sách đại hội');
         }
     };
 
+    const handleMeetingChange = (id: string) => {
+        setSelectedMeetingId(id);
+        const meeting = meetings.find(m => m.id === id);
+        if (meeting) setMeetingTitle(meeting.title);
+        loadAttendees(id);
+    };
+
     useEffect(() => {
-        fetchMeeting();
+        fetchMeetings();
     }, []);
 
-    const filteredAttendees = attendees.filter(a => 
+    const filteredAttendees = attendees.filter(a =>
         a.fullName?.toLowerCase().includes(searchText.toLowerCase()) ||
         a.cccd?.includes(searchText) ||
         a.investorCode?.includes(searchText)
@@ -82,9 +93,12 @@ export default function AttendeeList() {
             dataIndex: 'fullName',
             key: 'fullName',
             render: (text: string, record: any) => (
-                <Space>
+                <Space 
+                    className={styles.clickableName} 
+                    onClick={() => router.push(`/profile/${record.userId}`)}
+                >
                     <UserOutlined />
-                    <Text strong>{text}</Text>
+                    <Text strong className={styles.nameLink}>{text}</Text>
                 </Space>
             )
         },
@@ -104,10 +118,13 @@ export default function AttendeeList() {
             )
         },
         {
-            title: 'Số cổ phần',
+            title: 'Quyền biểu quyết',
             dataIndex: 'attendingShares',
             key: 'attendingShares',
-            render: (val: number) => <Text strong>{val?.toLocaleString()}</Text>
+            render: (val: number, record: Shareholder) => {
+                const total = (val + record.receivedProxyShares)
+                return <Text strong>{total?.toLocaleString()}</Text>
+            }
         },
         {
             title: 'Thời gian điểm danh',
@@ -124,14 +141,24 @@ export default function AttendeeList() {
     ];
 
     return (
-        <Card 
+        <Card
             title={
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Title level={4} style={{ margin: 0 }}>
-                        Danh sách tham dự: <Text type="secondary" style={{ fontSize: '16px' }}>{meetingTitle}</Text>
+                        Danh sách tham dự:
+                        <Select
+                            value={selectedMeetingId}
+                            onChange={handleMeetingChange}
+                            style={{ marginLeft: '12px', minWidth: '300px' }}
+                            placeholder="Chọn đại hội"
+                        >
+                            {meetings.map(m => (
+                                <Select.Option key={m.id} value={m.id}>{m.title}</Select.Option>
+                            ))}
+                        </Select>
                     </Title>
-                    <Button 
-                        icon={<ArrowLeftOutlined />} 
+                    <Button
+                        icon={<ArrowLeftOutlined />}
                         onClick={() => router.push('/eligibility-check')}
                     >
                         Quay lại tra cứu
@@ -165,7 +192,7 @@ export default function AttendeeList() {
                     <div className={styles.statCard}>
                         <div className={styles.statLabel}>Tỷ lệ tham dự</div>
                         <div className={`${styles.statValue} ${styles.statValueGreen}`}>
-                            {summary?.userStats?.participationRate ? (summary.userStats.participationRate * 100).toFixed(2) : '0.00'}%
+                            {summary?.userStats?.participationRate ? (summary.userStats.participationRate).toFixed(2) : '0.00'}%
                         </div>
                     </div>
                 </div>
@@ -178,15 +205,15 @@ export default function AttendeeList() {
                     size="large"
                     allowClear
                 />
-                
+
                 <Table
                     loading={loading}
                     dataSource={filteredAttendees}
                     columns={columns}
                     rowKey="investorCode"
-                    onRow={(record) => ({
+                    onRow={(record: any) => ({
                         onClick: () => router.push(`/profile/${record.userId}`),
-                        style: { cursor: 'pointer' }
+                        className: styles.clickableRow
                     })}
                     pagination={{ pageSize: 10 }}
                 />

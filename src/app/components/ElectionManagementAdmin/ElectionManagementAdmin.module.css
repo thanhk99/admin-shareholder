@@ -15,6 +15,28 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
+.backButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 16px;
+}
+
+.backButton:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+    color: #111827;
+}
+
 .title {
     font-size: 28px;
     font-weight: 700;

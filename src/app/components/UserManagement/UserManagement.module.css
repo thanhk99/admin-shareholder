@@ -138,6 +138,27 @@
   font-size: 14px;
 }
 
+.filterBox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.meetingSelect {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  min-width: 250px;
+  background-color: white;
+  cursor: pointer;
+}
+
+.meetingSelect:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
 .modal {
   position: fixed;
   top: 0;

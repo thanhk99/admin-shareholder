@@ -36,8 +36,9 @@ export default function Login() {
       const response: any = await AuthService.login(account, password);
 
       if (response && response.accessToken) {
-        // 1. Set in-memory token for immediate Client-Side use
+        // 1. Set in-memory/localStorage token for immediate Client-Side use
         tokenManager.setAccessToken(response.accessToken);
+        tokenManager.setRefreshToken(response.refreshToken);
 
         // 2. Call Server Action to set HttpOnly cookies
         await loginAction({

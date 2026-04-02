@@ -11,13 +11,16 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
+import { Pagination } from 'antd';
 import styles from './UserManagement.module.css';
 import ShareholderManage from '@/lib/api/shareholdermanagement';
+import { MeetingService } from '@/lib/api/meetings';
 import AddShareholderModal from './AddShareholderModal/AddShareholderModal';
 import EditShareholderModal from './EditShareholderModal/EditShareholderModal';
 import AddRepresentativeModal from './AddRepresentativeModal/AddRepresentativeModal';
 import ImportModal from '../MeetingManagement/ImportModal';
 import { Shareholder } from '@/app/types/shareholder';
+import { Meeting } from '@/app/types/meeting';
 
 
 
@@ -30,13 +33,32 @@ export default function UserManagement() {
   const [editingShareholder, setEditingShareholder] = useState<Shareholder | null>(null);
   const [loading, setLoading] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [selectedMeetingId, setSelectedMeetingId] = useState<string>('');
+  
+  // States cho phân trang
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalElements, setTotalElements] = useState(0);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
   const router = useRouter();
 
-  const filteredShareholders = shareholders.filter(sh =>
-    sh.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sh.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sh.cccd.includes(searchTerm)
-  );
+  // Debounce search term để không spam API
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const filteredShareholders = selectedMeetingId 
+    ? shareholders.filter(sh =>
+        sh.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sh.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sh.cccd?.includes(searchTerm)
+      )
+    : shareholders;
 
   // Xem chi tiết người dùng
   const handleViewDetail = (shareholder: Shareholder) => {
@@ -127,25 +149,70 @@ export default function UserManagement() {
     fetchShareholder();
   };
 
-  const fetchShareholder = async () => {
+  const fetchMeetings = async () => {
     try {
-      const response = await ShareholderManage.getList();
+      const response = await MeetingService.getAllMeetings();
+      if (Array.isArray(response)) {
+        setMeetings(response);
+      } else if ((response as any).status === 200 || (response as any).status === "success") {
+        setMeetings((response as any).data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching meetings:', error);
+    }
+  };
 
-      // Handle both wrapped {status, data} and direct array responses
-      const res = response as any;
-      if (Array.isArray(res)) {
-        setShareholders(res);
-      } else if (res.status === "success" || res.status === 200) {
-        setShareholders(res.data || []);
+  const fetchShareholder = async () => {
+    setLoading(true);
+    try {
+      let response;
+      if (selectedMeetingId) {
+        response = await ShareholderManage.getByMeetingId(selectedMeetingId);
+        const res = response as any;
+        if (Array.isArray(res)) {
+          setShareholders(res);
+          setTotalElements(res.length);
+        } else if (res.status === "success" || res.status === 200) {
+          setShareholders(res.data || []);
+          setTotalElements((res.data || []).length);
+        }
+      } else {
+        response = await ShareholderManage.getList(currentPage - 1, pageSize, debouncedSearchTerm);
+        const res = response as any;
+        // Xử lý Pagination response từ Backend (có hoặc không có axios wrapper res.data)
+        const responseData = res?.data || res;
+        
+        if (responseData && responseData.content) {
+          setShareholders(responseData.content);
+          setTotalElements(responseData.totalElements || 0);
+        } else if (Array.isArray(responseData)) {
+          // Fallback nếu API vẫn trả array
+          setShareholders(responseData);
+          setTotalElements(responseData.length);
+        } else {
+          setShareholders([]);
+          setTotalElements(0);
+        }
       }
     } catch (error) {
       console.error('Error fetching users:', error);
+      setShareholders([]);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchShareholder();
+    fetchMeetings();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1); // Reset page khi tìm kiếm hoặc đổi phòng
+  }, [debouncedSearchTerm, selectedMeetingId, pageSize]);
+
+  useEffect(() => {
+    fetchShareholder();
+  }, [currentPage, debouncedSearchTerm, selectedMeetingId, pageSize]);
 
   return (
     <div className={styles.management}>
@@ -192,12 +259,28 @@ export default function UserManagement() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <div className={styles.filterBox}>
+          <select
+            value={selectedMeetingId}
+            onChange={(e) => setSelectedMeetingId(e.target.value)}
+            className={styles.meetingSelect}
+          >
+            <option value="">Tất cả cuộc họp</option>
+            {meetings.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.title} ({m.id})
+              </option>
+            ))}
+          </select>
+        </div>
         <div className={styles.stats}>
-          <span>Tổng: {shareholders.length} người dùng</span>
-          <span>•</span>
-          <span>Active: {shareholders.filter(sh => sh.enabled).length}</span>
-          <span>•</span>
-          <span>Inactive: {shareholders.filter(sh => !sh.enabled).length}</span>
+          <span>Tổng: {totalElements} người dùng</span>
+          {!selectedMeetingId && (
+            <>
+              <span>•</span>
+              <span>Lọc qua Server-side Pagination</span>
+            </>
+          )}
         </div>
       </div>
 
@@ -237,6 +320,7 @@ export default function UserManagement() {
           <thead>
             <tr>
               <th>ID người dùng</th>
+              <th>Cuộc họp</th>
               <th>Tên người dùng</th>
               <th>Email</th>
               <th>Số cổ phần</th>
@@ -260,6 +344,7 @@ export default function UserManagement() {
                     {shareholder.id}
                   </div>
                 </td>
+                <td>{shareholder.meetingId || '-'}</td>
                 <td>{shareholder.fullName}</td>
                 <td>{shareholder.email}</td>
                 <td className={styles.shares}>{((shareholder.sharesOwned || 0) + (shareholder.receivedProxyShares || 0)).toLocaleString()}</td>
@@ -305,6 +390,21 @@ export default function UserManagement() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+        <Pagination
+          current={currentPage}
+          pageSize={pageSize}
+          total={totalElements}
+          disabled={loading || !!selectedMeetingId} // Disable phân trang nếu đang xem theo MeetingId (vì API ByMeeting chưa có page)
+          onChange={(page, size) => {
+            setCurrentPage(page);
+            setPageSize(size);
+          }}
+          showSizeChanger
+          showTotal={(total) => `Tổng số ${total} bản ghi`}
+        />
       </div>
 
       {loading && (

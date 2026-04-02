@@ -91,23 +91,6 @@ export default function ResolutionEditModal({
           />
         </Form.Item>
 
-        <Form.Item
-          name="displayOrder"
-          label="Thứ tự hiển thị"
-          rules={[
-            {
-              validator: (_, value) => {
-                if (value < 0) {
-                  return Promise.reject('Thứ tự hiển thị không được âm');
-                }
-                return Promise.resolve();
-              }
-            }
-          ]}
-        >
-          <InputNumber min={0} style={{ width: '100%' }} />
-        </Form.Item>
-
         <div className={styles.readonlyInfo}>
           <div className={styles.readonlyItem}>
             <span>Ngày tạo:</span>

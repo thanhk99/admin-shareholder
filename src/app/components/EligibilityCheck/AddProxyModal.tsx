@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Form, Input, InputNumber, Button, Row, Col, message, Spin } from 'antd';
 import { SearchOutlined, UserAddOutlined } from '@ant-design/icons';
 import ShareholderManage from '@/lib/api/shareholdermanagement';
@@ -30,7 +30,13 @@ export default function AddProxyModal({
     const [loading, setLoading] = useState(false);
     const [searching, setSearching] = useState(false);
 
-    // Reset form when opened or when delegator changes
+    // Refs cho xử lý QR
+    const qrTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    const isQRProcessingRef = useRef(false); // Cờ: đang trong luồng quét QR
+    // Debounce timer cho tìm kiếm bằng nhập tay
+    const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
+
     useEffect(() => {
         if (open) {
             form.resetFields();
@@ -40,67 +46,97 @@ export default function AddProxyModal({
                 sharesDelegated: maxShares > 0 ? maxShares : 0
             });
         }
+        return () => {
+            if (qrTimerRef.current) clearTimeout(qrTimerRef.current);
+            if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+        };
     }, [open, meetingId, delegatorCccd, form]);
-    // Bỏ maxShares khỏi dependency để tránh reset khi người dùng đang nhập liệu 
-    // nhưng giá trị maxShares bên ngoài thay đổi do gõ phím ở form khác.
 
-    const handleSearchCCCD = async (cccd: string) => {
-        // Nếu chuỗi chứa ký tự |, tự động cắt lấy phần đầu tiên (thanh CCCD)
-        if (cccd && cccd.includes('|')) {
-            const parts = cccd.split('|');
-            if (parts.length > 0) {
-                const cleanCccd = parts[0].trim();
-                form.setFieldsValue({ cccd: cleanCccd });
-                cccd = cleanCccd; // Sử dụng giá trị đã cắt để tìm kiếm
+    /**
+     * Bóc tách dữ liệu từ chuỗi QR CCCD đầy đủ.
+     * Định dạng: cccd||tên|ngàySinh|gioiTinh|diaChi|ngàyCấp
+     */
+    const parseQRString = (raw: string): { cccd: string; fullName: string; dateOfIssue: string } | null => {
+        // Định dạng có dấu ||
+        if (raw.includes('||')) {
+            const mainParts = raw.split('||');
+            if (mainParts.length >= 2) {
+                const cccd = mainParts[0].trim();
+                const infoParts = mainParts[1].split('|');
+                const fullName = infoParts[0]?.trim() || '';
+                const rawDate = infoParts[4]?.trim() || '';
+                const dateOfIssue = rawDate.length === 8
+                    ? `${rawDate.substring(0, 2)}/${rawDate.substring(2, 4)}/${rawDate.substring(4)}`
+                    : rawDate;
+                return { cccd, fullName, dateOfIssue };
             }
         }
 
-        if (!cccd || cccd.length < 9) {
-            // Xoá trắng các trường nếu CCCD quá ngắn hoặc bị xoá
-            form.setFieldsValue({
-                fullName: undefined,
-                dateOfIssue: undefined,
-                placeOfIssue: undefined,
-                phoneNumber: undefined
-            });
+        // Định dạng thô (12 số CCCD + tên + ngày trong chuỗi)
+        if (raw.length > 12 && /^\d{12}/.test(raw)) {
+            const cccd = raw.substring(0, 12);
+            const remaining = raw.substring(12);
+            const dobMatch = remaining.match(/\d{8}/);
+            let fullName = '';
+            let dateOfIssue = '';
+            if (dobMatch && dobMatch.index !== undefined) {
+                fullName = remaining.substring(0, dobMatch.index).trim();
+                const rawDate = raw.substring(raw.length - 8);
+                if (/^\d{8}$/.test(rawDate)) {
+                    dateOfIssue = `${rawDate.substring(0, 2)}/${rawDate.substring(2, 4)}/${rawDate.substring(4)}`;
+                }
+            }
+            return { cccd, fullName, dateOfIssue };
+        }
+
+        return null;
+    };
+
+    /**
+     * Xử lý khi QR buffer đã đủ thời gian tích lũy (200ms sau ký tự cuối).
+     * Lúc này mới thực sự bóc tách và điền form.
+     */
+    const processQRBuffer = (raw: string, target: HTMLInputElement) => {
+        const parsed = parseQRString(raw);
+        if (!parsed) {
+            isQRProcessingRef.current = false;
             return;
         }
 
+        // Làm sạch ô CCCD
+        target.value = parsed.cccd;
+
+        // Điền form
+        form.setFieldsValue({
+            cccd: parsed.cccd,
+            ...(parsed.fullName ? { fullName: parsed.fullName } : {}),
+            ...(parsed.dateOfIssue ? { dateOfIssue: parsed.dateOfIssue } : {})
+        });
+
+        isQRProcessingRef.current = false;
+    };
+
+    /**
+     * Tìm kiếm cổ đông từ DB khi nhập tay CCCD (debounced).
+     */
+    const searchFromDB = async (cccd: string) => {
+        if (!cccd || cccd.length < 9) return;
         setSearching(true);
         try {
             const response = await ShareholderManage.searchUsers(cccd);
-            const users = (response as any)?.data || response;
-
-            if (Array.isArray(users) && users.length > 0) {
-                // Chỉ lấy user nếu khớp chính xác CCCD
-                const user = users.find((u: any) => u.cccd === cccd);
-
+            const data = (response as any)?.data || response;
+            const users = Array.isArray(data) ? data : (data ? [data] : []);
+            if (users.length > 0) {
+                const user = users.find((u: any) => u.cccd === cccd) || users[0];
                 if (user) {
                     form.setFieldsValue({
                         fullName: user.fullName,
                         dateOfIssue: user.dateOfIssue,
-                        placeOfIssue: user.placeOfIssue,
                         phoneNumber: user.phoneNumber,
                         nation: user.nation
                     });
-                    message.success('Đã tìm thấy thông tin người dùng trong hệ thống');
-                } else {
-                    // Nếu tìm thấy danh sách nhưng không có user nào khớp chính xác CCCD
-                    form.setFieldsValue({
-                        fullName: undefined,
-                        dateOfIssue: undefined,
-                        placeOfIssue: undefined,
-                        phoneNumber: undefined
-                    });
+                    message.success('Đã tìm thấy thông tin cổ đông');
                 }
-            } else {
-                // Nếu không tìm thấy bất kỳ user nào
-                form.setFieldsValue({
-                    fullName: undefined,
-                    dateOfIssue: undefined,
-                    placeOfIssue: undefined,
-                    phoneNumber: undefined
-                });
             }
         } catch (error) {
             console.error('Search error:', error);
@@ -112,25 +148,21 @@ export default function AddProxyModal({
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
-
             if (values.sharesDelegated <= 0) {
                 message.error('Số lượng uỷ quyền phải lớn hơn 0');
                 return;
             }
-
             if (values.sharesDelegated > maxShares) {
                 message.error(`Số lượng uỷ quyền (${values.sharesDelegated.toLocaleString()} cp) vượt quá số cổ phần khả dụng (${maxShares.toLocaleString()} cp)`);
                 return;
             }
-
             setLoading(true);
             const request: NonShareholderProxyRequest = {
                 ...values,
-                address: values.address || "N/A", // Giá trị mặc định vì trường đã bị xoá khỏi UI nhưng BE có thể yêu cầu
+                address: values.address || 'N/A',
                 meetingId,
                 delegatorCccd
             };
-
             await ProxyService.createNonShareholderProxy(request);
             message.success('Thêm người nhận uỷ quyền thành công');
             onSuccess();
@@ -151,11 +183,45 @@ export default function AddProxyModal({
                         rules={[{ required: true, message: 'Vui lòng nhập CCCD' }]}
                     >
                         <Input
-                            placeholder="Nhập CCCD để tìm kiếm..."
+                            ref={(el) => { inputRef.current = el?.input || null; }}
+                            placeholder="Nhập hoặc quét CCCD..."
                             suffix={searching ? <Spin size="small" /> : <SearchOutlined style={{ color: '#bfbfbf' }} />}
+                            onInput={(e: React.FormEvent<HTMLInputElement>) => {
+                                const target = e.target as HTMLInputElement;
+                                const raw = target.value;
+
+                                // Phát hiện dấu hiệu QR: có dấu | hoặc dài hơn 12 ký tự và bắt đầu bằng 12 số
+                                const looksLikeQR = raw.includes('|') || (raw.length > 12 && /^\d{12}/.test(raw));
+
+                                if (looksLikeQR) {
+                                    // Đánh dấu đang trong luồng QR để onChange không gọi API
+                                    isQRProcessingRef.current = true;
+
+                                    // Xoá bộ đếm cũ (máy quét đang còn gửi tiếp)
+                                    if (qrTimerRef.current) clearTimeout(qrTimerRef.current);
+
+                                    // Đợi 200ms sau ký tự cuối cùng mới xử lý
+                                    // (máy quét thường hoàn thành trong ~100ms)
+                                    qrTimerRef.current = setTimeout(() => {
+                                        processQRBuffer(target.value, target);
+                                    }, 200);
+                                }
+                            }}
                             onChange={(e) => {
+                                // Nếu đang trong luồng QR, bỏ qua hoàn toàn để tránh request thừa
+                                if (isQRProcessingRef.current) return;
+
                                 const val = e.target.value;
-                                if (val.length >= 9) handleSearchCCCD(val);
+                                // Nhập tay: debounce 500ms rồi mới gọi API
+                                if (val.length >= 9) {
+                                    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+                                    searchTimerRef.current = setTimeout(() => {
+                                        searchFromDB(val);
+                                    }, 500);
+                                } else {
+                                    // Xoá ô nếu CCCD bị xoá về dưới 9 ký tự
+                                    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+                                }
                             }}
                         />
                     </Form.Item>
@@ -172,30 +238,16 @@ export default function AddProxyModal({
             </Row>
 
             <Row gutter={16}>
-                <Col span={12}>
-                    <Form.Item
-                        label="Ngày cấp (CCCD)"
-                        name="dateOfIssue"
-                    >
-                        <Input placeholder="VD: 01/01/2021" />
-                    </Form.Item>
-                </Col>
-                <Col span={12}>
-                    <Form.Item
-                        label="Nơi cấp"
-                        name="placeOfIssue"
-                    >
-                        <Input placeholder="VD: Cục CSQLHC về trật tự xã hội" />
+                <Col span={24}>
+                    <Form.Item label="Ngày cấp (CCCD)" name="dateOfIssue">
+                        <Input placeholder="VD: 14/09/2021" />
                     </Form.Item>
                 </Col>
             </Row>
 
             <Row gutter={16}>
                 <Col span={24}>
-                    <Form.Item
-                        label="Số điện thoại"
-                        name="phoneNumber"
-                    >
+                    <Form.Item label="Số điện thoại" name="phoneNumber">
                         <Input placeholder="Nhập số điện thoại" />
                     </Form.Item>
                 </Col>
@@ -218,10 +270,7 @@ export default function AddProxyModal({
                     </Form.Item>
                 </Col>
                 <Col span={12}>
-                    <Form.Item
-                        label="Ghi chú"
-                        name="note"
-                    >
+                    <Form.Item label="Ghi chú" name="note">
                         <Input placeholder="Nhập ghi chú uỷ quyền" />
                     </Form.Item>
                 </Col>
@@ -271,9 +320,7 @@ export default function AddProxyModal({
             open={open}
             onCancel={onCancel}
             footer={[
-                <Button key="back" onClick={onCancel}>
-                    Hủy
-                </Button>,
+                <Button key="back" onClick={onCancel}>Hủy</Button>,
                 <Button key="submit" type="primary" loading={loading} onClick={handleSubmit}>
                     Xác nhận uỷ quyền
                 </Button>

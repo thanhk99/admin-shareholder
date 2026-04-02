@@ -151,7 +151,9 @@ export default function ElectionStatistics({
                 <Card className={styles.electionCard}>
                     <div className={styles.cardHeader}>
                         <div className={styles.headerLeft}>
-                            <h3 className={styles.electionTitle}>{election.title}</h3>
+                            <h3 className={styles.electionTitle}>
+                                <span className={styles.orderBadge}>{election.displayOrder}.</span> {election.title}
+                            </h3>
                             <p className={styles.electionDesc}>{election.description}</p>
                             <Tag color="purple">{election.votingOptions?.length || 0} ứng viên</Tag>
                         </div>

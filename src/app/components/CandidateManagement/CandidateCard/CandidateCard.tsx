@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import {
     EditOutlined,
     DeleteOutlined,
-    UserOutlined
+    UserOutlined,
+    EyeOutlined
 } from '@ant-design/icons';
 import styles from './CandidateCard.module.css';
 import { Candidate } from '@/app/types/candidate';
@@ -11,12 +12,16 @@ interface CandidateCardProps {
     candidate: Candidate;
     onEdit: (candidate: Candidate) => void;
     onDelete: (id: string) => void;
+    onView?: (candidate: Candidate) => void;
+    canEdit?: boolean;
 }
 
 export default function CandidateCard({
     candidate,
     onEdit,
-    onDelete
+    onDelete,
+    onView,
+    canEdit = true
 }: CandidateCardProps) {
     const [isClient, setIsClient] = useState(false);
 
@@ -60,19 +65,30 @@ export default function CandidateCard({
             <div className={styles.cardFooter}>
                 <div className={styles.actions}>
                     <button
-                        className={styles.editButton}
-                        onClick={() => onEdit(candidate)}
+                        className={styles.viewButton}
+                        onClick={() => onView?.(candidate)}
                     >
-                        <EditOutlined />
-                        Sửa
+                        <EyeOutlined />
+                        Xem
                     </button>
-                    <button
-                        className={styles.deleteButton}
-                        onClick={() => onDelete(candidate.id)}
-                    >
-                        <DeleteOutlined />
-                        Xóa
-                    </button>
+                    {canEdit && (
+                        <>
+                            <button
+                                className={styles.editButton}
+                                onClick={() => onEdit(candidate)}
+                            >
+                                <EditOutlined />
+                                Sửa
+                            </button>
+                            <button
+                                className={styles.deleteButton}
+                                onClick={() => onDelete(candidate.id)}
+                            >
+                                <DeleteOutlined />
+                                Xóa
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
         </div>

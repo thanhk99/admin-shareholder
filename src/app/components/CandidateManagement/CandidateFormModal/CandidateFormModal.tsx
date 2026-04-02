@@ -16,6 +16,7 @@ interface CandidateFormModalProps {
     onSubmit: (data: CandidateRequest, electionId: string) => void;
     elections: VotingItem[];
     defaultElectionId?: string;
+    readOnly?: boolean;
 }
 
 export default function CandidateFormModal({
@@ -26,7 +27,8 @@ export default function CandidateFormModal({
     onClose,
     onSubmit,
     elections,
-    defaultElectionId
+    defaultElectionId,
+    readOnly = false
 }: CandidateFormModalProps) {
     const [form] = Form.useForm();
     const [selectedId, setSelectedId] = useState<string>('');
@@ -63,13 +65,18 @@ export default function CandidateFormModal({
 
     return (
         <Modal
-            title={formMode === 'create' ? 'Thêm Ứng viên Mới' : 'Chỉnh sửa Ứng viên'}
+            title={readOnly ? 'Chi tiết Ứng viên' : (formMode === 'create' ? 'Thêm Ứng viên Mới' : 'Chỉnh sửa Ứng viên')}
             open={showForm}
             onCancel={onClose}
             onOk={handleSubmit}
             confirmLoading={formLoading}
             okText={formMode === 'create' ? 'Thêm' : 'Cập nhật'}
-            cancelText="Hủy"
+            cancelText={readOnly ? 'Đóng' : 'Hủy'}
+            footer={readOnly ? (
+                <div style={{ textAlign: 'right' }}>
+                    <button className="ant-btn" onClick={onClose}>Đóng</button>
+                </div>
+            ) : undefined}
             width={600}
             destroyOnClose
         >
@@ -78,6 +85,7 @@ export default function CandidateFormModal({
                 layout="vertical"
                 autoComplete="off"
                 initialValues={{ displayOrder: 1 }}
+                disabled={readOnly}
             >
                 <Form.Item
                     name="electionId"

@@ -124,31 +124,74 @@ export default function Dashboard() {
               </div>
             ) : (
               <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                {/* Global Legend */}
+                <Card size="small" className={styles.compactInnerCard} style={{ marginBottom: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '24px' }}>
+                    <div className={styles.legendItem}>
+                      <div className={styles.legendColor} style={{ backgroundColor: '#52c41a', width: '12px', height: '12px' }} />
+                      <Text strong style={{ fontSize: '13px' }}>Đồng ý</Text>
+                    </div>
+                    <div className={styles.legendItem}>
+                      <div className={styles.legendColor} style={{ backgroundColor: '#ff4d4f', width: '12px', height: '12px' }} />
+                      <Text strong style={{ fontSize: '13px' }}>Không đồng ý</Text>
+                    </div>
+                    <div className={styles.legendItem}>
+                      <div className={styles.legendColor} style={{ backgroundColor: '#faad14', width: '12px', height: '12px' }} />
+                      <Text strong style={{ fontSize: '13px' }}>Không ý kiến / Khác</Text>
+                    </div>
+                  </div>
+                </Card>
                 {/* Resolutions Section */}
                 {realtimeStatus.resolutionResults && realtimeStatus.resolutionResults.length > 0 && (
                   <Card title={<Space><BarChartOutlined /> Kết quả Biểu quyết</Space>} className={styles.statsCard}>
                     <List
-                      grid={{ gutter: 16, column: 1 }}
+                      grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 3 }}
                       dataSource={realtimeStatus.resolutionResults}
                       renderItem={(res: any) => (
                         <List.Item>
-                          <Card type="inner" title={res.resolutionTitle} size="small">
-                            <div style={{ marginBottom: '16px' }}>
-                              <Text strong>Tổng số phiếu: {res.totalVoters}</Text> | <Text strong>Tổng quyền biểu quyết: {res.totalWeight.toLocaleString()}</Text>
+                          <Card 
+                            className={styles.compactInnerCard} 
+                            title={res.resolutionTitle} 
+                            size="small"
+                          >
+                            <div style={{ fontSize: '12px', color: '#64748b' }}>
+                              <Text strong style={{ fontSize: '12px' }}>{res.totalVoters} phiếu</Text>
+                              <span style={{ margin: '0 4px' }}>|</span>
+                              <span>Quyền: {res.totalWeight.toLocaleString()}</span>
                             </div>
-                            {res.results.map((opt: any) => (
-                              <div key={opt.votingOptionId} style={{ marginBottom: '12px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                  <Text>{opt.votingOptionName} ({opt.voteCount} phiếu)</Text>
-                                  <Text>{opt.percentage.toFixed(2)}%</Text>
-                                </div>
-                                <Progress percent={parseFloat(opt.percentage.toFixed(2))} status="active" strokeColor={
-                                  opt.votingOptionName === 'Đồng ý' ? '#52c41a' :
-                                    opt.votingOptionName === 'Không đồng ý' ? '#ff4d4f' : '#faad14'
-                                } />
-                                <Text type="secondary" style={{ fontSize: '12px' }}>Quyền biểu quyết: {opt.totalWeight.toLocaleString()}</Text>
+                            
+                            <div className={styles.stackedBarContainer}>
+                              <div className={styles.stackedBar}>
+                                {res.results.map((opt: any) => {
+                                  const color = opt.votingOptionName === 'Đồng ý' ? '#52c41a' :
+                                               opt.votingOptionName === 'Không đồng ý' ? '#ff4d4f' : '#faad14';
+                                  return (
+                                    <div 
+                                      key={opt.votingOptionId}
+                                      className={styles.barSegment}
+                                      style={{ 
+                                        width: `${opt.percentage}%`, 
+                                        backgroundColor: color 
+                                      }}
+                                    />
+                                  );
+                                })}
                               </div>
-                            ))}
+                              <div className={styles.legendContainer}>
+                                {res.results.map((opt: any) => {
+                                  const color = opt.votingOptionName === 'Đồng ý' ? '#52c41a' :
+                                               opt.votingOptionName === 'Không đồng ý' ? '#ff4d4f' : '#faad14';
+                                  return (
+                                    <div key={opt.votingOptionId} className={styles.legendItem}>
+                                      <div className={styles.legendColor} style={{ backgroundColor: color }} />
+                                      <Text style={{ fontSize: '11px' }}>
+                                        {opt.votingOptionName.charAt(0)}: {opt.percentage.toFixed(1)}%
+                                      </Text>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           </Card>
                         </List.Item>
                       )}
@@ -160,26 +203,35 @@ export default function Dashboard() {
                 {realtimeStatus.electionResults && realtimeStatus.electionResults.length > 0 && (
                   <Card title={<Space><TeamOutlined /> Kết quả Bầu cử</Space>} className={styles.statsCard}>
                     <List
-                      grid={{ gutter: 16, column: 1 }}
+                      grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 3 }}
                       dataSource={realtimeStatus.electionResults}
                       renderItem={(ele: any) => (
                         <List.Item>
-                          <Card type="inner" title={ele.electionTitle} size="small">
-                            <div style={{ marginBottom: '16px' }}>
-                              <Text strong>Tổng số phiếu: {ele.totalVoters}</Text> | <Text strong>Tổng quyền biểu quyết: {ele.totalWeight.toLocaleString()}</Text>
+                          <Card 
+                            className={styles.compactInnerCard} 
+                            title={ele.electionTitle} 
+                            size="small"
+                          >
+                            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
+                              <Text strong style={{ fontSize: '12px' }}>{ele.totalVoters} phiếu</Text>
+                              <span style={{ margin: '0 4px' }}>|</span>
+                              <span>Quyền: {ele.totalWeight.toLocaleString()}</span>
                             </div>
-                            <div style={{ marginTop: '16px' }}>
-                              {ele.results && ele.results.map((cand: any) => (
-                                <div key={cand.votingOptionId} style={{ marginBottom: '12px' }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                    <Text>{cand.votingOptionName} ({cand.voteCount} phiếu)</Text>
-                                    <Text>{cand.percentage.toFixed(2)}%</Text>
-                                  </div>
-                                  <Progress percent={parseFloat(cand.percentage.toFixed(2))} />
-                                  <Text type="secondary" style={{ fontSize: '12px' }}>Quyền biểu quyết: {cand.totalWeight.toLocaleString()}</Text>
+                            {ele.results && ele.results.map((cand: any) => (
+                              <div key={cand.votingOptionId} style={{ marginBottom: '4px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                                  <Text style={{ fontSize: '11px' }}>{cand.votingOptionName}</Text>
+                                  <Text style={{ fontSize: '11px' }} strong>{cand.percentage.toFixed(1)}%</Text>
                                 </div>
-                              ))}
-                            </div>
+                                <Progress 
+                                  percent={parseFloat(cand.percentage.toFixed(1))} 
+                                  size="small" 
+                                  strokeLinecap="butt"
+                                  showInfo={false}
+                                  strokeWidth={6}
+                                />
+                              </div>
+                            ))}
                           </Card>
                         </List.Item>
                       )}
