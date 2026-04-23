@@ -50,19 +50,20 @@ apiClient.interceptors.response.use(
 
         if (!originalRequest) return Promise.reject(error);
 
+        // Don't retry for auth requests to avoid loops
         const isAuthRequest = originalRequest.url?.includes(API_CONFIG.ENDPOINTS.AUTH.LOGIN) ||
             originalRequest.url?.includes(API_CONFIG.ENDPOINTS.AUTH.REFRESH) ||
             originalRequest.url?.includes(API_CONFIG.ENDPOINTS.AUTH.REGISTER);
 
-        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry && !isAuthRequest) {
-            originalRequest._retry = true;
-
+        // Handle 401 Unauthorized errors
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
             if (isRefreshing) {
+                // If refresh is already in progress, queue this request
                 return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject });
                 })
                     .then((token) => {
-                        originalRequest.headers.Authorization = 'Bearer ' + token;
+                        originalRequest.headers.Authorization = `Bearer ${token}`;
                         return apiClient(originalRequest);
                     })
                     .catch((err) => {
@@ -70,31 +71,42 @@ apiClient.interceptors.response.use(
                     });
             }
 
+            originalRequest._retry = true;
             isRefreshing = true;
 
             try {
                 const refreshToken = tokenManager.getRefreshToken();
-                if (!refreshToken) throw new Error('No refresh token available');
+                if (!refreshToken) {
+                    throw new Error('No refresh token available');
+                }
 
+                // Call the refresh endpoint
                 const response = await axios.post(
                     `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.REFRESH}`,
                     { refreshToken },
                     { withCredentials: true }
                 );
 
-                const { accessToken } = (response.data as any);
+                const { accessToken, refreshToken: newRefreshToken } = (response.data as any);
+                
+                // Update tokens in manager
                 tokenManager.setAccessToken(accessToken);
+                if (newRefreshToken) {
+                    tokenManager.setRefreshToken(newRefreshToken);
+                }
 
-                apiClient.defaults.headers.common['Authorization'] = 'Bearer ' + accessToken;
-                originalRequest.headers.Authorization = 'Bearer ' + accessToken;
-
+                // Process the queue with the new token
                 processQueue(null, accessToken);
+                
+                // Retry the original request
+                originalRequest.headers.Authorization = `Bearer ${accessToken}`;
                 return apiClient(originalRequest);
             } catch (refreshError) {
                 processQueue(refreshError, null);
-                tokenManager.clearAccessToken();
-                // Optional: Redirect to login or handle logout action
-                if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+                tokenManager.clearTokens();
+                
+                // Redirect to login on refresh failure
+                if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
                     window.location.href = '/login';
                 }
                 return Promise.reject(refreshError);

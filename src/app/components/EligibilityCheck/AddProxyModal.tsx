@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Form, Input, InputNumber, Button, Row, Col, message, Spin } from 'antd';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { Modal, Form, Input, InputNumber, Button, Row, Col, message, Spin, AutoComplete, Typography } from 'antd';
 import { SearchOutlined, UserAddOutlined } from '@ant-design/icons';
 import ShareholderManage from '@/lib/api/shareholdermanagement';
 import ProxyService from '@/lib/api/proxy';
@@ -14,9 +14,10 @@ interface AddProxyModalProps {
     delegatorName: string;
     maxShares: number;
     renderInline?: boolean;
+    active?: boolean;
 }
 
-export default function AddProxyModal({
+const AddProxyModal = forwardRef(({
     open,
     onCancel,
     onSuccess,
@@ -24,11 +25,17 @@ export default function AddProxyModal({
     delegatorCccd,
     delegatorName,
     maxShares,
-    renderInline = false
-}: AddProxyModalProps) {
+    renderInline = false,
+    active = true
+}: AddProxyModalProps, ref) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [searching, setSearching] = useState(false);
+    const [searchOptions, setSearchOptions] = useState<{ value: string; label: React.ReactNode; data: any }[]>([]);
+
+    useImperativeHandle(ref, () => ({
+        getFormValues: () => form.getFieldsValue()
+    }));
 
     // Refs cho xử lý QR
     const qrTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -117,27 +124,32 @@ export default function AddProxyModal({
     };
 
     /**
-     * Tìm kiếm cổ đông từ DB khi nhập tay CCCD (debounced).
+     * Tìm kiếm cổ đông từ DB và nạp vào danh sách gợi ý (AutoComplete).
      */
-    const searchFromDB = async (cccd: string) => {
-        if (!cccd || cccd.length < 9) return;
+    const handleSearchCCCD = async (cccd: string) => {
+        if (!cccd || cccd.length < 1) {
+            setSearchOptions([]);
+            return;
+        }
         setSearching(true);
         try {
             const response = await ShareholderManage.searchUsers(cccd);
             const data = (response as any)?.data || response;
             const users = Array.isArray(data) ? data : (data ? [data] : []);
-            if (users.length > 0) {
-                const user = users.find((u: any) => u.cccd === cccd) || users[0];
-                if (user) {
-                    form.setFieldsValue({
-                        fullName: user.fullName,
-                        dateOfIssue: user.dateOfIssue,
-                        phoneNumber: user.phoneNumber,
-                        nation: user.nation
-                    });
-                    message.success('Đã tìm thấy thông tin cổ đông');
-                }
-            }
+
+            // Hiển thị tối đa 5 kết quả đầu tiên từ API trả về (Server đã thực hiện lọc theo từ khoá)
+            const options = users.slice(0, 5).map((u: any) => ({
+                value: u.cccd,
+                label: (
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <Typography.Text strong>{u.cccd}</Typography.Text>
+                        <Typography.Text type="secondary" style={{ fontSize: '12px' }}>{u.fullName}</Typography.Text>
+                    </div>
+                ),
+                data: u
+            }));
+            setSearchOptions(options);
+
         } catch (error) {
             console.error('Search error:', error);
         } finally {
@@ -145,9 +157,33 @@ export default function AddProxyModal({
         }
     };
 
+    const handleSelectCCCD = (value: string, option: any) => {
+        const user = option.data;
+        if (user) {
+            if (user.cccd === delegatorCccd) {
+                message.warning('Người được uỷ quyền không được trùng với người uỷ quyền');
+                form.setFieldsValue({ cccd: '' });
+                return;
+            }
+
+            form.setFieldsValue({
+                fullName: user.fullName,
+                dateOfIssue: user.dateOfIssue,
+                phoneNumber: user.phoneNumber,
+                nation: user.nation || 'Việt Nam',
+                address: user.address || 'N/A'
+            });
+            message.success(`Đã chọn: ${user.fullName}`);
+        }
+    };
+
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
+            if (values.cccd === delegatorCccd) {
+                message.error('Người được uỷ quyền không được trùng với người uỷ quyền');
+                return;
+            }
             if (values.sharesDelegated <= 0) {
                 message.error('Số lượng uỷ quyền phải lớn hơn 0');
                 return;
@@ -174,7 +210,7 @@ export default function AddProxyModal({
     };
 
     const formContent = (
-        <Form form={form} layout="vertical" disabled={loading}>
+        <Form form={form} layout="vertical" disabled={loading || !active}>
             <Row gutter={16}>
                 <Col span={12}>
                     <Form.Item
@@ -182,48 +218,42 @@ export default function AddProxyModal({
                         name="cccd"
                         rules={[{ required: true, message: 'Vui lòng nhập CCCD' }]}
                     >
-                        <Input
-                            ref={(el) => { inputRef.current = el?.input || null; }}
-                            placeholder="Nhập hoặc quét CCCD..."
-                            suffix={searching ? <Spin size="small" /> : <SearchOutlined style={{ color: '#bfbfbf' }} />}
-                            onInput={(e: React.FormEvent<HTMLInputElement>) => {
-                                const target = e.target as HTMLInputElement;
-                                const raw = target.value;
-
-                                // Phát hiện dấu hiệu QR: có dấu | hoặc dài hơn 12 ký tự và bắt đầu bằng 12 số
-                                const looksLikeQR = raw.includes('|') || (raw.length > 12 && /^\d{12}/.test(raw));
-
-                                if (looksLikeQR) {
-                                    // Đánh dấu đang trong luồng QR để onChange không gọi API
-                                    isQRProcessingRef.current = true;
-
-                                    // Xoá bộ đếm cũ (máy quét đang còn gửi tiếp)
-                                    if (qrTimerRef.current) clearTimeout(qrTimerRef.current);
-
-                                    // Đợi 200ms sau ký tự cuối cùng mới xử lý
-                                    // (máy quét thường hoàn thành trong ~100ms)
-                                    qrTimerRef.current = setTimeout(() => {
-                                        processQRBuffer(target.value, target);
-                                    }, 200);
-                                }
-                            }}
-                            onChange={(e) => {
-                                // Nếu đang trong luồng QR, bỏ qua hoàn toàn để tránh request thừa
+                        <AutoComplete
+                            options={searchOptions}
+                            onSelect={handleSelectCCCD}
+                            onSearch={(val) => {
+                                // Nếu đang trong luồng QR, bỏ qua nạp gợi ý để tránh nhiễu
                                 if (isQRProcessingRef.current) return;
-
-                                const val = e.target.value;
-                                // Nhập tay: debounce 500ms rồi mới gọi API
-                                if (val.length >= 9) {
-                                    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-                                    searchTimerRef.current = setTimeout(() => {
-                                        searchFromDB(val);
-                                    }, 500);
-                                } else {
-                                    // Xoá ô nếu CCCD bị xoá về dưới 9 ký tự
-                                    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-                                }
+                                
+                                if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+                                searchTimerRef.current = setTimeout(() => {
+                                    handleSearchCCCD(val);
+                                }, 300);
                             }}
-                        />
+                            disabled={loading || !active}
+                        >
+                            <Input
+                                ref={(el) => { inputRef.current = el?.input || null; }}
+                                placeholder="Nhập hoặc quét CCCD..."
+                                suffix={searching ? <Spin size="small" /> : <SearchOutlined style={{ color: '#bfbfbf' }} />}
+                                tabIndex={5}
+                                onInput={(e: React.FormEvent<HTMLInputElement>) => {
+                                    const target = e.target as HTMLInputElement;
+                                    const raw = target.value;
+
+                                    // Phát hiện dấu hiệu QR
+                                    const looksLikeQR = raw.includes('|') || (raw.length > 12 && /^\d{12}/.test(raw));
+
+                                    if (looksLikeQR) {
+                                        isQRProcessingRef.current = true;
+                                        if (qrTimerRef.current) clearTimeout(qrTimerRef.current);
+                                        qrTimerRef.current = setTimeout(() => {
+                                            processQRBuffer(target.value, target);
+                                        }, 200);
+                                    }
+                                }}
+                            />
+                        </AutoComplete>
                     </Form.Item>
                 </Col>
                 <Col span={12}>
@@ -232,26 +262,25 @@ export default function AddProxyModal({
                         name="fullName"
                         rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
                     >
-                        <Input placeholder="Nhập họ tên người nhận uỷ quyền" />
+                        <Input placeholder="Nhập họ tên người nhận uỷ quyền" tabIndex={6} />
                     </Form.Item>
                 </Col>
             </Row>
 
             <Row gutter={16}>
-                <Col span={24}>
+                <Col span={12}>
                     <Form.Item label="Ngày cấp (CCCD)" name="dateOfIssue">
-                        <Input placeholder="VD: 14/09/2021" />
+                        <Input placeholder="VD: 14/09/2021" tabIndex={-1} />
+                    </Form.Item>
+                </Col>
+                <Col span={12}>
+                    <Form.Item label="Số điện thoại" name="phoneNumber">
+                        <Input placeholder="Nhập số điện thoại" tabIndex={-1} />
                     </Form.Item>
                 </Col>
             </Row>
 
-            <Row gutter={16}>
-                <Col span={24}>
-                    <Form.Item label="Số điện thoại" name="phoneNumber">
-                        <Input placeholder="Nhập số điện thoại" />
-                    </Form.Item>
-                </Col>
-            </Row>
+
 
             <Row gutter={16}>
                 <Col span={12}>
@@ -266,12 +295,13 @@ export default function AddProxyModal({
                             formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') as any}
                             parser={(value) => value!.replace(/\$\s?|(,*)/g, '') as any}
                             min={1}
+                            tabIndex={7}
                         />
                     </Form.Item>
                 </Col>
                 <Col span={12}>
                     <Form.Item label="Ghi chú" name="note">
-                        <Input placeholder="Nhập ghi chú uỷ quyền" />
+                        <Input placeholder="Nhập ghi chú uỷ quyền" tabIndex={-1} />
                     </Form.Item>
                 </Col>
             </Row>
@@ -283,8 +313,8 @@ export default function AddProxyModal({
 
             {renderInline && (
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
-                    <Button onClick={onCancel}>Hủy</Button>
-                    <Button type="primary" loading={loading} onClick={handleSubmit}>Xác nhận uỷ quyền</Button>
+                    <Button onClick={onCancel} disabled={!active} tabIndex={-1}>Hủy</Button>
+                    <Button type="primary" loading={loading} onClick={handleSubmit} disabled={!active} tabIndex={8}>Xác nhận uỷ quyền</Button>
                 </div>
             )}
         </Form>
@@ -298,7 +328,11 @@ export default function AddProxyModal({
                 padding: '20px',
                 border: '1px solid #d9d9d9',
                 borderRadius: '8px',
-                backgroundColor: '#fafafa'
+                backgroundColor: active ? '#fafafa' : '#fff',
+                opacity: active ? 1 : 0.6,
+                filter: active ? 'none' : 'grayscale(50%)',
+                position: 'relative',
+                transition: 'all 0.3s'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                     <UserAddOutlined style={{ color: '#1890ff' }} />
@@ -320,8 +354,8 @@ export default function AddProxyModal({
             open={open}
             onCancel={onCancel}
             footer={[
-                <Button key="back" onClick={onCancel}>Hủy</Button>,
-                <Button key="submit" type="primary" loading={loading} onClick={handleSubmit}>
+                <Button key="back" onClick={onCancel} disabled={!active} tabIndex={-1}>Hủy</Button>,
+                <Button key="submit" type="primary" loading={loading} onClick={handleSubmit} disabled={!active} tabIndex={8}>
                     Xác nhận uỷ quyền
                 </Button>
             ]}
@@ -330,4 +364,6 @@ export default function AddProxyModal({
             {formContent}
         </Modal>
     );
-}
+});
+
+export default AddProxyModal;

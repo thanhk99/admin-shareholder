@@ -1,3 +1,4 @@
+import { tokenManager } from "@/utils/tokenManager";
 import apiClient from "../api-client";
 import { API_CONFIG } from "../api-config";
 
@@ -32,7 +33,8 @@ class AuthService {
 
   static async refreshToken() {
     try {
-      const response = await apiClient.post(this.apiRefreshToken, {});
+      const refreshToken = tokenManager.getRefreshToken();
+      const response = await apiClient.post(this.apiRefreshToken, { refreshToken });
       return response;
     } catch (error) {
       throw error;

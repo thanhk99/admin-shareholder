@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Notification from '../../Notification/Notification';
 import styles from './Header.module.css';
 import { adminInfo } from '@/app/types/admin';
-import TokenService from '@/lib/api/token';
+import { tokenManager } from '@/utils/tokenManager';
 import { useAuth } from '@/lib/context/AuthProvider';
 import { useRouter } from 'next/navigation';
 
@@ -21,8 +21,7 @@ export default function Header({ user, onToggleSidebar, isSidebarOpen, currentPa
   const { refreshUser } = useAuth();
   const handleLogout = async () => {
     try {
-      TokenService.clearToken();
-
+      tokenManager.clearTokens();
       await refreshUser();
 
       // Chuyển hướng về trang login

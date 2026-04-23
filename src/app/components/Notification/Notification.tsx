@@ -76,6 +76,7 @@ export default function Notification() {
         className={styles.notificationButton}
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Thông báo"
+        tabIndex={-1}
       >
         <BellOutlined />
         {state.unreadCount > 0 && (
@@ -95,6 +96,7 @@ export default function Notification() {
                   className={styles.markAllButton}
                   onClick={markAllAsRead}
                   title="Đánh dấu tất cả đã đọc"
+                  tabIndex={-1}
                 >
                   <CheckOutlined />
                 </button>
@@ -104,6 +106,7 @@ export default function Notification() {
                   className={styles.clearAllButton}
                   onClick={clearAll}
                   title="Xóa tất cả"
+                  tabIndex={-1}
                 >
                   <DeleteOutlined />
                 </button>
@@ -112,6 +115,7 @@ export default function Notification() {
                 className={styles.closeButton}
                 onClick={() => setIsOpen(false)}
                 title="Đóng"
+                tabIndex={-1}
               >
                 <CloseOutlined />
               </button>
@@ -146,6 +150,7 @@ export default function Notification() {
                           removeNotification(notification.id);
                         }}
                         title="Xóa thông báo"
+                        tabIndex={-1}
                       >
                         <CloseOutlined />
                       </button>
@@ -159,6 +164,7 @@ export default function Notification() {
                         <button
                           className={styles.actionButton}
                           onClick={(e) => handleActionClick(e, notification.id, notification.action?.onClick)}
+                          tabIndex={-1}
                         >
                           {notification.action.label}
                         </button>
@@ -172,7 +178,7 @@ export default function Notification() {
 
           {state.notifications.length > 10 && (
             <div className={styles.dropdownFooter}>
-              <button className={styles.viewAllButton}>
+              <button className={styles.viewAllButton} tabIndex={-1}>
                 Xem tất cả thông báo ({state.notifications.length})
               </button>
             </div>

@@ -53,51 +53,122 @@
   flex-shrink: 0; 
 }
 
-.logo {
+.headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.logoInfo {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.currentPageTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2d3748;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.adminPanelText {
+  font-size: 11px;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.headerActions {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.logoIcon {
-  width: 32px;
-  height: 32px;
+.toggleBtn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #4a5568;
+  cursor: pointer;
+  padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  background: #3498db;
-  border-radius: 8px;
-  color: white;
+  border-radius: 4px;
+  transition: background-color 0.2s;
 }
 
-.logoText {
-  display: flex;
-  flex-direction: column;
-}
-
-.logoTitle {
-  font-size: 16px;
-  font-weight: 700;
+.toggleBtn:hover {
+  background-color: #f7fafc;
   color: #2d3748;
-  line-height: 1.2;
-}
-
-.logoSubtitle {
-  font-size: 12px;
-  color: #718096;
-  line-height: 1.2;
 }
 
 .logoCollapsed {
   display: flex;
-  align-items: center;
   justify-content: center;
   width: 100%;
 }
 
-.logoCollapsed .logoIcon {
-  margin: 0 auto;
+.toggleBtnCollapsed {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #4a5568;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.toggleBtnCollapsed:hover {
+  background-color: #f7fafc;
+}
+
+/* User Section */
+.userSection {
+  padding: 16px;
+  margin: 8px 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2d3748;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 6px 0;
+  color: #e53e3e;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s;
+  width: fit-content;
+}
+
+.logoutBtn:hover {
+  color: #c53030;
 }
 
 .nav {

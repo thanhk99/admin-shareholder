@@ -39,14 +39,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const initializeAuth = async () => {
             try {
-                // Try to refresh token on app load to restore session from HttpOnly cookie
-                const response: any = await AuthService.refreshToken();
-                if (response && response.accessToken) {
-                    tokenManager.setAccessToken(response.accessToken);
-                    await fetchAdmin();
+                const refreshToken = tokenManager.getRefreshToken();
+                if (refreshToken) {
+                    // Try to refresh token on app load to restore session from localStorage
+                    const response: any = await AuthService.refreshToken();
+                    if (response && response.accessToken) {
+                        tokenManager.setAccessToken(response.accessToken);
+                        if (response.refreshToken) {
+                            tokenManager.setRefreshToken(response.refreshToken);
+                        }
+                        await fetchAdmin();
+                    }
                 }
             } catch (error) {
-                console.log('No active session found');
+                console.log('No active session found or refresh failed');
+                tokenManager.clearTokens();
             } finally {
                 setLoading(false);
             }

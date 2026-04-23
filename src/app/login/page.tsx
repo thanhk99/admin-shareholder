@@ -1,10 +1,9 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserOutlined, LockOutlined, BankOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 import AuthService from '@/lib/api/auth';
-import TokenService from '@/lib/api/token';
 import { useNotify } from '../hooks/useNotificationHook';
 import axios from 'axios';
 import { useAuth } from '@/lib/context/AuthProvider';
@@ -19,7 +18,18 @@ export default function Login() {
   const [error, setError] = useState('');
   const router = useRouter();
   const notify = useNotify();
-  const { onLoginSuccess } = useAuth();
+  const { onLoginSuccess, admin, loading: authLoading } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && admin) {
+      router.push('/');
+    }
+  }, [admin, authLoading, router]);
+
+  if (authLoading) {
+    return null; // Or a loading spinner
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,11 +46,11 @@ export default function Login() {
       const response: any = await AuthService.login(account, password);
 
       if (response && response.accessToken) {
-        // 1. Set in-memory/localStorage token for immediate Client-Side use
+        // Set tokens in localStorage for Client-Side use
         tokenManager.setAccessToken(response.accessToken);
         tokenManager.setRefreshToken(response.refreshToken);
 
-        // 2. Call Server Action to set HttpOnly cookies
+        // Call Server Action (optional, but kept for consistency)
         await loginAction({
           accessToken: response.accessToken,
           refreshToken: response.refreshToken
@@ -51,10 +61,22 @@ export default function Login() {
         router.push('/');
       }
     } catch (error) {
+      console.error('Login error:', error);
+      let errorMessage = 'Tài khoản hoặc mật khẩu không chính xác';
+      
       if (axios.isAxiosError(error)) {
-        if (error.response) {
+        if (error.response && error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.message) {
+          // Fallback to axios error message if no data.message
+          // errorMessage = error.message; // Sometimes generic, keep default
         }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
       }
+
+      setError(errorMessage);
+      notify.error('Đăng nhập thất bại', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -108,6 +130,19 @@ export default function Login() {
         </div>
 
         <form onSubmit={handleSubmit}>
+          {error && (
+            <div style={{
+              marginBottom: '1.5rem',
+              padding: '10px 15px',
+              backgroundColor: '#fff5f5',
+              borderLeft: '4px solid #fc8181',
+              color: '#c53030',
+              borderRadius: '4px',
+              fontSize: '0.9rem'
+            }}>
+              {error}
+            </div>
+          )}
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{
               display: 'block',

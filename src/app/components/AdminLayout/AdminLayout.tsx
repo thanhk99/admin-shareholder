@@ -1,22 +1,28 @@
 'use client';
 
-import { useState } from 'react';
-import { usePathname } from 'next/navigation';
-import Header from '../shared/header/Header';
+import { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from '../shared/sidebar/Sidebar';
 import styles from './AdminLayout.module.css';
 import { useAuth } from '@/lib/context/AuthProvider';
 import { RealtimeProvider } from '@/lib/context/RealtimeContext';
+import { Spin } from 'antd';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const pathname = usePathname();
-  const { admin } = useAuth();
+  const router = useRouter();
+  const { admin, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !admin) {
+      router.push('/login');
+    }
+  }, [admin, loading, router]);
 
   const handleToggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -27,7 +33,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     const routes: { [key: string]: string } = {
       '/': 'Dashboard',
       '/users': 'Quản lý Người dùng',
-      '/proxy': 'Quản lý uỷ  quyền',
+      '/proxy': 'Quản lý uỷ quyền',
       '/meetings': 'Quản lý Cuộc họp',
       '/reports': 'Báo cáo',
       '/eligibility-check': 'Kiểm tra tư cách cổ đông',
@@ -47,22 +53,29 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return routes[pathname] || 'Dashboard';
   };
 
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f2f5' }}>
+        <Spin size="large" tip="Đang tải..." />
+      </div>
+    );
+  }
+
+  if (!admin) {
+    return null; // Will redirect via useEffect
+  }
+
   return (
     <RealtimeProvider>
       <div className={styles.adminLayout}>
         <Sidebar
           isOpen={isSidebarOpen}
           onToggle={handleToggleSidebar}
+          user={admin}
+          currentPage={getCurrentPageTitle()}
         />
 
         <div className={`${styles.mainContent} ${!isSidebarOpen ? styles.sidebarClosed : ''}`}>
-          <Header
-            user={admin}
-            onToggleSidebar={handleToggleSidebar}
-            isSidebarOpen={isSidebarOpen}
-            currentPage={getCurrentPageTitle()}
-          />
-
           <div className={styles.content}>
             {children}
           </div>

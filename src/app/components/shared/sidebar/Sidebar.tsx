@@ -11,18 +11,30 @@ import {
   BankOutlined,
   CopyrightOutlined,
   IdcardOutlined,
-  UnorderedListOutlined
+  UnorderedListOutlined,
+  LogoutOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined
 } from '@ant-design/icons';
 import { MenuItem } from '@/app/types/types';
+import { adminInfo } from '@/app/types/admin';
+import { tokenManager } from '@/utils/tokenManager';
+import Notification from '../../Notification/Notification';
 import styles from './Sidebar.module.css';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/context/AuthProvider';
 
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
+  user: adminInfo | null;
+  currentPage: string;
 }
 
-export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
+export default function Sidebar({ isOpen, onToggle, user, currentPage }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { refreshUser } = useAuth();
 
   const menuItems: MenuItem[] = [
     {
@@ -69,6 +81,17 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
     }
   ];
 
+  const handleLogout = async () => {
+    try {
+      tokenManager.clearTokens();
+      await refreshUser();
+      router.push('/login');
+      router.refresh();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   const isActive = (href: string) => {
     if (href === '/') {
       return pathname === '/';
@@ -80,25 +103,39 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
     <>
       <aside className={`${styles.sidebar} ${isOpen ? styles.open : styles.closed}`}>
         <div className={styles.sidebarHeader}>
-          {isOpen && (
-            <div className={styles.logo}>
-              <div className={styles.logoIcon}>
-                <BankOutlined />
+          {isOpen ? (
+            <div className={styles.headerTop}>
+              <div className={styles.logoInfo}>
+                <div className={styles.currentPageTitle}>{currentPage}</div>
+                <div className={styles.adminPanelText}>Admin Panel</div>
               </div>
-              <div className={styles.logoText}>
-                <div className={styles.logoTitle}>VIX DHCD</div>
-                <div className={styles.logoSubtitle}>Admin Panel</div>
+              <div className={styles.headerActions}>
+                <Notification />
+                <button className={styles.toggleBtn} onClick={onToggle} tabIndex={-1}>
+                  <MenuFoldOutlined />
+                </button>
               </div>
             </div>
-          )}
-          {!isOpen && (
+          ) : (
             <div className={styles.logoCollapsed}>
-              <div className={styles.logoIcon}>
-                <BankOutlined />
-              </div>
+              <button className={styles.toggleBtnCollapsed} onClick={onToggle} tabIndex={-1}>
+                <MenuUnfoldOutlined />
+              </button>
             </div>
           )}
         </div>
+
+        {isOpen && user && (
+          <div className={styles.userSection}>
+            <div className={styles.userDetails}>
+              <div className={styles.userName}>{user.fullName}</div>
+              <button className={styles.logoutBtn} onClick={handleLogout} title="Đăng xuất" tabIndex={-1}>
+                <LogoutOutlined />
+                <span>Đăng xuất</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         <nav className={styles.nav}>
           <div className={styles.navSection}>
@@ -111,6 +148,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
                     className={`${styles.navLink} ${isActive(item.href) ? styles.active : ''
                       }`}
                     title={!isOpen ? item.label : undefined}
+                    tabIndex={-1}
                   >
                     <span className={styles.navIcon}>{item.icon}</span>
                     {isOpen && (
@@ -144,7 +182,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps) {
             </div>
           ) : (
             <div className={styles.footerCollapsed}>
-              <button className={styles.copyrightButton} title="Bản quyền">
+              <button className={styles.copyrightButton} title="Bản quyền" tabIndex={-1}>
                 <CopyrightOutlined />
               </button>
             </div>

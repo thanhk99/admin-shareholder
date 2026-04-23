@@ -28,6 +28,7 @@ interface ShareholderSearchFormProps {
     isScanningRef?: React.RefObject<boolean>;
     lastCleanCccdRef?: React.RefObject<string | null>;
     rightContent?: React.ReactNode;
+    isProxyMode?: boolean;
 }
 
 export default function ShareholderSearchForm({
@@ -53,7 +54,8 @@ export default function ShareholderSearchForm({
     onOpenAddProxy,
     isScanningRef,
     lastCleanCccdRef,
-    rightContent
+    rightContent,
+    isProxyMode = false
 }: ShareholderSearchFormProps) {
     return (
         <div className={styles.section}>
@@ -64,8 +66,9 @@ export default function ShareholderSearchForm({
                     onClick={onPrintQR}
                     size="small"
                     style={{ marginLeft: 'auto' }}
+                    tabIndex={-1}
                 >
-                    In mã QR đăng nhập
+                    In thẻ biểu quyết
                 </Button>
             </div>
                 <Row gutter={24}>
@@ -93,6 +96,7 @@ export default function ShareholderSearchForm({
                                                 size="small"
                                                 placeholder="Nhập CCCD..."
                                                 onPressEnter={onSearch}
+                                                tabIndex={1}
                                                 onInput={(e: React.FormEvent<HTMLInputElement>) => {
                                                     const target = e.target as HTMLInputElement;
                                                     const val = target.value;
@@ -128,24 +132,25 @@ export default function ShareholderSearchForm({
                                             icon={<SearchOutlined />}
                                             onClick={onSearch}
                                             loading={loading}
+                                            tabIndex={-1}
                                         />
                                     </div>
                                 </Form.Item>
 
                                 <Form.Item label="Họ tên" name="fullName">
-                                    <Input size="small" readOnly className={styles.readOnlyField} />
+                                    <Input size="small" readOnly className={styles.readOnlyField} tabIndex={-1} />
                                 </Form.Item>
                                 <Form.Item label="Ngày cấp" name="dateOfIssue">
-                                    <DatePicker size="small" className={styles.readOnlyField} style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày" disabled />
+                                    <DatePicker size="small" className={styles.readOnlyField} style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày" disabled tabIndex={-1} />
                                 </Form.Item>
                                 <Form.Item label="Số lượng CP" name="sharesOwned">
-                                    <Input size="small" readOnly suffix="(cp)" className={styles.readOnlyField} />
+                                    <Input size="small" readOnly suffix="(cp)" className={styles.readOnlyField} tabIndex={-1} />
                                 </Form.Item>
                             </div>
 
                             {/* Phần xác nhận tham dự dời sang bên trái */}
                             <div style={{
-                                marginTop: 24,
+                                marginTop: 12,
                                 border: '1px solid #d9d9d9',
                                 borderRadius: 8,
                                 overflow: 'hidden',
@@ -154,69 +159,68 @@ export default function ShareholderSearchForm({
                             }}>
                                 <div
                                     style={{
-                                        padding: '12px 16px',
+                                        padding: '8px 16px',
                                         backgroundColor: '#f5f5f5',
                                         display: 'flex',
                                         justifyContent: 'space-between',
                                         alignItems: 'center',
-                                        cursor: 'pointer',
-                                        borderBottom: isAttendanceSectionExpanded ? '1px solid #d9d9d9' : 'none'
+                                        borderBottom: '1px solid #d9d9d9'
                                     }}
-                                    onClick={onToggleAttendanceSection}
                                 >
                                     <h3 style={{ margin: 0, fontSize: 16 }}>Xác nhận tham dự</h3>
-                                    {isAttendanceSectionExpanded ? <UpOutlined /> : <DownOutlined />}
                                 </div>
+                                <div style={{ padding: '8px 16px' }}>
+                                    {isParticipated && checkedInAt && (
+                                        <div style={{ marginBottom: 16, padding: '8px 12px', backgroundColor: '#e6f7ff', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid #91d5ff' }}>
+                                            <ClockCircleOutlined style={{ color: '#1890ff' }} />
+                                            <span>Thời gian: <b style={{ color: '#1890ff' }}>{dayjs(checkedInAt).format('HH:mm DD/MM/YYYY')}</b></span>
+                                        </div>
+                                    )}
 
-                                {isAttendanceSectionExpanded && (
-                                    <div style={{ padding: 16 }}>
-                                        {isParticipated && checkedInAt && (
-                                            <div style={{ marginBottom: 16, padding: '8px 12px', backgroundColor: '#e6f7ff', borderRadius: 4, display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid #91d5ff' }}>
-                                                <ClockCircleOutlined style={{ color: '#1890ff' }} />
-                                                <span>Thời gian: <b style={{ color: '#1890ff' }}>{dayjs(checkedInAt).format('HH:mm DD/MM/YYYY')}</b></span>
-                                            </div>
-                                        )}
-                                        
-                                        <Form.Item
-                                            label="Số lượng tham dự"
-                                            name="attendingShares"
-                                            style={{ marginBottom: 16 }}
-                                            help={remainingToAllocate < 0 ? <span style={{ color: 'red' }}>Vượt quá số lượng có thể tham dự</span> : `Còn lại: ${displayRemaining.toLocaleString()} cp`}
+                                    <Form.Item
+                                        label="Số lượng tham dự"
+                                        name="attendingShares"
+                                        style={{ marginBottom: 4 }}
+                                        help={remainingToAllocate < 0 ? <span style={{ color: 'red' }}>Vượt quá số lượng có thể tham dự</span> : `Còn lại: ${displayRemaining.toLocaleString()} cp`}
+                                    >
+                                        <InputNumber
+                                            size="small"
+                                            style={{ width: '100%' }}
+                                            min={0}
+                                            formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                            parser={(value) => value!.replace(/\$\s?|(,*)/g, '') as any}
+                                            placeholder="Nhập số lượng CP tham dự"
+                                            tabIndex={2}
+                                        />
+                                    </Form.Item>
+
+                                    <div className={styles.actionRow} style={{ display: 'flex', gap: '12px' }}>
+                                        <Button
+                                            size="small"
+                                            type="primary"
+                                            className={styles.confirmButton}
+                                            onClick={onConfirmAttendance}
+                                            loading={loading}
+                                            disabled={isProxyMode}
+                                            icon={isParticipated ? <EditOutlined /> : <CheckOutlined />}
+                                            tabIndex={3}
                                         >
-                                            <InputNumber
-                                                size="small"
-                                                style={{ width: '100%' }}
-                                                min={0}
-                                                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                                parser={(value) => value!.replace(/\$\s?|(,*)/g, '') as any}
-                                                placeholder="Nhập số lượng CP tham dự"
-                                            />
-                                        </Form.Item>
-
-                                        <div className={styles.actionRow} style={{ display: 'flex', gap: '12px' }}>
+                                            {isParticipated ? 'Cập nhật' : 'Xác nhận tham dự'}
+                                        </Button>
+                                        {isParticipated && (
                                             <Button
                                                 size="small"
-                                                type="primary"
-                                                className={styles.confirmButton}
-                                                onClick={onConfirmAttendance}
+                                                danger
+                                                onClick={onCancelAttendance}
                                                 loading={loading}
-                                                icon={isParticipated ? <EditOutlined /> : <CheckOutlined />}
+                                                disabled={isProxyMode}
+                                                tabIndex={-1}
                                             >
-                                                {isParticipated ? 'Cập nhật' : 'Xác nhận tham dự'}
+                                                Huỷ tham dự
                                             </Button>
-                                            {isParticipated && (
-                                                <Button
-                                                    size="small"
-                                                    danger
-                                                    onClick={onCancelAttendance}
-                                                    loading={loading}
-                                                >
-                                                    Huỷ tham dự
-                                                </Button>
-                                            )}
-                                        </div>
+                                        )}
                                     </div>
-                                )}
+                                </div>
                             </div>
                         </Form>
                     </Col>

@@ -17,32 +17,32 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const { realtimeStatus, isConnected } = useRealtime();
 
-    useEffect(() => {
-      let isMounted = true;
-      const fetchSummary = async () => {
-        try {
-          const data = await DashboardService.getSummary();
-          if (isMounted) {
-            setSummary(data);
-          }
-        } catch (error) {
-          console.error('Error fetching dashboard summary:', error);
-        } finally {
-          if (isMounted) {
-            setLoading(false);
-          }
+  useEffect(() => {
+    let isMounted = true;
+    const fetchSummary = async () => {
+      try {
+        const data = await DashboardService.getSummary();
+        if (isMounted) {
+          setSummary(data);
         }
-      };
-  
-      fetchSummary();
-      // Refresh summary every 30 seconds
-      const interval = setInterval(fetchSummary, 30000);
-      
-      return () => {
-        isMounted = false;
-        clearInterval(interval);
-      };
-    }, []);
+      } catch (error) {
+        console.error('Error fetching dashboard summary:', error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchSummary();
+    // Refresh summary every 30 seconds
+    const interval = setInterval(fetchSummary, 30000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleAddSuccess = () => {
     // Refresh logic if needed
@@ -149,9 +149,9 @@ export default function Dashboard() {
                       dataSource={realtimeStatus.resolutionResults}
                       renderItem={(res: any) => (
                         <List.Item>
-                          <Card 
-                            className={styles.compactInnerCard} 
-                            title={res.resolutionTitle} 
+                          <Card
+                            className={styles.compactInnerCard}
+                            title={res.resolutionTitle}
                             size="small"
                           >
                             <div style={{ fontSize: '12px', color: '#64748b' }}>
@@ -159,19 +159,19 @@ export default function Dashboard() {
                               <span style={{ margin: '0 4px' }}>|</span>
                               <span>Quyền: {res.totalWeight.toLocaleString()}</span>
                             </div>
-                            
+
                             <div className={styles.stackedBarContainer}>
                               <div className={styles.stackedBar}>
                                 {res.results.map((opt: any) => {
                                   const color = opt.votingOptionName === 'Đồng ý' ? '#52c41a' :
-                                               opt.votingOptionName === 'Không đồng ý' ? '#ff4d4f' : '#faad14';
+                                    opt.votingOptionName === 'Không đồng ý' ? '#ff4d4f' : '#faad14';
                                   return (
-                                    <div 
+                                    <div
                                       key={opt.votingOptionId}
                                       className={styles.barSegment}
-                                      style={{ 
-                                        width: `${opt.percentage}%`, 
-                                        backgroundColor: color 
+                                      style={{
+                                        width: `${opt.percentage}%`,
+                                        backgroundColor: color
                                       }}
                                     />
                                   );
@@ -180,7 +180,7 @@ export default function Dashboard() {
                               <div className={styles.legendContainer}>
                                 {res.results.map((opt: any) => {
                                   const color = opt.votingOptionName === 'Đồng ý' ? '#52c41a' :
-                                               opt.votingOptionName === 'Không đồng ý' ? '#ff4d4f' : '#faad14';
+                                    opt.votingOptionName === 'Không đồng ý' ? '#ff4d4f' : '#faad14';
                                   return (
                                     <div key={opt.votingOptionId} className={styles.legendItem}>
                                       <div className={styles.legendColor} style={{ backgroundColor: color }} />
@@ -207,9 +207,9 @@ export default function Dashboard() {
                       dataSource={realtimeStatus.electionResults}
                       renderItem={(ele: any) => (
                         <List.Item>
-                          <Card 
-                            className={styles.compactInnerCard} 
-                            title={ele.electionTitle} 
+                          <Card
+                            className={styles.compactInnerCard}
+                            title={ele.electionTitle}
                             size="small"
                           >
                             <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
@@ -223,9 +223,9 @@ export default function Dashboard() {
                                   <Text style={{ fontSize: '11px' }}>{cand.votingOptionName}</Text>
                                   <Text style={{ fontSize: '11px' }} strong>{cand.percentage.toFixed(1)}%</Text>
                                 </div>
-                                <Progress 
-                                  percent={parseFloat(cand.percentage.toFixed(1))} 
-                                  size="small" 
+                                <Progress
+                                  percent={parseFloat(cand.percentage.toFixed(1))}
+                                  size="small"
                                   strokeLinecap="butt"
                                   showInfo={false}
                                   strokeWidth={6}
