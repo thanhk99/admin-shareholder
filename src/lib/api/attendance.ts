@@ -4,7 +4,7 @@ import apiClient from "../api-client";
 export interface AttendanceRequest {
     meetingId: string;
     cccd: string;
-    attendingShares: number;
+    attendingShares?: number;
     participationType: 'DIRECT' | 'PROXY';
 }
 

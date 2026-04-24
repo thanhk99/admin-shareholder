@@ -269,7 +269,6 @@ export default function EligibilityCheck() {
                 await AttendanceService.registerAttendance({
                     meetingId: selectedMeetingId,
                     cccd: proxyCccd,
-                    attendingShares: newDelegatedShares,
                     participationType: 'PROXY'
                 });
             }
